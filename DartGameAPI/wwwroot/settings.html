@@ -40,80 +40,55 @@
         <section id="tab-calibration" class="settings-section active">
             <div class="section-header">
                 <h2>Board Calibration</h2>
-                <p class="section-desc">Configure cameras and calibrate the dartboard detection</p>
+                <p class="section-desc">Select a camera to view and calibrate</p>
             </div>
 
-            <div class="status-cards">
-                <div class="status-card">
-                    <span class="status-label">DartDetect API</span>
-                    <span id="detect-api-status" class="status-value status-checking">Checking...</span>
-                </div>
-                <div class="status-card">
-                    <span class="status-label">Calibration</span>
-                    <span id="cal-status" class="status-value">—</span>
-                </div>
-                <div class="status-card">
-                    <span class="status-label">Last Calibrated</span>
-                    <span id="cal-date" class="status-value">—</span>
-                </div>
+            <!-- Camera Selector Buttons -->
+            <div class="camera-selector">
+                <button class="cam-btn active" data-cam="0" id="cam-btn-0">
+                    <span class="cam-number">CAM 0</span>
+                    <span class="cam-indicator" id="cam-ind-0">●</span>
+                </button>
+                <button class="cam-btn" data-cam="1" id="cam-btn-1">
+                    <span class="cam-number">CAM 1</span>
+                    <span class="cam-indicator" id="cam-ind-1">●</span>
+                </button>
+                <button class="cam-btn" data-cam="2" id="cam-btn-2">
+                    <span class="cam-number">CAM 2</span>
+                    <span class="cam-indicator" id="cam-ind-2">●</span>
+                </button>
             </div>
 
-            <div class="cameras-section">
-                <h3>Camera Previews</h3>
-                
-                <div class="camera-grid" id="calibration-camera-grid">
-                    <div class="camera-card" data-cam="0">
-                        <div class="camera-header">
-                            <span class="camera-name">Camera 0</span>
-                            <span class="camera-status" id="cal-cam0-status">⏳</span>
-                        </div>
-                        <div class="camera-preview">
-                            <img id="cal-cam0-img" class="camera-img" alt="Camera 0">
-                            <div class="camera-loading">Loading...</div>
-                        </div>
-                        <div class="camera-quality" id="cal-cam0-quality"></div>
-                    </div>
-                    <div class="camera-card" data-cam="1">
-                        <div class="camera-header">
-                            <span class="camera-name">Camera 1</span>
-                            <span class="camera-status" id="cal-cam1-status">⏳</span>
-                        </div>
-                        <div class="camera-preview">
-                            <img id="cal-cam1-img" class="camera-img" alt="Camera 1">
-                            <div class="camera-loading">Loading...</div>
-                        </div>
-                        <div class="camera-quality" id="cal-cam1-quality"></div>
-                    </div>
-                    <div class="camera-card" data-cam="2">
-                        <div class="camera-header">
-                            <span class="camera-name">Camera 2</span>
-                            <span class="camera-status" id="cal-cam2-status">⏳</span>
-                        </div>
-                        <div class="camera-preview">
-                            <img id="cal-cam2-img" class="camera-img" alt="Camera 2">
-                            <div class="camera-loading">Loading...</div>
-                        </div>
-                        <div class="camera-quality" id="cal-cam2-quality"></div>
-                    </div>
+            <!-- Large Camera Preview -->
+            <div class="camera-preview-large">
+                <img id="main-camera-img" class="main-cam-img" alt="Camera Preview">
+                <div id="main-camera-loading" class="main-cam-loading">
+                    <span>📷 Loading camera...</span>
                 </div>
-                
-                <div class="action-buttons">
-                    <button id="refresh-snapshots-btn" class="btn btn-secondary">
-                        🔄 Refresh Snapshots
-                    </button>
-                    <button id="calibrate-all-btn" class="btn btn-primary">
-                        🎯 Calibrate All Cameras
-                    </button>
+                <div id="main-camera-offline" class="main-cam-offline hidden">
+                    <span>❌ Camera Offline</span>
                 </div>
             </div>
 
+            <!-- Camera Info & Actions -->
+            <div class="camera-actions">
+                <div class="cam-info">
+                    <span id="cam-quality-label" class="cam-quality-label">Not Calibrated</span>
+                </div>
+                <div class="cam-buttons">
+                    <button id="refresh-btn" class="btn btn-secondary">🔄 Refresh</button>
+                    <button id="calibrate-btn" class="btn btn-primary">🎯 Calibrate</button>
+                </div>
+            </div>
+
+            <!-- Zone Legend -->
             <div class="zone-legend">
                 <h4>Scoring Zones</h4>
                 <div class="legend-grid">
-                    <span class="legend-item"><span class="zone-dot triple"></span> Triple Ring</span>
-                    <span class="legend-item"><span class="zone-dot double"></span> Double Ring</span>
-                    <span class="legend-item"><span class="zone-dot bull"></span> Bullseye</span>
-                    <span class="legend-item"><span class="zone-dot dbull"></span> Double Bull</span>
+                    <span class="legend-item"><span class="zone-dot triple"></span> Triple</span>
+                    <span class="legend-item"><span class="zone-dot double"></span> Double</span>
+                    <span class="legend-item"><span class="zone-dot bull"></span> Bull</span>
+                    <span class="legend-item"><span class="zone-dot dbull"></span> D-Bull</span>
                 </div>
             </div>
         </section>
