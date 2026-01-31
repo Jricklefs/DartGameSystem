@@ -17,8 +17,8 @@
     <header class="settings-header">
         <a href="/" class="back-link">← BACK</a>
         <h1 class="settings-title">SETTINGS</h1>
-        
-        <!-- Tabs in header -->
+        <div class="header-spacer"></div>
+        <!-- Tabs on right -->
         <nav class="settings-nav-inline">
             <button class="nav-tab-sm active" data-tab="calibration">🎯 CALIBRATION</button>
             <button class="nav-tab-sm" data-tab="theme">🎨 THEME</button>
@@ -30,17 +30,21 @@
 
         <!-- Calibration Tab -->
         <section id="tab-calibration" class="settings-section active">
-            <!-- Camera Selector Buttons - Compact -->
-            <div class="camera-selector-compact">
-                <button class="cam-btn-sm active" data-cam="0" id="cam-btn-0">
-                    CAM 0 <span class="cam-indicator" id="cam-ind-0">●</span>
-                </button>
-                <button class="cam-btn-sm" data-cam="1" id="cam-btn-1">
-                    CAM 1 <span class="cam-indicator" id="cam-ind-1">●</span>
-                </button>
-                <button class="cam-btn-sm" data-cam="2" id="cam-btn-2">
-                    CAM 2 <span class="cam-indicator" id="cam-ind-2">●</span>
-                </button>
+            <!-- Section Title -->
+            <div class="section-title-row">
+                <h2 class="section-title">BOARD CALIBRATION</h2>
+                <!-- Camera Selector Buttons - Compact -->
+                <div class="camera-selector-compact">
+                    <button class="cam-btn-sm active" data-cam="0" id="cam-btn-0">
+                        CAM 0 <span class="cam-indicator" id="cam-ind-0">●</span>
+                    </button>
+                    <button class="cam-btn-sm" data-cam="1" id="cam-btn-1">
+                        CAM 1 <span class="cam-indicator" id="cam-ind-1">●</span>
+                    </button>
+                    <button class="cam-btn-sm" data-cam="2" id="cam-btn-2">
+                        CAM 2 <span class="cam-indicator" id="cam-ind-2">●</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Large Camera Preview -->

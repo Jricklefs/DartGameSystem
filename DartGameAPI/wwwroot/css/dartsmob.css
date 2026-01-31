@@ -766,45 +766,47 @@ html, body {
 .settings-header {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 12px 20px;
+    gap: 12px;
+    padding: 10px 16px;
     background: rgba(0, 0, 0, 0.5);
     border-bottom: 1px solid var(--gold-dark);
     position: sticky;
     top: 0;
     z-index: 100;
-    flex-wrap: wrap;
 }
 
 .back-link {
     color: var(--gold);
     text-decoration: none;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1rem;
+    font-size: 0.9rem;
     letter-spacing: 0.05em;
 }
 
 .settings-title {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     color: var(--paper);
     letter-spacing: 0.1em;
-    margin-right: auto;
 }
 
-/* Inline tabs in header */
+.header-spacer {
+    flex: 1;
+}
+
+/* Inline tabs - right side */
 .settings-nav-inline {
     display: flex;
     gap: 4px;
 }
 
 .nav-tab-sm {
-    padding: 8px 12px;
+    padding: 6px 10px;
     background: transparent;
     border: 1px solid var(--gold-dark);
     color: var(--paper-dark);
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     letter-spacing: 0.05em;
     cursor: pointer;
     border-radius: 4px;
@@ -820,6 +822,23 @@ html, body {
     background: rgba(212, 168, 75, 0.2);
     border-color: var(--gold);
     color: var(--gold);
+}
+
+/* Section title row */
+.section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
 }
 
 .settings-container {
@@ -949,24 +968,21 @@ html, body {
 /* Compact Camera Selector */
 .camera-selector-compact {
     display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
 }
 
 .cam-btn-sm {
-    flex: 1;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px 12px;
+    gap: 6px;
+    padding: 6px 12px;
     background: rgba(0, 0, 0, 0.4);
     border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     color: var(--paper);
     letter-spacing: 0.05em;
 }
@@ -981,7 +997,7 @@ html, body {
 }
 
 .cam-btn-sm .cam-indicator {
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
 /* Full-size Camera Preview */
