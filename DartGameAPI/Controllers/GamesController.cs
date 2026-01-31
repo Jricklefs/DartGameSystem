@@ -208,6 +208,56 @@ public class GamesController : ControllerBase
         return Ok(new ThrowResult { NewDart = dart, Game = game });
     }
 
+    /// <summary>
+    /// Correct a dart in the current turn
+    /// </summary>
+    [HttpPost("{id}/correct")]
+    public async Task<ActionResult<ThrowResult>> CorrectDart(string id, [FromBody] CorrectDartRequest request)
+    {
+        var game = _gameService.GetGame(id);
+        if (game == null) return NotFound();
+        if (game.State != GameState.InProgress)
+            return BadRequest(new { error = "Game is not in progress" });
+        if (game.CurrentTurn == null)
+            return BadRequest(new { error = "No current turn" });
+        if (request.DartIndex < 0 || request.DartIndex >= game.CurrentTurn.Darts.Count)
+            return BadRequest(new { error = "Invalid dart index" });
+
+        // Get the old dart and calculate score difference
+        var oldDart = game.CurrentTurn.Darts[request.DartIndex];
+        var oldScore = oldDart.Score;
+        
+        // Create corrected dart
+        var newDart = new DartThrow
+        {
+            Index = request.DartIndex,
+            Segment = request.Segment,
+            Multiplier = request.Multiplier,
+            Zone = GetZoneName(request.Segment, request.Multiplier),
+            Score = request.Segment * request.Multiplier,
+            XMm = oldDart.XMm,
+            YMm = oldDart.YMm,
+            Confidence = 1.0  // Manual correction = 100% confidence
+        };
+
+        // Apply correction
+        _gameService.CorrectDart(game, request.DartIndex, newDart);
+        
+        _logger.LogInformation("Corrected dart {Index}: {OldZone}={OldScore} -> {NewZone}={NewScore}", 
+            request.DartIndex, oldDart.Zone, oldScore, newDart.Zone, newDart.Score);
+
+        // Notify connected clients
+        await _hubContext.SendDartThrown(game.BoardId, newDart, game);
+        
+        // Check if game ended (unlikely from correction but possible)
+        if (game.State == GameState.Finished)
+        {
+            await _hubContext.SendGameEnded(game.BoardId, game);
+        }
+
+        return Ok(new ThrowResult { NewDart = newDart, Game = game });
+    }
+
     private static string GetZoneName(int segment, int multiplier)
     {
         if (segment == 25) return multiplier == 2 ? "D-BULL" : "BULL";
@@ -238,6 +288,13 @@ public class ManualThrowRequest
 {
     public int Segment { get; set; }  // 1-20, or 25 for bull
     public int Multiplier { get; set; } = 1;  // 1=single, 2=double, 3=triple
+}
+
+public class CorrectDartRequest
+{
+    public int DartIndex { get; set; }
+    public int Segment { get; set; }
+    public int Multiplier { get; set; } = 1;
 }
 
 public class ThrowResult

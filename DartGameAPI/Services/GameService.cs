@@ -353,5 +353,70 @@ public class GameService
         _logger.LogInformation("Manual dart: {Zone} = {Score} pts", dart.Zone, dart.Score);
     }
 
+    /// <summary>
+    /// Correct a dart in the current turn
+    /// </summary>
+    public void CorrectDart(Game game, int dartIndex, DartThrow newDart)
+    {
+        if (game.CurrentTurn == null || dartIndex >= game.CurrentTurn.Darts.Count)
+            return;
+
+        var player = game.CurrentPlayer;
+        if (player == null) return;
+
+        var oldDart = game.CurrentTurn.Darts[dartIndex];
+        var scoreDiff = newDart.Score - oldDart.Score;
+
+        // Replace the dart
+        game.CurrentTurn.Darts[dartIndex] = newDart;
+
+        // Adjust player score based on game mode
+        switch (game.Mode)
+        {
+            case GameMode.Practice:
+                player.Score += scoreDiff;
+                break;
+
+            case GameMode.Game501:
+            case GameMode.Game301:
+                // For X01 games, we subtract scores, so add the old and subtract the new
+                // oldScore was subtracted, newScore needs to be subtracted instead
+                player.Score = player.Score + oldDart.Score - newDart.Score;
+                
+                // Check for bust after correction
+                if (player.Score < 0 || (player.Score == 1))
+                {
+                    // This would be a bust - but corrections shouldn't cause busts
+                    // Just prevent going negative
+                    player.Score = player.Score - oldDart.Score + newDart.Score; // Revert
+                    game.CurrentTurn.Darts[dartIndex] = oldDart; // Revert dart
+                    _logger.LogWarning("Correction would cause bust, reverting");
+                    return;
+                }
+                
+                // Check for checkout
+                if (player.Score == 0 && newDart.Multiplier == 2)
+                {
+                    player.LegsWon++;
+                    game.LegWinnerId = player.Id;
+                    
+                    if (player.LegsWon >= game.LegsToWin)
+                    {
+                        game.State = GameState.Finished;
+                        game.WinnerId = player.Id;
+                        game.EndedAt = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        StartNextLeg(game);
+                    }
+                }
+                break;
+        }
+
+        _logger.LogInformation("Corrected dart {Index}: {OldScore} -> {NewScore}, player score now {PlayerScore}", 
+            dartIndex, oldDart.Score, newDart.Score, player.Score);
+    }
+
     #endregion
 }

@@ -561,6 +561,184 @@ html, body {
 }
 
 /* ==========================================================================
+   DART CORRECTION MODAL
+   ========================================================================== */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+    position: relative;
+    background: var(--ink);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.correction-modal h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    color: var(--gold);
+    font-size: 1.4rem;
+    text-align: center;
+    margin-bottom: 16px;
+    letter-spacing: 0.1em;
+}
+
+.multiplier-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.mult-btn {
+    flex: 1;
+    padding: 12px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: var(--paper);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mult-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.mult-btn.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ink);
+}
+
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.key-btn {
+    padding: 14px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--paper);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.key-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.key-btn:active {
+    transform: scale(0.95);
+}
+
+.key-btn.selected {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ink);
+}
+
+.special-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.miss-btn {
+    flex: 1;
+    background: rgba(231, 76, 60, 0.3);
+    border-color: var(--red);
+    color: var(--red);
+}
+
+.bull-btn {
+    flex: 1;
+    background: rgba(46, 204, 113, 0.3);
+    border-color: var(--green);
+    color: var(--green);
+}
+
+.dbull-btn {
+    flex: 1;
+    background: rgba(46, 204, 113, 0.5);
+    border-color: var(--green);
+    color: #fff;
+}
+
+.correction-preview {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+#correction-preview-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    color: var(--teal);
+    letter-spacing: 0.05em;
+}
+
+#correction-preview-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    color: var(--paper);
+}
+
+.correction-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.correction-actions .btn {
+    flex: 1;
+}
+
+/* Make dart slots clickable */
+.dart-slot {
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.dart-slot:hover {
+    transform: scale(1.1);
+    border-color: var(--gold);
+}
+
+/* ==========================================================================
    FULLSCREEN BUTTON
    ========================================================================== */
 

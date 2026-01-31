@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initConnection();
     initEventListeners();
     initFullscreen();
+    initDartCorrection();
 });
 
 // ==========================================================================
@@ -429,5 +430,166 @@ function formatMode(mode) {
         case 'Game301': return '301';
         case 'Cricket': return 'CRICKET';
         default: return mode;
+    }
+}
+
+// ==========================================================================
+// Dart Correction
+// ==========================================================================
+
+let correctionDartIndex = null;
+let correctionSegment = null;
+let correctionMultiplier = 1;
+
+function initDartCorrection() {
+    // Make dart slots clickable
+    document.querySelectorAll('.dart-slot').forEach(slot => {
+        slot.addEventListener('click', () => {
+            const dartIndex = parseInt(slot.dataset.dart);
+            openCorrectionModal(dartIndex);
+        });
+    });
+    
+    // Multiplier buttons
+    document.querySelectorAll('.mult-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            correctionMultiplier = parseInt(btn.dataset.mult);
+            updateCorrectionPreview();
+        });
+    });
+    
+    // Number keypad
+    document.querySelectorAll('.keypad .key-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.keypad .key-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            correctionSegment = parseInt(btn.dataset.val);
+            updateCorrectionPreview();
+        });
+    });
+    
+    // Special buttons (Miss, Bull, D-Bull)
+    document.querySelector('.miss-btn')?.addEventListener('click', () => {
+        clearKeypadSelection();
+        correctionSegment = 0;
+        correctionMultiplier = 1;
+        updateCorrectionPreview();
+    });
+    
+    document.querySelector('.bull-btn')?.addEventListener('click', () => {
+        clearKeypadSelection();
+        correctionSegment = 25;
+        correctionMultiplier = 1;
+        document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
+        updateCorrectionPreview();
+    });
+    
+    document.querySelector('.dbull-btn')?.addEventListener('click', () => {
+        clearKeypadSelection();
+        correctionSegment = 25;
+        correctionMultiplier = 2;
+        document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
+        updateCorrectionPreview();
+    });
+    
+    // Cancel button
+    document.getElementById('correction-cancel')?.addEventListener('click', closeCorrectionModal);
+    
+    // Backdrop click to close
+    document.querySelector('#dart-correction-modal .modal-backdrop')?.addEventListener('click', closeCorrectionModal);
+    
+    // Confirm button
+    document.getElementById('correction-confirm')?.addEventListener('click', submitCorrection);
+}
+
+function clearKeypadSelection() {
+    document.querySelectorAll('.keypad .key-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.special-row .key-btn').forEach(b => b.classList.remove('selected'));
+}
+
+function openCorrectionModal(dartIndex) {
+    if (!currentGame) return;
+    
+    correctionDartIndex = dartIndex;
+    correctionSegment = null;
+    correctionMultiplier = 1;
+    
+    // Reset UI
+    document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.mult-btn[data-mult="1"]')?.classList.add('active');
+    clearKeypadSelection();
+    
+    document.getElementById('correction-dart-num').textContent = dartIndex + 1;
+    document.getElementById('correction-preview-text').textContent = '—';
+    document.getElementById('correction-preview-score').textContent = '0';
+    
+    document.getElementById('dart-correction-modal')?.classList.remove('hidden');
+}
+
+function closeCorrectionModal() {
+    document.getElementById('dart-correction-modal')?.classList.add('hidden');
+    correctionDartIndex = null;
+}
+
+function updateCorrectionPreview() {
+    const textEl = document.getElementById('correction-preview-text');
+    const scoreEl = document.getElementById('correction-preview-score');
+    
+    if (correctionSegment === null) {
+        textEl.textContent = '—';
+        scoreEl.textContent = '0';
+        return;
+    }
+    
+    if (correctionSegment === 0) {
+        textEl.textContent = 'MISS';
+        scoreEl.textContent = '0';
+        return;
+    }
+    
+    if (correctionSegment === 25) {
+        textEl.textContent = correctionMultiplier === 2 ? 'D-BULL' : 'BULL';
+        scoreEl.textContent = correctionSegment * correctionMultiplier;
+        return;
+    }
+    
+    const prefix = correctionMultiplier === 3 ? 'T' : correctionMultiplier === 2 ? 'D' : 'S';
+    textEl.textContent = `${prefix}${correctionSegment}`;
+    scoreEl.textContent = correctionSegment * correctionMultiplier;
+}
+
+async function submitCorrection() {
+    if (correctionDartIndex === null || correctionSegment === null || !currentGame) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/games/${currentGame.id}/correct`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                dartIndex: correctionDartIndex,
+                segment: correctionSegment,
+                multiplier: correctionMultiplier
+            })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            alert(err.error || 'Failed to correct dart');
+            return;
+        }
+        
+        const result = await response.json();
+        currentGame = result.game;
+        updateScoreboard();
+        updateCurrentTurn();
+        closeCorrectionModal();
+        
+    } catch (e) {
+        console.error('Correction error:', e);
+        alert('Failed to correct dart');
     }
 }
