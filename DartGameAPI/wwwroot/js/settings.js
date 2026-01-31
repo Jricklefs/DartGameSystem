@@ -197,9 +197,9 @@ async function selectCamera(camIndex) {
     
     const stored = storedCalibrations[`cam${camIndex}`];
     
-    // Show stored calibration if available
-    if (stored && stored.overlayImage) {
-        img.src = `data:image/png;base64,${stored.overlayImage}`;
+    // Show stored calibration if available (use overlayImagePath now)
+    if (stored && stored.overlayImagePath) {
+        img.src = stored.overlayImagePath;
         img.classList.add('loaded');
         loading.classList.add('hidden');
         offline.classList.add('hidden');

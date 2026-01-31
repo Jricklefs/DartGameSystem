@@ -167,8 +167,8 @@ public class CalibrationEntity
 {
     public int Id { get; set; }
     public string CameraId { get; set; } = string.Empty;
-    public byte[] CalibrationImage { get; set; } = Array.Empty<byte>();
-    public byte[]? OverlayImage { get; set; }
+    public string? CalibrationImagePath { get; set; }
+    public string? OverlayImagePath { get; set; }
     public double Quality { get; set; }
     public double? TwentyAngle { get; set; }
     public string? CalibrationData { get; set; }

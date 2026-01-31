@@ -10,9 +10,11 @@ public class Calibration
     [MaxLength(50)]
     public string CameraId { get; set; } = string.Empty;
     
-    public byte[] CalibrationImage { get; set; } = Array.Empty<byte>();
+    [MaxLength(500)]
+    public string? CalibrationImagePath { get; set; }
     
-    public byte[]? OverlayImage { get; set; }
+    [MaxLength(500)]
+    public string? OverlayImagePath { get; set; }
     
     public double Quality { get; set; }
     
@@ -28,8 +30,10 @@ public class Calibration
 public class CalibrationDto
 {
     public string CameraId { get; set; } = string.Empty;
-    public string? CalibrationImage { get; set; }  // Base64
-    public string? OverlayImage { get; set; }       // Base64
+    public string? CalibrationImagePath { get; set; }
+    public string? OverlayImagePath { get; set; }
+    public string? CalibrationImage { get; set; }  // Base64 for upload
+    public string? OverlayImage { get; set; }      // Base64 for upload
     public double Quality { get; set; }
     public double? TwentyAngle { get; set; }
     public string? CalibrationData { get; set; }

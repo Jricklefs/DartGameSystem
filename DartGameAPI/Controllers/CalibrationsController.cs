@@ -11,11 +11,19 @@ public class CalibrationsController : ControllerBase
 {
     private readonly DartsMobDbContext _db;
     private readonly ILogger<CalibrationsController> _logger;
+    private readonly IWebHostEnvironment _env;
+    private readonly string _calibrationDir;
 
-    public CalibrationsController(DartsMobDbContext db, ILogger<CalibrationsController> logger)
+    public CalibrationsController(DartsMobDbContext db, ILogger<CalibrationsController> logger, IWebHostEnvironment env)
     {
         _db = db;
         _logger = logger;
+        _env = env;
+        _calibrationDir = Path.Combine(_env.WebRootPath, "images", "calibrations");
+        
+        // Ensure directory exists
+        if (!Directory.Exists(_calibrationDir))
+            Directory.CreateDirectory(_calibrationDir);
     }
 
     /// <summary>
@@ -42,20 +50,24 @@ public class CalibrationsController : ControllerBase
     }
 
     /// <summary>
-    /// Get just the overlay image for a camera (for fast loading)
+    /// Get the overlay image file directly
     /// </summary>
     [HttpGet("{cameraId}/overlay")]
     public async Task<IActionResult> GetOverlay(string cameraId)
     {
         var cal = await _db.Calibrations
             .Where(c => c.CameraId == cameraId)
-            .Select(c => new { c.OverlayImage })
+            .Select(c => new { c.OverlayImagePath })
             .FirstOrDefaultAsync();
         
-        if (cal?.OverlayImage == null)
+        if (string.IsNullOrEmpty(cal?.OverlayImagePath))
             return NotFound();
         
-        return File(cal.OverlayImage, "image/png");
+        var fullPath = Path.Combine(_env.WebRootPath, cal.OverlayImagePath.TrimStart('/'));
+        if (!System.IO.File.Exists(fullPath))
+            return NotFound();
+        
+        return PhysicalFile(fullPath, "image/png");
     }
 
     /// <summary>
@@ -79,12 +91,27 @@ public class CalibrationsController : ControllerBase
             _db.Calibrations.Add(existing);
         }
 
-        // Update fields
+        // Save calibration image to file
         if (!string.IsNullOrEmpty(dto.CalibrationImage))
-            existing.CalibrationImage = Convert.FromBase64String(dto.CalibrationImage);
+        {
+            var filename = $"{dto.CameraId}_calibration_{DateTime.UtcNow:yyyyMMddHHmmss}.jpg";
+            var relativePath = $"/images/calibrations/{filename}";
+            var fullPath = Path.Combine(_calibrationDir, filename);
+            
+            await System.IO.File.WriteAllBytesAsync(fullPath, Convert.FromBase64String(dto.CalibrationImage));
+            existing.CalibrationImagePath = relativePath;
+        }
         
+        // Save overlay image to file
         if (!string.IsNullOrEmpty(dto.OverlayImage))
-            existing.OverlayImage = Convert.FromBase64String(dto.OverlayImage);
+        {
+            var filename = $"{dto.CameraId}_overlay_{DateTime.UtcNow:yyyyMMddHHmmss}.png";
+            var relativePath = $"/images/calibrations/{filename}";
+            var fullPath = Path.Combine(_calibrationDir, filename);
+            
+            await System.IO.File.WriteAllBytesAsync(fullPath, Convert.FromBase64String(dto.OverlayImage));
+            existing.OverlayImagePath = relativePath;
+        }
         
         existing.Quality = dto.Quality;
         existing.TwentyAngle = dto.TwentyAngle;
@@ -93,8 +120,8 @@ public class CalibrationsController : ControllerBase
 
         await _db.SaveChangesAsync();
         
-        _logger.LogInformation("Saved calibration for {CameraId}, quality: {Quality}", 
-            dto.CameraId, dto.Quality);
+        _logger.LogInformation("Saved calibration for {CameraId}, quality: {Quality}, path: {Path}", 
+            dto.CameraId, dto.Quality, existing.OverlayImagePath);
 
         return ToDto(existing);
     }
@@ -140,6 +167,18 @@ public class CalibrationsController : ControllerBase
         if (cal == null)
             return NotFound();
 
+        // Delete files if they exist
+        if (!string.IsNullOrEmpty(cal.CalibrationImagePath))
+        {
+            var path = Path.Combine(_env.WebRootPath, cal.CalibrationImagePath.TrimStart('/'));
+            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+        }
+        if (!string.IsNullOrEmpty(cal.OverlayImagePath))
+        {
+            var path = Path.Combine(_env.WebRootPath, cal.OverlayImagePath.TrimStart('/'));
+            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+        }
+
         _db.Calibrations.Remove(cal);
         await _db.SaveChangesAsync();
 
@@ -149,12 +188,8 @@ public class CalibrationsController : ControllerBase
     private static CalibrationDto ToDto(CalibrationEntity entity) => new()
     {
         CameraId = entity.CameraId,
-        CalibrationImage = entity.CalibrationImage.Length > 0 
-            ? Convert.ToBase64String(entity.CalibrationImage) 
-            : null,
-        OverlayImage = entity.OverlayImage != null 
-            ? Convert.ToBase64String(entity.OverlayImage) 
-            : null,
+        CalibrationImagePath = entity.CalibrationImagePath,
+        OverlayImagePath = entity.OverlayImagePath,
         Quality = entity.Quality,
         TwentyAngle = entity.TwentyAngle,
         CalibrationData = entity.CalibrationData,
