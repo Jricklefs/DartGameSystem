@@ -1,0 +1,1665 @@
+/* ==========================================================================
+   DartsMob - 1920s Speakeasy Theme
+   ========================================================================== */
+
+:root {
+    --gold: #d4a84b;
+    --gold-dark: #b38b3a;
+    --gold-light: #f4d185;
+    --crimson: #8b1a1a;
+    --crimson-dark: #5a1212;
+    --smoke: rgba(20, 15, 10, 0.95);
+    --smoke-light: rgba(40, 35, 25, 0.9);
+    --paper: #f5e6c8;
+    --paper-dark: #d4c4a8;
+    --ink: #1a1510;
+    --ink-light: #3d3528;
+    --green-felt: #1a4d2e;
+    --wood: #3d2817;
+    --wood-light: #5c3d24;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Special Elite', monospace;
+    background: linear-gradient(135deg, var(--ink) 0%, var(--wood) 50%, var(--ink) 100%);
+    background-attachment: fixed;
+    color: var(--paper);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Smoke overlay effect */
+.smoke-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(ellipse at 20% 80%, rgba(139, 26, 26, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(212, 168, 75, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ==========================================================================
+   Typography
+   ========================================================================== */
+
+.title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem;
+    letter-spacing: 0.3em;
+    text-shadow: 
+        3px 3px 0 var(--crimson-dark),
+        -1px -1px 0 var(--gold-dark);
+    color: var(--paper);
+}
+
+.title .accent {
+    color: var(--gold);
+}
+
+.tagline {
+    font-size: 0.9rem;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    opacity: 0.8;
+    margin-top: -0.5rem;
+}
+
+.panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    border-bottom: 2px solid var(--gold-dark);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
+.header {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+    position: relative;
+    z-index: 10;
+}
+
+.game-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+    position: relative;
+    z-index: 10;
+}
+
+.footer {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.8rem;
+    color: var(--gold-dark);
+    position: relative;
+    z-index: 10;
+}
+
+/* ==========================================================================
+   Panels
+   ========================================================================== */
+
+.panel {
+    background: var(--smoke);
+    border: 2px solid var(--gold-dark);
+    border-radius: 4px;
+    padding: 2rem;
+    margin-bottom: 1rem;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(212, 168, 75, 0.1);
+}
+
+.panel.hidden {
+    display: none;
+}
+
+/* ==========================================================================
+   Forms & Inputs
+   ========================================================================== */
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+}
+
+.player-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    font-family: 'Special Elite', monospace;
+    font-size: 1rem;
+    background: var(--ink);
+    border: 1px solid var(--gold-dark);
+    border-radius: 2px;
+    color: var(--paper);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.player-input:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 10px rgba(212, 168, 75, 0.3);
+}
+
+.player-input::placeholder {
+    color: var(--ink-light);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    padding: 0.75rem 1.5rem;
+    border: 2px solid var(--gold-dark);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+.btn:hover {
+    background: var(--gold-dark);
+    color: var(--ink);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(212, 168, 75, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: var(--crimson);
+    border-color: var(--crimson);
+    font-size: 1.4rem;
+    padding: 1rem 2rem;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.btn-primary:hover {
+    background: var(--crimson-dark);
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+.btn-small {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+}
+
+.btn-danger {
+    border-color: var(--crimson);
+    color: var(--crimson);
+}
+
+.btn-danger:hover {
+    background: var(--crimson);
+    color: var(--paper);
+}
+
+.button-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.game-mode-btn {
+    flex: 1;
+    min-width: 80px;
+}
+
+.game-mode-btn.active {
+    background: var(--gold-dark);
+    color: var(--ink);
+}
+
+/* ==========================================================================
+   Scoreboard
+   ========================================================================== */
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.game-mode {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+}
+
+.scoreboard {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.player-card {
+    flex: 1;
+    min-width: 150px;
+    background: var(--ink);
+    border: 2px solid var(--gold-dark);
+    border-radius: 4px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.player-card.active {
+    border-color: var(--gold);
+    box-shadow: 
+        0 0 20px rgba(212, 168, 75, 0.3),
+        inset 0 0 20px rgba(212, 168, 75, 0.1);
+}
+
+.player-card .name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.1em;
+    color: var(--paper);
+    margin-bottom: 0.5rem;
+}
+
+.player-card .score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    color: var(--gold);
+    line-height: 1;
+}
+
+.player-card .darts-thrown {
+    font-size: 0.8rem;
+    color: var(--gold-dark);
+    margin-top: 0.25rem;
+}
+
+/* ==========================================================================
+   Current Turn Display
+   ========================================================================== */
+
+.current-turn {
+    background: var(--ink);
+    border: 1px solid var(--gold-dark);
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.turn-title {
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    color: var(--gold-dark);
+    margin-bottom: 0.75rem;
+}
+
+.darts-display {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.dart-slot {
+    width: 70px;
+    height: 70px;
+    background: var(--smoke);
+    border: 2px solid var(--gold-dark);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: var(--gold);
+    transition: all 0.3s;
+}
+
+.dart-slot.empty {
+    color: var(--ink-light);
+    border-style: dashed;
+}
+
+.dart-slot.hit {
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(212, 168, 75, 0.4);
+    animation: dartHit 0.3s ease-out;
+}
+
+.dart-slot .zone {
+    font-size: 0.7rem;
+    color: var(--paper);
+    display: block;
+    margin-top: -0.25rem;
+}
+
+.turn-total {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    color: var(--paper);
+    letter-spacing: 0.1em;
+}
+
+.turn-total span {
+    color: var(--gold);
+    font-size: 2rem;
+}
+
+@keyframes dartHit {
+    0% { transform: scale(1.3); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   Dartboard Visual
+   ========================================================================== */
+
+.dartboard-container {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+
+.dartboard {
+    width: 300px;
+    height: 300px;
+    filter: drop-shadow(0 5px 20px rgba(0, 0, 0, 0.5));
+}
+
+/* ==========================================================================
+   Last Throw Callout
+   ========================================================================== */
+
+.last-throw {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: var(--crimson);
+    border: 4px solid var(--gold);
+    border-radius: 8px;
+    padding: 2rem 3rem;
+    text-align: center;
+    z-index: 100;
+    box-shadow: 0 0 60px rgba(139, 26, 26, 0.8);
+}
+
+.last-throw.show {
+    animation: throwCallout 1.5s ease-out forwards;
+}
+
+.last-throw .throw-zone {
+    display: block;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+}
+
+.last-throw .throw-score {
+    display: block;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 5rem;
+    color: var(--paper);
+    line-height: 1;
+    text-shadow: 3px 3px 0 var(--crimson-dark);
+}
+
+@keyframes throwCallout {
+    0% { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.1) rotate(2deg); opacity: 1; }
+    30% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    80% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.8) rotate(5deg); opacity: 0; }
+}
+
+/* ==========================================================================
+   Game Over
+   ========================================================================== */
+
+.gameover-panel {
+    text-align: center;
+}
+
+.winner-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.3em;
+    color: var(--gold-dark);
+    margin-bottom: 0.5rem;
+}
+
+.winner-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem;
+    color: var(--gold);
+    text-shadow: 3px 3px 0 var(--crimson);
+    margin-bottom: 1rem;
+}
+
+.winner-stats {
+    color: var(--paper);
+    margin-bottom: 2rem;
+}
+
+/* ==========================================================================
+   Connection Status
+   ========================================================================== */
+
+#connection-status {
+    color: var(--gold);
+}
+
+#connection-status.connected {
+    color: #4a9f4a;
+}
+
+#connection-status.disconnected {
+    color: var(--crimson);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 600px) {
+    .title {
+        font-size: 2.5rem;
+        letter-spacing: 0.2em;
+    }
+    
+    .tagline {
+        font-size: 0.7rem;
+        letter-spacing: 0.3em;
+    }
+    
+    .panel {
+        padding: 1rem;
+    }
+    
+    .dart-slot {
+        width: 55px;
+        height: 55px;
+        font-size: 1.4rem;
+    }
+    
+    .player-card .score {
+        font-size: 2.5rem;
+    }
+    
+    .dartboard {
+        width: 250px;
+        height: 250px;
+    }
+}
+
+/* ==========================================================================
+   Settings Modal
+   ========================================================================== */
+
+.settings-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: transparent;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    font-size: 1.5rem;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 100;
+}
+
+.settings-btn:hover {
+    background: var(--gold);
+    color: var(--ink);
+    transform: rotate(90deg);
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, var(--smoke) 0%, var(--ink) 100%);
+    border: 2px solid var(--gold);
+    border-radius: 15px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(212, 168, 75, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid var(--gold-dark);
+}
+
+.modal-header h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: var(--gold);
+    letter-spacing: 2px;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: var(--paper);
+    font-size: 2rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close-btn:hover {
+    color: var(--crimson);
+}
+
+/* Settings Tabs */
+.settings-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--gold-dark);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 15px;
+    background: transparent;
+    border: none;
+    color: var(--paper-dark);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+    color: var(--gold);
+    background: rgba(212, 168, 75, 0.1);
+}
+
+.tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+    background: rgba(212, 168, 75, 0.1);
+}
+
+.tab-content {
+    padding: 25px;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+.tab-content h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    color: var(--gold);
+    font-size: 1.4rem;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+}
+
+/* Camera Settings */
+.camera-count-selector {
+    margin-bottom: 25px;
+}
+
+.camera-count-selector label {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--paper-dark);
+}
+
+.cam-count-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+}
+
+.cam-count-btn.active {
+    background: var(--gold);
+    color: var(--ink);
+}
+
+.camera-previews {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.camera-preview {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--gold-dark);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.5);
+    font-size: 0.9rem;
+}
+
+.cam-status {
+    font-size: 0.8rem;
+}
+
+.cam-status.online { color: #00ff88; }
+.cam-status.offline { color: #ff4444; }
+.cam-status.checking { color: #ffaa00; }
+
+.preview-frame {
+    aspect-ratio: 4/3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #111;
+}
+
+.preview-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-signal {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+/* Calibration Settings */
+.calibration-status {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-row:last-child {
+    border-bottom: none;
+}
+
+.cal-badge {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.cal-badge.calibrated {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00ff88;
+}
+
+.cal-badge.not-calibrated {
+    background: rgba(255, 68, 68, 0.2);
+    color: #ff4444;
+}
+
+.calibration-preview {
+    margin-bottom: 20px;
+}
+
+.calibration-preview h4 {
+    color: var(--paper);
+    margin-bottom: 10px;
+}
+
+.hint {
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+}
+
+.calibration-view {
+    background: #111;
+    border: 1px solid var(--gold-dark);
+    border-radius: 8px;
+    min-height: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+    position: relative;
+    overflow: hidden;
+}
+
+.overlay-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+
+.overlay-container.active {
+    display: block;
+}
+
+.cal-feed {
+    width: 100%;
+    height: auto;
+}
+
+.cal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.no-feed-msg {
+    text-align: center;
+    color: #666;
+}
+
+.calibration-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.calibration-controls select {
+    padding: 10px 15px;
+    background: var(--ink);
+    border: 1px solid var(--gold-dark);
+    color: var(--paper);
+    border-radius: 5px;
+    font-family: inherit;
+}
+
+/* Zone Legend */
+.zone-legend {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.zone-legend h4 {
+    margin-bottom: 10px;
+    color: var(--paper);
+}
+
+.legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--paper-dark);
+}
+
+.zone-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.zone-color.triple { background: #ff6b6b; }
+.zone-color.double { background: #4ecdc4; }
+.zone-color.bull { background: #ffe66d; }
+.zone-color.dbull { background: #ff4444; }
+
+/* System Tab */
+.system-info {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.status-indicator {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.status-indicator.online {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00ff88;
+}
+
+.status-indicator.offline {
+    background: rgba(255, 68, 68, 0.2);
+    color: #ff4444;
+}
+
+.system-links {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.system-links .btn {
+    text-decoration: none;
+}
+
+/* ==========================================================================
+   Legs Display
+   ========================================================================== */
+
+.legs-selector {
+    margin-top: 15px;
+}
+
+.legs-btn {
+    min-width: 50px;
+}
+
+.legs-btn.active {
+    background: var(--gold);
+    color: var(--ink);
+}
+
+.legs-display {
+    font-family: 'Special Elite', monospace;
+    color: var(--gold);
+    font-size: 0.9rem;
+    margin-left: 15px;
+    padding: 5px 12px;
+    background: rgba(212, 168, 75, 0.1);
+    border: 1px solid var(--gold-dark);
+    border-radius: 5px;
+}
+
+.player-stats {
+    display: flex;
+    gap: 15px;
+    font-size: 0.85rem;
+    color: var(--paper-dark);
+    margin-top: 5px;
+}
+
+.legs-won {
+    color: var(--gold);
+    font-weight: bold;
+}
+
+/* ==========================================================================
+   Responsive / Full Screen Layout
+   ========================================================================== */
+
+/* Use full viewport */
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    flex-shrink: 0;
+    padding: 10px 20px;
+    position: relative;
+}
+
+.game-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px;
+}
+
+.footer {
+    flex-shrink: 0;
+    padding: 8px;
+    font-size: 0.8rem;
+}
+
+/* Compact header on small screens */
+@media (max-width: 768px) {
+    .title {
+        font-size: 2.5rem;
+        letter-spacing: 0.15em;
+    }
+    
+    .tagline {
+        font-size: 0.7rem;
+        letter-spacing: 0.3em;
+    }
+    
+    .settings-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
+        top: 10px;
+        right: 10px;
+    }
+}
+
+/* Very small screens (phones) */
+@media (max-width: 480px) {
+    .title {
+        font-size: 2rem;
+        letter-spacing: 0.1em;
+    }
+    
+    .tagline {
+        display: none;
+    }
+    
+    .header {
+        padding: 8px 15px;
+    }
+    
+    .panel {
+        padding: 10px;
+    }
+    
+    .panel-title {
+        font-size: 1.5rem;
+    }
+}
+
+/* ==========================================================================
+   Game Panel - Responsive Grid
+   ========================================================================== */
+
+.game-panel {
+    display: grid;
+    gap: 15px;
+    height: 100%;
+    grid-template-rows: auto 1fr auto;
+}
+
+/* Large screens - side by side layout */
+@media (min-width: 1024px) {
+    .game-panel {
+        grid-template-columns: 1fr 400px;
+        grid-template-rows: auto 1fr auto;
+    }
+    
+    .game-header {
+        grid-column: 1 / -1;
+    }
+    
+    .scoreboard {
+        grid-column: 1;
+        grid-row: 2;
+    }
+    
+    .dartboard-container {
+        grid-column: 2;
+        grid-row: 2 / 4;
+        max-width: 400px;
+    }
+    
+    .current-turn {
+        grid-column: 1;
+        grid-row: 3;
+    }
+}
+
+/* Tablet screens */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .game-panel {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .game-header {
+        grid-column: 1 / -1;
+    }
+    
+    .scoreboard {
+        grid-column: 1 / -1;
+    }
+    
+    .dartboard-container {
+        grid-column: 1;
+        max-width: 300px;
+        justify-self: center;
+    }
+    
+    .current-turn {
+        grid-column: 2;
+        align-self: center;
+    }
+}
+
+/* ==========================================================================
+   Scoreboard - Responsive
+   ========================================================================== */
+
+.scoreboard {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.player-card {
+    flex: 1;
+    min-width: 120px;
+    max-width: 200px;
+    padding: 15px;
+    text-align: center;
+}
+
+@media (max-width: 480px) {
+    .player-card {
+        min-width: 100px;
+        padding: 10px;
+    }
+    
+    .player-card .score {
+        font-size: 2rem;
+    }
+    
+    .player-card .name {
+        font-size: 0.9rem;
+    }
+}
+
+/* ==========================================================================
+   Dartboard - Responsive sizing
+   ========================================================================== */
+
+.dartboard-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.dartboard {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+}
+
+@media (max-width: 480px) {
+    .dartboard {
+        max-width: 280px;
+    }
+}
+
+@media (min-height: 900px) {
+    .dartboard {
+        max-width: 500px;
+    }
+}
+
+/* ==========================================================================
+   Current Turn - Compact on mobile
+   ========================================================================== */
+
+.current-turn {
+    text-align: center;
+    padding: 10px;
+}
+
+.darts-display {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.dart-slot {
+    width: 70px;
+    height: 70px;
+    font-size: 1.2rem;
+}
+
+@media (max-width: 480px) {
+    .dart-slot {
+        width: 55px;
+        height: 55px;
+        font-size: 1rem;
+    }
+    
+    .turn-title {
+        font-size: 1rem;
+    }
+}
+
+/* ==========================================================================
+   Setup Panel - Responsive
+   ========================================================================== */
+
+.setup-panel {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.button-group .btn {
+    flex: 1;
+    min-width: 70px;
+}
+
+@media (max-width: 480px) {
+    .button-group .btn {
+        padding: 10px 8px;
+        font-size: 0.9rem;
+    }
+    
+    .game-mode-btn {
+        min-width: 60px;
+    }
+}
+
+/* ==========================================================================
+   Full-screen mode support
+   ========================================================================== */
+
+.fullscreen-btn {
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--gold-dark);
+    color: var(--gold);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fullscreen-btn:hover {
+    background: var(--gold);
+    color: var(--ink);
+}
+
+/* Hide scrollbars but allow scroll */
+.game-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.game-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.game-container::-webkit-scrollbar-thumb {
+    background: var(--gold-dark);
+    border-radius: 3px;
+}
+
+/* Touch-friendly buttons */
+@media (pointer: coarse) {
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .player-input {
+        min-height: 44px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+}
+
+/* Landscape phone - more horizontal layout */
+@media (max-height: 500px) and (orientation: landscape) {
+    .header {
+        padding: 5px 15px;
+    }
+    
+    .title {
+        font-size: 1.8rem;
+    }
+    
+    .tagline {
+        display: none;
+    }
+    
+    .game-panel {
+        grid-template-columns: 1fr 250px;
+        grid-template-rows: auto 1fr;
+    }
+    
+    .dartboard {
+        max-width: 200px;
+    }
+}
+
+/* ==========================================================================
+   Background Image Support
+   ========================================================================== */
+
+.background-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -2;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: opacity 1s ease-in-out;
+}
+
+.background-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    background: rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   Theme Settings Tab
+   ========================================================================== */
+
+.theme-section {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.theme-section h4 {
+    color: var(--gold);
+    margin-bottom: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 1px;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.form-row label {
+    min-width: 100px;
+    color: var(--paper-dark);
+}
+
+.theme-input {
+    flex: 1;
+    padding: 10px 15px;
+    background: var(--ink);
+    border: 1px solid var(--gold-dark);
+    color: var(--paper);
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.theme-input:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+/* Background Gallery */
+.background-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.bg-thumbnail {
+    aspect-ratio: 16/9;
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.bg-thumbnail:hover {
+    border-color: var(--gold-dark);
+    transform: scale(1.05);
+}
+
+.bg-thumbnail.selected {
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(212, 168, 75, 0.5);
+}
+
+.bg-thumbnail.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: var(--gold);
+    color: var(--ink);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.background-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.background-controls label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--paper-dark);
+    cursor: pointer;
+}
+
+.slideshow-speed {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.slideshow-speed select {
+    padding: 5px 10px;
+    background: var(--ink);
+    border: 1px solid var(--gold-dark);
+    color: var(--paper);
+    border-radius: 4px;
+}
+
+.upload-section {
+    margin-top: 10px;
+}
+
+.upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+/* Opacity slider */
+#overlay-opacity {
+    width: 200px;
+    margin-right: 10px;
+}
+
+#opacity-value {
+    color: var(--gold);
+}
+
+/* Theme buttons */
+#save-theme-btn {
+    margin-right: 10px;
+}
+
+/* ==========================================================================
+   Kiosk/Fullscreen Mode
+   ========================================================================== */
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+    50% { opacity: 0.8; transform: translateX(-50%) scale(1.05); }
+}
+
+/* Hide browser UI hints in fullscreen */
+:fullscreen {
+    background: var(--ink);
+}
+
+:fullscreen .footer {
+    display: none;
+}
+
+:fullscreen .fullscreen-btn {
+    opacity: 0.3;
+}
+
+:fullscreen .fullscreen-btn:hover {
+    opacity: 1;
+}
+
+/* ==========================================================================
+   Calibration Status Indicators
+   ========================================================================== */
+
+.status-online {
+    color: #4ecdc4;
+    font-weight: bold;
+}
+
+.status-offline {
+    color: #ff6b6b;
+}
+
+.cal-badge.calibrated {
+    background: rgba(78, 205, 196, 0.2);
+    color: #4ecdc4;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+.cal-badge.not-calibrated {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+.cal-badge.api-offline {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+.calibration-status {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-row:last-child {
+    border-bottom: none;
+}
+
+/* ==========================================================================
+   Calibration Camera Grid
+   ========================================================================== */
+
+.camera-snapshots {
+    margin-top: 20px;
+}
+
+.camera-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.cal-camera-card {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    transition: border-color 0.3s;
+}
+
+.cal-camera-card.calibrated {
+    border-color: #4ecdc4;
+}
+
+.cal-camera-card.failed {
+    border-color: #ff6b6b;
+}
+
+.cal-cam-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.3);
+    font-weight: bold;
+}
+
+.cal-cam-status {
+    font-size: 1.2rem;
+}
+
+.cal-cam-preview {
+    position: relative;
+    aspect-ratio: 4/3;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cal-cam-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+
+.cal-cam-img.loaded {
+    display: block;
+}
+
+.cal-cam-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.cal-cam-loading {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.cal-cam-img.loaded + .cal-cam-overlay + .cal-cam-loading {
+    display: none;
+}
+
+.calibration-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.calibration-actions .btn-primary {
+    background: linear-gradient(135deg, #4ecdc4, #44a08d);
+    font-size: 1.1rem;
+    padding: 12px 30px;
+}

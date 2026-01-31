@@ -1,0 +1,18 @@
+{
+  "appName": "DartsMob",
+  "tagline": "The Family's Game",
+  "theme": {
+    "primaryColor": "#d4a84b",
+    "accentColor": "#8b1a1a",
+    "backgroundImages": [
+      "/images/backgrounds/speakeasy-1.jpg",
+      "/images/backgrounds/speakeasy-2.jpg",
+      "/images/backgrounds/speakeasy-3.jpg",
+      "/images/backgrounds/speakeasy-4.jpg",
+      "/images/backgrounds/speakeasy-5.jpg"
+    ],
+    "backgroundMode": "slideshow",
+    "slideshowInterval": 30000,
+    "overlayOpacity": 0.7
+  }
+}

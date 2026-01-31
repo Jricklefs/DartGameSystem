@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DartsMob - System Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #00d4ff;
+            text-decoration: none;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .architecture-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            perspective: 1000px;
+        }
+
+        .architecture-3d {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, auto);
+            gap: 30px;
+            max-width: 1200px;
+            transform-style: preserve-3d;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: rotateX(5deg) rotateY(-5deg); }
+            50% { transform: rotateX(-5deg) rotateY(5deg); }
+        }
+
+        .component {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 25px;
+            min-width: 280px;
+            min-height: 180px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .component:hover {
+            transform: translateZ(30px) scale(1.05);
+            border-color: rgba(0, 212, 255, 0.5);
+            box-shadow: 0 20px 60px rgba(0, 212, 255, 0.2);
+        }
+
+        .component-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .component-icon {
+            font-size: 2.5rem;
+        }
+
+        .status-orb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #666;
+            box-shadow: 0 0 10px currentColor;
+            transition: all 0.3s ease;
+        }
+
+        .status-orb.online {
+            background: #00ff88;
+            box-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88;
+            animation: pulse 2s infinite;
+        }
+
+        .status-orb.offline {
+            background: #ff4444;
+            box-shadow: 0 0 20px #ff4444;
+        }
+
+        .status-orb.checking {
+            background: #ffaa00;
+            box-shadow: 0 0 20px #ffaa00;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .component-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .component-subtitle {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .component-details {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .component-details p {
+            margin: 5px 0;
+        }
+
+        .component-details .label {
+            color: #666;
+        }
+
+        .component-details .value {
+            color: #00d4ff;
+            font-family: 'Consolas', monospace;
+        }
+
+        /* Connection lines */
+        .connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Grid positioning */
+        .component.ui { grid-column: 2; grid-row: 1; }
+        .component.game-api { grid-column: 2; grid-row: 2; }
+        .component.detect-api { grid-column: 1; grid-row: 2; }
+        .component.database { grid-column: 3; grid-row: 2; }
+        .component.cameras { grid-column: 1; grid-row: 3; }
+        .component.signalr { grid-column: 2; grid-row: 3; }
+        .component.dartboard { grid-column: 3; grid-row: 3; }
+
+        /* Data flow arrows */
+        .data-flow {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+            height: 2px;
+            animation: flow 2s linear infinite;
+        }
+
+        @keyframes flow {
+            0% { opacity: 0; transform: translateX(-100%); }
+            50% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(100%); }
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 30px;
+            background: rgba(0,0,0,0.3);
+            margin-top: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .legend-orb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-orb.green { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        .legend-orb.red { background: #ff4444; box-shadow: 0 0 10px #ff4444; }
+        .legend-orb.yellow { background: #ffaa00; box-shadow: 0 0 10px #ffaa00; }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← Back to Game</a>
+    
+    <div class="header">
+        <h1>🎯 DartsMob Architecture</h1>
+        <p>Live System Health Dashboard • v1.0</p>
+        <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">
+            Features: Best-of-N Legs • Responsive UI • Custom Themes • Kiosk Mode • Auto Calibration
+        </p>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-orb green"></div> Online</div>
+        <div class="legend-item"><div class="legend-orb yellow"></div> Checking</div>
+        <div class="legend-item"><div class="legend-orb red"></div> Offline</div>
+    </div>
+
+    <div class="architecture-container">
+        <div class="architecture-3d">
+            
+            <!-- DartsMob UI -->
+            <div class="component ui">
+                <div class="component-header">
+                    <span class="component-icon">🎮</span>
+                    <div class="status-orb online" id="status-ui"></div>
+                </div>
+                <div class="component-title">DartsMob UI</div>
+                <div class="component-subtitle">Web Interface</div>
+                <div class="component-details">
+                    <p><span class="label">Tech:</span> <span class="value">HTML/CSS/JS</span></p>
+                    <p><span class="label">Port:</span> <span class="value">5000</span></p>
+                    <p><span class="label">Status:</span> <span class="value" id="ui-status-text">You're looking at it!</span></p>
+                </div>
+            </div>
+
+            <!-- DartDetect API -->
+            <div class="component detect-api">
+                <div class="component-header">
+                    <span class="component-icon">👁️</span>
+                    <div class="status-orb checking" id="status-detect"></div>
+                </div>
+                <div class="component-title">DartDetect API</div>
+                <div class="component-subtitle">Computer Vision Engine</div>
+                <div class="component-details">
+                    <p><span class="label">Tech:</span> <span class="value">Python / FastAPI</span></p>
+                    <p><span class="label">URL:</span> <span class="value">:8000</span></p>
+                    <p><span class="label">GPU:</span> <span class="value" id="detect-gpu">Checking...</span></p>
+                    <p><span class="label">Calibrated:</span> <span class="value" id="detect-calibrated">--</span></p>
+                </div>
+            </div>
+
+            <!-- DartGame API -->
+            <div class="component game-api">
+                <div class="component-header">
+                    <span class="component-icon">⚙️</span>
+                    <div class="status-orb checking" id="status-game"></div>
+                </div>
+                <div class="component-title">DartGame API</div>
+                <div class="component-subtitle">Game Logic & State</div>
+                <div class="component-details">
+                    <p><span class="label">Tech:</span> <span class="value">.NET 8 / C#</span></p>
+                    <p><span class="label">URL:</span> <span class="value">:5000/api</span></p>
+                    <p><span class="label">Active Games:</span> <span class="value" id="game-active">--</span></p>
+                </div>
+            </div>
+
+            <!-- Database -->
+            <div class="component database">
+                <div class="component-header">
+                    <span class="component-icon">🗄️</span>
+                    <div class="status-orb checking" id="status-db"></div>
+                </div>
+                <div class="component-title">DartsMobDB</div>
+                <div class="component-subtitle">SQL Server Database</div>
+                <div class="component-details">
+                    <p><span class="label">Server:</span> <span class="value">JOESSERVER2019</span></p>
+                    <p><span class="label">Tables:</span> <span class="value">5</span></p>
+                    <p><span class="label">Players:</span> <span class="value" id="db-players">--</span></p>
+                    <p><span class="label">Games:</span> <span class="value" id="db-games">--</span></p>
+                </div>
+            </div>
+
+            <!-- Cameras -->
+            <div class="component cameras">
+                <div class="component-header">
+                    <span class="component-icon">📷</span>
+                    <div class="status-orb checking" id="status-cameras"></div>
+                </div>
+                <div class="component-title">Camera Array</div>
+                <div class="component-subtitle">3-Camera Setup</div>
+                <div class="component-details">
+                    <p><span class="label">Cam 0:</span> <span class="value" id="cam0-status">--</span></p>
+                    <p><span class="label">Cam 1:</span> <span class="value" id="cam1-status">--</span></p>
+                    <p><span class="label">Cam 2:</span> <span class="value" id="cam2-status">--</span></p>
+                </div>
+            </div>
+
+            <!-- SignalR Hub -->
+            <div class="component signalr">
+                <div class="component-header">
+                    <span class="component-icon">📡</span>
+                    <div class="status-orb checking" id="status-signalr"></div>
+                </div>
+                <div class="component-title">SignalR Hub</div>
+                <div class="component-subtitle">Real-time Updates</div>
+                <div class="component-details">
+                    <p><span class="label">Endpoint:</span> <span class="value">/gamehub</span></p>
+                    <p><span class="label">Connections:</span> <span class="value" id="signalr-connections">--</span></p>
+                    <p><span class="label">Latency:</span> <span class="value" id="signalr-latency">--</span></p>
+                </div>
+            </div>
+
+            <!-- Dartboard -->
+            <div class="component dartboard">
+                <div class="component-header">
+                    <span class="component-icon">🎯</span>
+                    <div class="status-orb checking" id="status-board"></div>
+                </div>
+                <div class="component-title">Dartboard</div>
+                <div class="component-subtitle">Physical Hardware</div>
+                <div class="component-details">
+                    <p><span class="label">Board ID:</span> <span class="value" id="board-id">default</span></p>
+                    <p><span class="label">Location:</span> <span class="value" id="board-location">--</span></p>
+                    <p><span class="label">Last Cal:</span> <span class="value" id="board-calibration">--</span></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-value" id="stat-uptime">--</div>
+            <div class="stat-label">System Uptime</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="stat-throws">--</div>
+            <div class="stat-label">Total Throws</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="stat-games">--</div>
+            <div class="stat-label">Games Played</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="stat-players">--</div>
+            <div class="stat-label">Registered Players</div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="checkAllSystems()">🔄 Refresh Status</button>
+
+    <script>
+        // Configuration
+        const GAME_API = '';  // Same origin
+        const DETECT_API = 'http://192.168.0.158:8000';
+
+        // Set orb status
+        function setStatus(elementId, status) {
+            const orb = document.getElementById(elementId);
+            orb.className = 'status-orb ' + status;
+        }
+
+        // Check DartGame API health
+        async function checkGameAPI() {
+            setStatus('status-game', 'checking');
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    setStatus('status-game', 'online');
+                    
+                    // Get active games count
+                    const gamesResponse = await fetch('/api/games');
+                    if (gamesResponse.ok) {
+                        const games = await gamesResponse.json();
+                        document.getElementById('game-active').textContent = games.length || '0';
+                    }
+                    return true;
+                }
+            } catch (e) {
+                console.error('Game API check failed:', e);
+            }
+            setStatus('status-game', 'offline');
+            return false;
+        }
+
+        // Check DartDetect API health
+        async function checkDetectAPI() {
+            setStatus('status-detect', 'checking');
+            try {
+                const response = await fetch(`${DETECT_API}/health`, { mode: 'cors' });
+                if (response.ok) {
+                    const data = await response.json();
+                    setStatus('status-detect', 'online');
+                    document.getElementById('detect-gpu').textContent = data.models_loaded ? 'Models Loaded ✓' : 'No Models';
+                    
+                    // Check calibrations count
+                    const calCount = data.calibrations_count || 0;
+                    document.getElementById('detect-calibrated').textContent = calCount > 0 ? `${calCount} camera(s) ✓` : 'Not calibrated';
+                    return true;
+                }
+            } catch (e) {
+                console.error('Detect API check failed:', e);
+            }
+            setStatus('status-detect', 'offline');
+            document.getElementById('detect-gpu').textContent = 'Unreachable';
+            document.getElementById('detect-calibrated').textContent = '--';
+            return false;
+        }
+
+        // Check cameras via DartDetect
+        async function checkCameras() {
+            setStatus('status-cameras', 'checking');
+            try {
+                const response = await fetch(`${DETECT_API}/cameras`, { mode: 'cors' });
+                if (response.ok) {
+                    const data = await response.json();
+                    let allOnline = true;
+                    
+                    for (let i = 0; i < 3; i++) {
+                        const cam = data.cameras?.find(c => c.index === i);
+                        const statusEl = document.getElementById(`cam${i}-status`);
+                        if (cam && cam.connected) {
+                            statusEl.textContent = '● Online';
+                            statusEl.style.color = '#00ff88';
+                        } else {
+                            statusEl.textContent = '○ Offline';
+                            statusEl.style.color = '#ff4444';
+                            allOnline = false;
+                        }
+                    }
+                    
+                    setStatus('status-cameras', allOnline ? 'online' : 'offline');
+                    return allOnline;
+                }
+            } catch (e) {
+                console.error('Camera check failed:', e);
+            }
+            setStatus('status-cameras', 'offline');
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`cam${i}-status`).textContent = '? Unknown';
+            }
+            return false;
+        }
+
+        // Check database via Players API
+        async function checkDatabase() {
+            setStatus('status-db', 'checking');
+            try {
+                const response = await fetch('/api/players');
+                if (response.ok) {
+                    const players = await response.json();
+                    setStatus('status-db', 'online');
+                    document.getElementById('db-players').textContent = players.length;
+                    document.getElementById('stat-players').textContent = players.length;
+                    return true;
+                }
+            } catch (e) {
+                console.error('Database check failed:', e);
+            }
+            setStatus('status-db', 'offline');
+            document.getElementById('db-players').textContent = 'Error';
+            return false;
+        }
+
+        // Check SignalR connection
+        async function checkSignalR() {
+            setStatus('status-signalr', 'checking');
+            const startTime = Date.now();
+            try {
+                // Try to negotiate SignalR connection
+                const response = await fetch('/gamehub/negotiate?negotiateVersion=1', {
+                    method: 'POST'
+                });
+                const latency = Date.now() - startTime;
+                
+                if (response.ok) {
+                    setStatus('status-signalr', 'online');
+                    document.getElementById('signalr-latency').textContent = `${latency}ms`;
+                    document.getElementById('signalr-connections').textContent = 'Ready';
+                    return true;
+                }
+            } catch (e) {
+                console.error('SignalR check failed:', e);
+            }
+            setStatus('status-signalr', 'offline');
+            document.getElementById('signalr-latency').textContent = '--';
+            return false;
+        }
+
+        // Check board status
+        async function checkBoard() {
+            setStatus('status-board', 'checking');
+            try {
+                const response = await fetch('/api/games/boards');
+                if (response.ok) {
+                    const boards = await response.json();
+                    const board = boards[0];
+                    if (board) {
+                        setStatus('status-board', board.isCalibrated ? 'online' : 'offline');
+                        document.getElementById('board-id').textContent = board.boardId;
+                        document.getElementById('board-location').textContent = board.location || 'Not set';
+                        document.getElementById('board-calibration').textContent = 
+                            board.lastCalibration ? new Date(board.lastCalibration).toLocaleDateString() : 'Never';
+                        return board.isCalibrated;
+                    }
+                }
+            } catch (e) {
+                console.error('Board check failed:', e);
+            }
+            setStatus('status-board', 'offline');
+            return false;
+        }
+
+        // Check all systems
+        async function checkAllSystems() {
+            const btn = document.querySelector('.refresh-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Checking...';
+            
+            // UI is always online (you're looking at it)
+            setStatus('status-ui', 'online');
+            
+            // Check all systems in parallel
+            await Promise.all([
+                checkGameAPI(),
+                checkDetectAPI(),
+                checkCameras(),
+                checkDatabase(),
+                checkSignalR(),
+                checkBoard()
+            ]);
+            
+            btn.disabled = false;
+            btn.textContent = '🔄 Refresh Status';
+        }
+
+        // Initial check
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAllSystems();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(checkAllSystems, 30000);
+        });
+    </script>
+</body>
+</html>
