@@ -15,19 +15,19 @@
     <div id="background-layer" class="background-layer"></div>
     <div id="background-overlay" class="background-overlay"></div>
 
-    <!-- Minimal Header - Only shown on setup -->
-    <header id="main-header" class="main-header">
-        <div class="brand">
-            <h1 id="app-title" class="app-title">DARTS<span class="accent">MOB</span></h1>
-            <p id="app-tagline" class="tagline">— The Family's Game —</p>
-        </div>
-        <a href="/settings.html" class="settings-link" title="Settings">⚙️</a>
-    </header>
-
     <!-- ================================================================== -->
     <!-- SETUP SCREEN - Full viewport                                      -->
     <!-- ================================================================== -->
     <main id="setup-screen" class="screen setup-screen">
+        <!-- Header inside screen so it's not covered -->
+        <header class="main-header">
+            <div class="brand">
+                <h1 id="app-title" class="app-title">DARTS<span class="accent">MOB</span></h1>
+                <p id="app-tagline" class="tagline">— The Family's Game —</p>
+            </div>
+            <a href="/settings.html" class="settings-link" title="Settings">⚙️</a>
+        </header>
+
         <div class="setup-card">
             <h2 class="card-title">NEW GAME</h2>
             

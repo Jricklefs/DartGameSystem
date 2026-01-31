@@ -177,12 +177,6 @@ function handleTurnEnded(data) {
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
     document.getElementById(screenId)?.classList.remove('hidden');
-    
-    // Show/hide header based on screen
-    const header = document.getElementById('main-header');
-    if (header) {
-        header.style.display = screenId === 'setup-screen' ? 'flex' : 'none';
-    }
 }
 
 function updateScoreboard() {
