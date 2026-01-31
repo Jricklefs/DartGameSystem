@@ -1101,6 +1101,21 @@ html, body {
     color: #666;
 }
 
+/* Mark 20 mode */
+.camera-preview-full.mark20-mode {
+    cursor: crosshair;
+}
+
+.camera-preview-full.mark20-mode .main-cam-img {
+    cursor: crosshair;
+}
+
+#mark20-btn.active {
+    background: var(--gold);
+    color: #000;
+    border-color: var(--gold);
+}
+
 /* Legacy camera grid (keep for compatibility) */
 .cameras-section h3 {
     font-family: 'Bebas Neue', sans-serif;

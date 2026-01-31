@@ -1,3 +1,4 @@
+using DartGameAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace DartGameAPI.Data;
@@ -16,6 +17,7 @@ public class DartsMobDbContext : DbContext
     public DbSet<GameEntity> Games => Set<GameEntity>();
     public DbSet<GamePlayerEntity> GamePlayers => Set<GamePlayerEntity>();
     public DbSet<ThrowEntity> Throws => Set<ThrowEntity>();
+    public DbSet<CalibrationEntity> Calibrations => Set<CalibrationEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -78,6 +80,15 @@ public class DartsMobDbContext : DbContext
             entity.Property(e => e.XMm).HasColumnType("decimal(8,2)");
             entity.Property(e => e.YMm).HasColumnType("decimal(8,2)");
             entity.Property(e => e.Confidence).HasColumnType("decimal(5,4)");
+        });
+
+        // Calibrations
+        modelBuilder.Entity<CalibrationEntity>(entity =>
+        {
+            entity.ToTable("Calibrations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CameraId).HasMaxLength(50).IsRequired();
+            entity.HasIndex(e => e.CameraId).IsUnique();
         });
     }
 }
@@ -150,4 +161,17 @@ public class ThrowEntity
     public decimal? Confidence { get; set; }
     public bool IsBust { get; set; }
     public DateTime ThrownAt { get; set; }
+}
+
+public class CalibrationEntity
+{
+    public int Id { get; set; }
+    public string CameraId { get; set; } = string.Empty;
+    public byte[] CalibrationImage { get; set; } = Array.Empty<byte>();
+    public byte[]? OverlayImage { get; set; }
+    public double Quality { get; set; }
+    public double? TwentyAngle { get; set; }
+    public string? CalibrationData { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }

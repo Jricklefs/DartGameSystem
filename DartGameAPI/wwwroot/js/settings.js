@@ -17,9 +17,9 @@ const DEFAULT_BACKGROUNDS = [
 // State
 let selectedBackgrounds = [];
 let customBackgrounds = [];
-let calibrationData = {};
-let cameraSnapshots = {};
+let storedCalibrations = {};  // From database
 let selectedCamera = 0;
+let mark20Mode = false;
 
 // ============================================================================
 // Initialization
@@ -120,7 +120,7 @@ function renderBackgroundGallery() {
 }
 
 // ============================================================================
-// Calibration - New Design
+// Calibration
 // ============================================================================
 
 async function initCalibration() {
@@ -131,24 +131,28 @@ async function initCalibration() {
         });
     });
     
-    // Load calibration status for all cameras
-    await loadCalibrationStatus();
+    // Set up image click for Mark 20
+    const mainImg = document.getElementById('main-camera-img');
+    mainImg.addEventListener('click', handleImageClick);
     
-    // Load the first camera
+    // Load stored calibrations from database (not live cameras)
+    await loadStoredCalibrations();
+    
+    // Show first camera's stored calibration
     selectCamera(0);
 }
 
-async function loadCalibrationStatus() {
+async function loadStoredCalibrations() {
     try {
-        const res = await fetch(`${DART_DETECT_URL}/v1/calibrations`, {
+        const res = await fetch(`${DART_GAME_URL}/api/calibrations`, {
             signal: AbortSignal.timeout(3000)
         });
         
         if (res.ok) {
             const calibrations = await res.json();
-            calibrationData = {};
+            storedCalibrations = {};
             calibrations.forEach(c => {
-                calibrationData[c.camera_id] = c;
+                storedCalibrations[c.cameraId] = c;
             });
             
             // Update all camera button indicators
@@ -157,7 +161,7 @@ async function loadCalibrationStatus() {
             }
         }
     } catch (e) {
-        console.error('Failed to load calibrations:', e);
+        console.error('Failed to load stored calibrations:', e);
     }
 }
 
@@ -165,20 +169,16 @@ function updateCameraIndicator(camIndex) {
     const indicator = document.getElementById(`cam-ind-${camIndex}`);
     if (!indicator) return;
     
-    const cal = calibrationData[`cam${camIndex}`];
-    const isOnline = cameraSnapshots[camIndex] !== undefined;
+    const stored = storedCalibrations[`cam${camIndex}`];
     
     indicator.classList.remove('calibrated', 'not-calibrated', 'offline');
     
-    if (cal) {
+    if (stored) {
         indicator.classList.add('calibrated');
-        indicator.title = `Calibrated: ${Math.round(cal.quality * 100)}%`;
-    } else if (isOnline) {
+        indicator.title = `Stored: ${Math.round(stored.quality * 100)}%`;
+    } else {
         indicator.classList.add('not-calibrated');
         indicator.title = 'Not calibrated';
-    } else {
-        indicator.classList.add('offline');
-        indicator.title = 'Offline';
     }
 }
 
@@ -190,7 +190,36 @@ async function selectCamera(camIndex) {
         btn.classList.toggle('active', parseInt(btn.dataset.cam) === camIndex);
     });
     
-    // Show loading state
+    const img = document.getElementById('main-camera-img');
+    const loading = document.getElementById('main-camera-loading');
+    const offline = document.getElementById('main-camera-offline');
+    const qualityLabel = document.getElementById('cam-quality-label');
+    
+    const stored = storedCalibrations[`cam${camIndex}`];
+    
+    // Show stored calibration if available
+    if (stored && stored.overlayImage) {
+        img.src = `data:image/png;base64,${stored.overlayImage}`;
+        img.classList.add('loaded');
+        loading.classList.add('hidden');
+        offline.classList.add('hidden');
+        
+        qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}%`;
+        qualityLabel.className = 'cam-quality-label calibrated';
+    } else {
+        // No stored calibration - show placeholder
+        img.classList.remove('loaded');
+        loading.classList.add('hidden');
+        offline.classList.remove('hidden');
+        offline.querySelector('span').textContent = '📷 No calibration stored - click Calibrate';
+        
+        qualityLabel.textContent = '❌ Not Calibrated';
+        qualityLabel.className = 'cam-quality-label failed';
+    }
+}
+
+async function refreshCurrentCamera() {
+    // Get live snapshot from camera (for preview before calibrating)
     const img = document.getElementById('main-camera-img');
     const loading = document.getElementById('main-camera-loading');
     const offline = document.getElementById('main-camera-offline');
@@ -198,79 +227,47 @@ async function selectCamera(camIndex) {
     
     img.classList.remove('loaded');
     loading.classList.remove('hidden');
+    loading.querySelector('span').textContent = '📷 Loading live view...';
     offline.classList.add('hidden');
     
-    // Check if we have cached snapshot
-    if (cameraSnapshots[camIndex]) {
-        showCameraImage(camIndex);
-        return;
-    }
-    
-    // Load snapshot
     try {
-        const res = await fetch(`${DART_DETECT_URL}/cameras/${camIndex}/snapshot`, {
+        const res = await fetch(`${DART_DETECT_URL}/cameras/${selectedCamera}/snapshot`, {
             signal: AbortSignal.timeout(5000)
         });
         
         if (res.ok) {
             const data = await res.json();
-            cameraSnapshots[camIndex] = data.image;
-            showCameraImage(camIndex);
-            updateCameraIndicator(camIndex);
+            img.src = `data:image/jpeg;base64,${data.image}`;
+            img.classList.add('loaded');
+            loading.classList.add('hidden');
+            
+            qualityLabel.textContent = '📷 Live Preview';
+            qualityLabel.className = 'cam-quality-label';
         } else {
             throw new Error('Camera unavailable');
         }
     } catch (e) {
-        console.error(`Camera ${camIndex} error:`, e);
+        console.error(`Camera ${selectedCamera} error:`, e);
         loading.classList.add('hidden');
         offline.classList.remove('hidden');
+        offline.querySelector('span').textContent = '❌ Camera Offline';
         qualityLabel.textContent = 'Camera Offline';
         qualityLabel.className = 'cam-quality-label failed';
     }
 }
 
-function showCameraImage(camIndex) {
-    const img = document.getElementById('main-camera-img');
-    const loading = document.getElementById('main-camera-loading');
-    const offline = document.getElementById('main-camera-offline');
-    const qualityLabel = document.getElementById('cam-quality-label');
-    
-    const snapshot = cameraSnapshots[camIndex];
-    const cal = calibrationData[`cam${camIndex}`];
-    
-    if (snapshot) {
-        // Check if it's an overlay image (from calibration) or raw snapshot
-        const isOverlay = cal && cal.overlay_image;
-        img.src = `data:image/jpeg;base64,${isOverlay ? cal.overlay_image : snapshot}`;
-        img.classList.add('loaded');
-        loading.classList.add('hidden');
-        offline.classList.add('hidden');
-    }
-    
-    // Update quality label
-    if (cal) {
-        qualityLabel.textContent = `✅ Calibrated: ${Math.round(cal.quality * 100)}%`;
-        qualityLabel.className = 'cam-quality-label calibrated';
-    } else {
-        qualityLabel.textContent = '❌ Not Calibrated';
-        qualityLabel.className = 'cam-quality-label failed';
-    }
-}
-
-async function refreshCurrentCamera() {
-    // Clear cached snapshot
-    delete cameraSnapshots[selectedCamera];
-    await selectCamera(selectedCamera);
-}
-
 async function calibrateCurrentCamera() {
     const btn = document.getElementById('calibrate-btn');
     const qualityLabel = document.getElementById('cam-quality-label');
+    const img = document.getElementById('main-camera-img');
+    const loading = document.getElementById('main-camera-loading');
     
     btn.disabled = true;
     btn.textContent = '⏳ Calibrating...';
     qualityLabel.textContent = 'Calibrating...';
     qualityLabel.className = 'cam-quality-label';
+    loading.classList.remove('hidden');
+    loading.querySelector('span').textContent = '🎯 Running calibration...';
     
     try {
         // Get fresh snapshot
@@ -278,9 +275,8 @@ async function calibrateCurrentCamera() {
         if (!snapRes.ok) throw new Error('Could not get camera snapshot');
         
         const snapData = await snapRes.json();
-        cameraSnapshots[selectedCamera] = snapData.image;
         
-        // Send calibration request
+        // Send calibration request to DartDetect
         const calRes = await fetch(`${DART_DETECT_URL}/v1/calibrate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -298,21 +294,32 @@ async function calibrateCurrentCamera() {
         const camResult = result.results?.[0];
         
         if (camResult?.success) {
-            // Store calibration data
-            calibrationData[`cam${selectedCamera}`] = {
-                camera_id: `cam${selectedCamera}`,
-                quality: camResult.quality,
-                overlay_image: camResult.overlay_image,
-                created_at: new Date().toISOString()
-            };
+            // Save to database
+            const saveRes = await fetch(`${DART_GAME_URL}/api/calibrations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cameraId: `cam${selectedCamera}`,
+                    calibrationImage: snapData.image,
+                    overlayImage: camResult.overlay_image,
+                    quality: camResult.quality,
+                    calibrationData: JSON.stringify(camResult)
+                })
+            });
+            
+            if (saveRes.ok) {
+                const saved = await saveRes.json();
+                storedCalibrations[`cam${selectedCamera}`] = saved;
+            }
             
             // Show overlay image
             if (camResult.overlay_image) {
-                const img = document.getElementById('main-camera-img');
                 img.src = `data:image/png;base64,${camResult.overlay_image}`;
+                img.classList.add('loaded');
             }
             
-            qualityLabel.textContent = `✅ Calibrated: ${Math.round(camResult.quality * 100)}%`;
+            loading.classList.add('hidden');
+            qualityLabel.textContent = `✅ Stored: ${Math.round(camResult.quality * 100)}%`;
             qualityLabel.className = 'cam-quality-label calibrated';
             
             updateCameraIndicator(selectedCamera);
@@ -323,13 +330,75 @@ async function calibrateCurrentCamera() {
         
     } catch (e) {
         console.error('Calibration error:', e);
+        loading.classList.add('hidden');
         qualityLabel.textContent = `❌ Failed: ${e.message}`;
         qualityLabel.className = 'cam-quality-label failed';
-        updateCameraIndicator(selectedCamera);
     } finally {
         btn.disabled = false;
         btn.textContent = '🎯 Calibrate';
     }
+}
+
+// ============================================================================
+// Mark 20 Feature
+// ============================================================================
+
+function toggleMark20Mode() {
+    mark20Mode = !mark20Mode;
+    const btn = document.getElementById('mark20-btn');
+    const img = document.getElementById('main-camera-img');
+    const preview = document.querySelector('.camera-preview-full');
+    
+    if (mark20Mode) {
+        btn.classList.add('active');
+        btn.textContent = '🎯 Click on 20...';
+        preview.classList.add('mark20-mode');
+    } else {
+        btn.classList.remove('active');
+        btn.textContent = '🎯 Mark 20';
+        preview.classList.remove('mark20-mode');
+    }
+}
+
+async function handleImageClick(e) {
+    if (!mark20Mode) return;
+    
+    const img = e.target;
+    const rect = img.getBoundingClientRect();
+    
+    // Get click position as normalized 0-1 coordinates
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    
+    console.log(`Mark 20 clicked at: ${x.toFixed(3)}, ${y.toFixed(3)}`);
+    
+    // Send to API
+    try {
+        const res = await fetch(`${DART_GAME_URL}/api/calibrations/cam${selectedCamera}/mark20`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cameraId: `cam${selectedCamera}`, x, y })
+        });
+        
+        if (res.ok) {
+            const result = await res.json();
+            storedCalibrations[`cam${selectedCamera}`] = result;
+            
+            const qualityLabel = document.getElementById('cam-quality-label');
+            qualityLabel.textContent = `✅ 20 marked at ${Math.round(result.twentyAngle)}°`;
+            
+            // Exit mark 20 mode
+            toggleMark20Mode();
+        } else {
+            const err = await res.json();
+            alert(`Failed: ${err.error || 'Unknown error'}`);
+        }
+    } catch (e) {
+        console.error('Mark 20 error:', e);
+        alert('Failed to mark 20');
+    }
+    
+    toggleMark20Mode();
 }
 
 // ============================================================================
@@ -382,6 +451,9 @@ function initEventListeners() {
     
     // Calibrate button
     document.getElementById('calibrate-btn')?.addEventListener('click', calibrateCurrentCamera);
+    
+    // Mark 20 button
+    document.getElementById('mark20-btn')?.addEventListener('click', toggleMark20Mode);
     
     // Overlay opacity
     document.getElementById('overlay-opacity')?.addEventListener('input', (e) => {
