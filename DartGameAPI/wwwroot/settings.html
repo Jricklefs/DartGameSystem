@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - DartsMob</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/css/dartsmob.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
+</head>
+<body class="settings-page">
+    <div id="background-layer" class="background-layer"></div>
+    <div id="background-overlay" class="background-overlay"></div>
+
+    <header class="settings-header">
+        <a href="/" class="back-link">← Back</a>
+        <h1 class="settings-title">SETTINGS</h1>
+    </header>
+
+    <main class="settings-container">
+        <!-- Tab Navigation -->
+        <nav class="settings-nav">
+            <button class="nav-tab active" data-tab="calibration">
+                <span class="tab-icon">🎯</span>
+                <span class="tab-label">Calibration</span>
+            </button>
+            <button class="nav-tab" data-tab="theme">
+                <span class="tab-icon">🎨</span>
+                <span class="tab-label">Theme</span>
+            </button>
+            <button class="nav-tab" data-tab="system">
+                <span class="tab-icon">🖥️</span>
+                <span class="tab-label">System</span>
+            </button>
+        </nav>
+
+        <!-- Calibration Tab -->
+        <section id="tab-calibration" class="settings-section active">
+            <div class="section-header">
+                <h2>Board Calibration</h2>
+                <p class="section-desc">Configure cameras and calibrate the dartboard detection</p>
+            </div>
+
+            <div class="status-cards">
+                <div class="status-card">
+                    <span class="status-label">DartDetect API</span>
+                    <span id="detect-api-status" class="status-value status-checking">Checking...</span>
+                </div>
+                <div class="status-card">
+                    <span class="status-label">Calibration</span>
+                    <span id="cal-status" class="status-value">—</span>
+                </div>
+                <div class="status-card">
+                    <span class="status-label">Last Calibrated</span>
+                    <span id="cal-date" class="status-value">—</span>
+                </div>
+            </div>
+
+            <div class="cameras-section">
+                <h3>Camera Previews</h3>
+                
+                <div class="camera-grid" id="calibration-camera-grid">
+                    <div class="camera-card" data-cam="0">
+                        <div class="camera-header">
+                            <span class="camera-name">Camera 0</span>
+                            <span class="camera-status" id="cal-cam0-status">⏳</span>
+                        </div>
+                        <div class="camera-preview">
+                            <img id="cal-cam0-img" class="camera-img" alt="Camera 0">
+                            <div class="camera-loading">Loading...</div>
+                        </div>
+                        <div class="camera-quality" id="cal-cam0-quality"></div>
+                    </div>
+                    <div class="camera-card" data-cam="1">
+                        <div class="camera-header">
+                            <span class="camera-name">Camera 1</span>
+                            <span class="camera-status" id="cal-cam1-status">⏳</span>
+                        </div>
+                        <div class="camera-preview">
+                            <img id="cal-cam1-img" class="camera-img" alt="Camera 1">
+                            <div class="camera-loading">Loading...</div>
+                        </div>
+                        <div class="camera-quality" id="cal-cam1-quality"></div>
+                    </div>
+                    <div class="camera-card" data-cam="2">
+                        <div class="camera-header">
+                            <span class="camera-name">Camera 2</span>
+                            <span class="camera-status" id="cal-cam2-status">⏳</span>
+                        </div>
+                        <div class="camera-preview">
+                            <img id="cal-cam2-img" class="camera-img" alt="Camera 2">
+                            <div class="camera-loading">Loading...</div>
+                        </div>
+                        <div class="camera-quality" id="cal-cam2-quality"></div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="refresh-snapshots-btn" class="btn btn-secondary">
+                        🔄 Refresh Snapshots
+                    </button>
+                    <button id="calibrate-all-btn" class="btn btn-primary">
+                        🎯 Calibrate All Cameras
+                    </button>
+                </div>
+            </div>
+
+            <div class="zone-legend">
+                <h4>Scoring Zones</h4>
+                <div class="legend-grid">
+                    <span class="legend-item"><span class="zone-dot triple"></span> Triple Ring</span>
+                    <span class="legend-item"><span class="zone-dot double"></span> Double Ring</span>
+                    <span class="legend-item"><span class="zone-dot bull"></span> Bullseye</span>
+                    <span class="legend-item"><span class="zone-dot dbull"></span> Double Bull</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Theme Tab -->
+        <section id="tab-theme" class="settings-section">
+            <div class="section-header">
+                <h2>Customize Appearance</h2>
+                <p class="section-desc">Personalize the look and feel of your game</p>
+            </div>
+
+            <div class="theme-card">
+                <h3>App Branding</h3>
+                <div class="input-group">
+                    <label for="theme-app-name">App Name</label>
+                    <input type="text" id="theme-app-name" class="input" value="DartsMob">
+                </div>
+                <div class="input-group">
+                    <label for="theme-tagline">Tagline</label>
+                    <input type="text" id="theme-tagline" class="input" value="The Family's Game">
+                </div>
+            </div>
+
+            <div class="theme-card">
+                <h3>Background Images</h3>
+                <p class="hint">Tap to select/deselect backgrounds for slideshow</p>
+                
+                <div id="background-gallery" class="bg-gallery">
+                    <!-- Loaded dynamically -->
+                </div>
+                
+                <div class="bg-controls">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="slideshow-toggle" checked>
+                        <span>Auto-rotate backgrounds</span>
+                    </label>
+                    <div class="speed-select">
+                        <label for="slideshow-speed">Speed:</label>
+                        <select id="slideshow-speed" class="select">
+                            <option value="10000">10 sec</option>
+                            <option value="30000" selected>30 sec</option>
+                            <option value="60000">1 min</option>
+                            <option value="300000">5 min</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <label class="btn btn-secondary upload-btn">
+                    📁 Upload Custom Image
+                    <input type="file" id="bg-upload" accept="image/*" hidden>
+                </label>
+            </div>
+
+            <div class="theme-card">
+                <h3>Overlay Darkness</h3>
+                <div class="slider-group">
+                    <input type="range" id="overlay-opacity" class="slider" min="0" max="100" value="70">
+                    <span id="opacity-value" class="slider-value">70%</span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="reset-theme-btn" class="btn btn-secondary">↩️ Reset</button>
+                <button id="save-theme-btn" class="btn btn-primary">💾 Save Theme</button>
+            </div>
+        </section>
+
+        <!-- System Tab -->
+        <section id="tab-system" class="settings-section">
+            <div class="section-header">
+                <h2>System Status</h2>
+                <p class="section-desc">Monitor system health and access developer tools</p>
+            </div>
+
+            <div class="status-cards vertical">
+                <div class="status-card wide">
+                    <span class="status-label">DartGame API</span>
+                    <span id="sys-game-api" class="status-value status-checking">Checking...</span>
+                </div>
+                <div class="status-card wide">
+                    <span class="status-label">DartDetect API</span>
+                    <span id="sys-detect-api" class="status-value status-checking">Checking...</span>
+                </div>
+                <div class="status-card wide">
+                    <span class="status-label">Database</span>
+                    <span id="sys-database" class="status-value status-checking">Checking...</span>
+                </div>
+                <div class="status-card wide">
+                    <span class="status-label">SignalR Hub</span>
+                    <span id="sys-signalr" class="status-value status-checking">Checking...</span>
+                </div>
+            </div>
+            
+            <div class="link-buttons">
+                <a href="/architecture.html" class="btn btn-secondary" target="_blank">📊 Architecture</a>
+                <a href="/swagger" class="btn btn-secondary" target="_blank">📚 API Docs</a>
+            </div>
+        </section>
+    </main>
+
+    <script src="/js/settings.js"></script>
+</body>
+</html>

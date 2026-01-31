@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>DartsMob</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="apple-touch-icon" href="/favicon.svg">
@@ -14,290 +14,120 @@
 <body>
     <div id="background-layer" class="background-layer"></div>
     <div id="background-overlay" class="background-overlay"></div>
-    <div class="smoke-overlay"></div>
-    
-    <header class="header">
-        <h1 class="title">DARTS<span class="accent">MOB</span></h1>
-        <p class="tagline">— The Family's Game —</p>
-        <button id="settings-btn" class="settings-btn" title="Settings">⚙️</button>
+
+    <!-- Minimal Header - Only shown on setup -->
+    <header id="main-header" class="main-header">
+        <div class="brand">
+            <h1 id="app-title" class="app-title">DARTS<span class="accent">MOB</span></h1>
+            <p id="app-tagline" class="tagline">— The Family's Game —</p>
+        </div>
+        <a href="/settings.html" class="settings-link" title="Settings">⚙️</a>
     </header>
 
-    <main class="game-container">
-        <!-- Game Setup Panel -->
-        <section id="setup-panel" class="panel setup-panel">
-            <h2 class="panel-title">NEW GAME</h2>
+    <!-- ================================================================== -->
+    <!-- SETUP SCREEN - Full viewport                                      -->
+    <!-- ================================================================== -->
+    <main id="setup-screen" class="screen setup-screen">
+        <div class="setup-card">
+            <h2 class="card-title">NEW GAME</h2>
             
-            <div class="form-group">
-                <label>GAME TYPE</label>
-                <div class="button-group">
-                    <button class="btn game-mode-btn active" data-mode="Practice">PRACTICE</button>
-                    <button class="btn game-mode-btn" data-mode="Game501">501</button>
-                    <button class="btn game-mode-btn" data-mode="Game301">301</button>
+            <!-- Game Mode -->
+            <div class="form-section">
+                <label class="form-label">GAME TYPE</label>
+                <div class="btn-group mode-group">
+                    <button class="mode-btn active" data-mode="Practice">PRACTICE</button>
+                    <button class="mode-btn" data-mode="Game501">501</button>
+                    <button class="mode-btn" data-mode="Game301">301</button>
                 </div>
             </div>
 
-            <div class="form-group legs-selector" id="legs-group">
-                <label>BEST OF</label>
-                <div class="button-group">
-                    <button class="btn legs-btn" data-legs="1">1</button>
-                    <button class="btn legs-btn" data-legs="3">3</button>
-                    <button class="btn legs-btn active" data-legs="5">5</button>
-                    <button class="btn legs-btn" data-legs="7">7</button>
+            <!-- Legs (hidden for Practice) -->
+            <div class="form-section" id="legs-section">
+                <label class="form-label">BEST OF</label>
+                <div class="btn-group legs-group">
+                    <button class="legs-btn" data-legs="1">1</button>
+                    <button class="legs-btn" data-legs="3">3</button>
+                    <button class="legs-btn active" data-legs="5">5</button>
+                    <button class="legs-btn" data-legs="7">7</button>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>THE PLAYERS</label>
-                <div id="players-list" class="players-input">
-                    <input type="text" class="player-input" placeholder="Player 1" value="Vinnie">
+            <!-- Players -->
+            <div class="form-section">
+                <label class="form-label">PLAYERS</label>
+                <div id="players-list" class="players-list">
+                    <input type="text" class="player-input" placeholder="Player 1" value="Player 1">
                     <input type="text" class="player-input" placeholder="Player 2">
                 </div>
-                <button id="add-player-btn" class="btn btn-small">+ ADD PLAYER</button>
+                <button id="add-player-btn" class="btn-add">+ Add Player</button>
             </div>
 
-            <button id="start-game-btn" class="btn btn-primary">
-                <span class="btn-text">START THE GAME</span>
+            <!-- Start Button -->
+            <button id="start-game-btn" class="btn-start">
+                🎯 START GAME
             </button>
-        </section>
+        </div>
+        
+        <footer class="setup-footer">
+            <span id="connection-status" class="connection">🔌 Connecting...</span>
+        </footer>
+    </main>
 
-        <!-- Active Game Panel -->
-        <section id="game-panel" class="panel game-panel hidden">
-            <div class="game-header">
+    <!-- ================================================================== -->
+    <!-- GAME SCREEN - Full viewport, maximum space                        -->
+    <!-- ================================================================== -->
+    <main id="game-screen" class="screen game-screen hidden">
+        <!-- Compact Game Header -->
+        <header class="game-header">
+            <div class="game-info">
                 <span id="game-mode-display" class="game-mode">501</span>
-                <span id="legs-display" class="legs-display">Leg 1 • Best of 5</span>
-                <button id="end-game-btn" class="btn btn-danger btn-small">END GAME</button>
+                <span id="legs-display" class="legs-info">Leg 1/5</span>
             </div>
+            <button id="end-game-btn" class="btn-end">✕ End</button>
+        </header>
 
-            <!-- Scoreboard -->
-            <div id="scoreboard" class="scoreboard">
-                <!-- Players will be inserted here -->
-            </div>
-
-            <!-- Current Turn -->
-            <div class="current-turn">
-                <h3 class="turn-title">CURRENT THROW</h3>
-                <div id="current-darts" class="darts-display">
-                    <div class="dart-slot empty">—</div>
-                    <div class="dart-slot empty">—</div>
-                    <div class="dart-slot empty">—</div>
-                </div>
-                <div class="turn-total">
-                    TURN: <span id="turn-score">0</span>
-                </div>
-            </div>
-
-            <!-- Dartboard Visual -->
-            <div class="dartboard-container">
-                <svg id="dartboard" viewBox="0 0 400 400" class="dartboard">
-                    <!-- Dartboard will be drawn here -->
-                </svg>
-            </div>
-
-            <!-- Last Throw Callout -->
-            <div id="last-throw" class="last-throw hidden">
-                <span class="throw-zone">TRIPLE</span>
-                <span class="throw-score">20</span>
-            </div>
+        <!-- Scoreboard - Takes most of the space -->
+        <section id="scoreboard" class="scoreboard">
+            <!-- Player cards inserted dynamically -->
         </section>
 
-        <!-- Game Over Panel -->
-        <section id="gameover-panel" class="panel gameover-panel hidden">
-            <h2 class="winner-title">THE WINNER</h2>
-            <p id="winner-name" class="winner-name">VINNIE</p>
-            <div class="winner-stats">
-                <span id="winner-darts">Darts: 15</span>
+        <!-- Current Turn - Compact bottom bar -->
+        <section class="turn-bar">
+            <div class="darts-row">
+                <div class="dart-slot" data-dart="0">—</div>
+                <div class="dart-slot" data-dart="1">—</div>
+                <div class="dart-slot" data-dart="2">—</div>
             </div>
-            <button id="new-game-btn" class="btn btn-primary">ANOTHER ROUND</button>
+            <div class="turn-total">
+                <span class="label">TURN</span>
+                <span id="turn-score" class="score">0</span>
+            </div>
         </section>
     </main>
 
-    <footer class="footer">
-        <p>🎯 Connected to <span id="connection-status">Connecting...</span></p>
-    </footer>
+    <!-- ================================================================== -->
+    <!-- GAME OVER SCREEN                                                  -->
+    <!-- ================================================================== -->
+    <main id="gameover-screen" class="screen gameover-screen hidden">
+        <div class="winner-card">
+            <span class="crown">👑</span>
+            <h2 class="winner-label">WINNER</h2>
+            <p id="winner-name" class="winner-name">PLAYER</p>
+            <p id="winner-stats" class="winner-stats">15 darts</p>
+            <button id="new-game-btn" class="btn-start">🎯 PLAY AGAIN</button>
+        </div>
+    </main>
 
-    <button id="fullscreen-btn" class="fullscreen-btn" title="Toggle Fullscreen">⛶</button>
+    <!-- Last Throw Popup -->
+    <div id="throw-popup" class="throw-popup hidden">
+        <span class="throw-zone">TRIPLE</span>
+        <span class="throw-value">20</span>
+    </div>
 
-    <!-- SignalR -->
+    <!-- Fullscreen Toggle -->
+    <button id="fullscreen-btn" class="fullscreen-btn">⛶</button>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script src="/js/dartsmob.js"></script>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal hidden">
-        <div class="modal-content settings-modal">
-            <div class="modal-header">
-                <h2>⚙️ SETTINGS</h2>
-                <button id="close-settings" class="close-btn">&times;</button>
-            </div>
-            
-            <div class="settings-tabs">
-                <button class="tab-btn active" data-tab="calibration">🎯 Calibration</button>
-                <button class="tab-btn" data-tab="theme">🎨 Theme</button>
-                <button class="tab-btn" data-tab="system">🖥️ System</button>
-            </div>
-
-            <!-- Calibration Tab -->
-            <div id="tab-calibration" class="tab-content active">
-                <h3>Board Calibration</h3>
-                
-                <div class="calibration-status">
-                    <div class="status-row">
-                        <span>DartDetect API:</span>
-                        <span id="detect-api-status" class="status-offline">🔴 Checking...</span>
-                    </div>
-                    <div class="status-row">
-                        <span>Calibration:</span>
-                        <span id="cal-status" class="cal-badge">Checking...</span>
-                    </div>
-                    <div class="status-row">
-                        <span>Last Calibrated:</span>
-                        <span id="cal-date">—</span>
-                    </div>
-                </div>
-
-                <div class="camera-snapshots">
-                    <h4>Camera Previews</h4>
-                    <p class="hint">Live snapshots from connected cameras</p>
-                    
-                    <div class="camera-grid" id="calibration-camera-grid">
-                        <div class="cal-camera-card" data-cam="0">
-                            <div class="cal-cam-header">
-                                <span>Camera 0</span>
-                                <span class="cal-cam-status" id="cal-cam0-status">⏳</span>
-                            </div>
-                            <div class="cal-cam-preview">
-                                <img id="cal-cam0-img" class="cal-cam-img" alt="Camera 0">
-                                <div class="cal-cam-overlay" id="cal-cam0-overlay"></div>
-                                <div class="cal-cam-loading">Loading...</div>
-                            </div>
-                        </div>
-                        <div class="cal-camera-card" data-cam="1">
-                            <div class="cal-cam-header">
-                                <span>Camera 1</span>
-                                <span class="cal-cam-status" id="cal-cam1-status">⏳</span>
-                            </div>
-                            <div class="cal-cam-preview">
-                                <img id="cal-cam1-img" class="cal-cam-img" alt="Camera 1">
-                                <div class="cal-cam-overlay" id="cal-cam1-overlay"></div>
-                                <div class="cal-cam-loading">Loading...</div>
-                            </div>
-                        </div>
-                        <div class="cal-camera-card" data-cam="2">
-                            <div class="cal-cam-header">
-                                <span>Camera 2</span>
-                                <span class="cal-cam-status" id="cal-cam2-status">⏳</span>
-                            </div>
-                            <div class="cal-cam-preview">
-                                <img id="cal-cam2-img" class="cal-cam-img" alt="Camera 2">
-                                <div class="cal-cam-overlay" id="cal-cam2-overlay"></div>
-                                <div class="cal-cam-loading">Loading...</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="calibration-actions">
-                        <button id="refresh-snapshots-btn" class="btn">🔄 Refresh Snapshots</button>
-                        <button id="calibrate-all-btn" class="btn btn-primary">🎯 Calibrate All Cameras</button>
-                    </div>
-                </div>
-
-                <div class="zone-legend">
-                    <h4>Scoring Zones</h4>
-                    <div class="legend-items">
-                        <span class="legend-item"><span class="zone-color triple"></span> Triple Ring</span>
-                        <span class="legend-item"><span class="zone-color double"></span> Double Ring</span>
-                        <span class="legend-item"><span class="zone-color bull"></span> Bullseye</span>
-                        <span class="legend-item"><span class="zone-color dbull"></span> Double Bull</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Theme Tab -->
-            <div id="tab-theme" class="tab-content hidden">
-                <h3>Customize Appearance</h3>
-                
-                <div class="theme-section">
-                    <h4>App Branding</h4>
-                    <div class="form-row">
-                        <label>App Name:</label>
-                        <input type="text" id="theme-app-name" class="theme-input" value="DartsMob">
-                    </div>
-                    <div class="form-row">
-                        <label>Tagline:</label>
-                        <input type="text" id="theme-tagline" class="theme-input" value="The Family's Game">
-                    </div>
-                </div>
-
-                <div class="theme-section">
-                    <h4>Background Images</h4>
-                    <p class="hint">Select backgrounds or add your own family photos</p>
-                    
-                    <div id="background-gallery" class="background-gallery">
-                        <!-- Backgrounds loaded dynamically -->
-                    </div>
-                    
-                    <div class="background-controls">
-                        <label>
-                            <input type="checkbox" id="slideshow-toggle" checked>
-                            Auto-rotate backgrounds
-                        </label>
-                        <div class="slideshow-speed">
-                            <label>Speed:</label>
-                            <select id="slideshow-speed">
-                                <option value="10000">10 sec</option>
-                                <option value="30000" selected>30 sec</option>
-                                <option value="60000">1 min</option>
-                                <option value="300000">5 min</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="upload-section">
-                        <label class="btn upload-btn">
-                            📁 Upload Custom Image
-                            <input type="file" id="bg-upload" accept="image/*" hidden>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="theme-section">
-                    <h4>Overlay Opacity</h4>
-                    <input type="range" id="overlay-opacity" min="0" max="100" value="70">
-                    <span id="opacity-value">70%</span>
-                </div>
-
-                <button id="save-theme-btn" class="btn btn-primary">💾 Save Theme</button>
-                <button id="reset-theme-btn" class="btn">↩️ Reset to Default</button>
-            </div>
-
-            <!-- System Tab -->
-            <div id="tab-system" class="tab-content hidden">
-                <h3>System Info</h3>
-                
-                <div class="system-info">
-                    <div class="info-row">
-                        <span>DartGame API:</span>
-                        <span id="sys-game-api" class="status-indicator">Checking...</span>
-                    </div>
-                    <div class="info-row">
-                        <span>DartDetect API:</span>
-                        <span id="sys-detect-api" class="status-indicator">Checking...</span>
-                    </div>
-                    <div class="info-row">
-                        <span>Database:</span>
-                        <span id="sys-database" class="status-indicator">Checking...</span>
-                    </div>
-                    <div class="info-row">
-                        <span>SignalR Hub:</span>
-                        <span id="sys-signalr" class="status-indicator">Checking...</span>
-                    </div>
-                </div>
-                
-                <div class="system-links">
-                    <a href="/architecture.html" class="btn" target="_blank">📊 Full Architecture View</a>
-                    <a href="/swagger" class="btn" target="_blank">📚 API Docs</a>
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

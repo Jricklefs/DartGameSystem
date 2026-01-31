@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DartsMob - 1920s Speakeasy Theme
+   DartsMob - Mobile-First Redesign
    ========================================================================== */
 
 :root {
@@ -14,1241 +14,565 @@
     --paper-dark: #d4c4a8;
     --ink: #1a1510;
     --ink-light: #3d3528;
-    --green-felt: #1a4d2e;
-    --wood: #3d2817;
-    --wood-light: #5c3d24;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --teal: #4ecdc4;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
+    height: 100%;
+    overflow: hidden;
     font-family: 'Special Elite', monospace;
-    background: linear-gradient(135deg, var(--ink) 0%, var(--wood) 50%, var(--ink) 100%);
-    background-attachment: fixed;
+    background: var(--ink);
     color: var(--paper);
-    min-height: 100vh;
-    position: relative;
-    overflow-x: hidden;
 }
 
-/* Smoke overlay effect */
-.smoke-overlay {
+/* ==========================================================================
+   Background
+   ========================================================================== */
+
+.background-layer {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        radial-gradient(ellipse at 20% 80%, rgba(139, 26, 26, 0.1) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(212, 168, 75, 0.05) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 1;
+    inset: 0;
+    z-index: -2;
+    background-size: cover;
+    background-position: center;
+    transition: opacity 1s ease;
+}
+
+.background-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: rgba(0, 0, 0, 0.7);
 }
 
 /* ==========================================================================
-   Typography
+   Screens - Full Viewport
    ========================================================================== */
 
-.title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 4rem;
-    letter-spacing: 0.3em;
-    text-shadow: 
-        3px 3px 0 var(--crimson-dark),
-        -1px -1px 0 var(--gold-dark);
-    color: var(--paper);
+.screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
-.title .accent {
-    color: var(--gold);
-}
-
-.tagline {
-    font-size: 0.9rem;
-    letter-spacing: 0.5em;
-    color: var(--gold);
-    opacity: 0.8;
-    margin-top: -0.5rem;
-}
-
-.panel-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    letter-spacing: 0.2em;
-    color: var(--gold);
-    border-bottom: 2px solid var(--gold-dark);
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
-}
-
-/* ==========================================================================
-   Layout
-   ========================================================================== */
-
-.header {
-    text-align: center;
-    padding: 2rem 1rem 1rem;
-    position: relative;
-    z-index: 10;
-}
-
-.game-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 1rem;
-    position: relative;
-    z-index: 10;
-}
-
-.footer {
-    text-align: center;
-    padding: 1rem;
-    font-size: 0.8rem;
-    color: var(--gold-dark);
-    position: relative;
-    z-index: 10;
-}
-
-/* ==========================================================================
-   Panels
-   ========================================================================== */
-
-.panel {
-    background: var(--smoke);
-    border: 2px solid var(--gold-dark);
-    border-radius: 4px;
-    padding: 2rem;
-    margin-bottom: 1rem;
-    box-shadow: 
-        0 10px 40px rgba(0, 0, 0, 0.5),
-        inset 0 1px 0 rgba(212, 168, 75, 0.1);
-}
-
-.panel.hidden {
+.screen.hidden {
     display: none;
 }
 
 /* ==========================================================================
-   Forms & Inputs
+   HEADER - Compact
    ========================================================================== */
 
-.form-group {
-    margin-bottom: 1.5rem;
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid var(--gold-dark);
 }
 
-.form-group label {
-    display: block;
-    font-size: 0.9rem;
-    letter-spacing: 0.2em;
+.brand {
+    text-align: left;
+}
+
+.app-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    color: var(--paper);
+}
+
+.app-title .accent {
     color: var(--gold);
-    margin-bottom: 0.5rem;
+}
+
+.tagline {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--gold-dark);
+    margin-top: 2px;
+}
+
+.settings-link {
+    font-size: 1.5rem;
+    text-decoration: none;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.settings-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   SETUP SCREEN
+   ========================================================================== */
+
+.setup-screen {
+    padding-top: 0;
+}
+
+.setup-screen .main-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+}
+
+.setup-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 20px 20px;
+    max-width: 500px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--gold);
+    text-align: center;
+    letter-spacing: 0.15em;
+    margin-bottom: 24px;
+    border-bottom: 2px solid var(--gold-dark);
+    padding-bottom: 8px;
+}
+
+.form-section {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 8px;
+}
+
+/* Button Groups */
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
+
+.mode-btn, .legs-btn {
+    flex: 1;
+    padding: 14px 8px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+    background: transparent;
+    border: 2px solid var(--gold-dark);
+    color: var(--paper);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mode-btn.active, .legs-btn.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ink);
+}
+
+.mode-btn:hover, .legs-btn:hover {
+    border-color: var(--gold);
+}
+
+/* Players List */
+.players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
 .player-input {
     width: 100%;
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.5rem;
+    padding: 14px 16px;
     font-family: 'Special Elite', monospace;
-    font-size: 1rem;
+    font-size: 16px; /* Prevents iOS zoom */
     background: var(--ink);
     border: 1px solid var(--gold-dark);
-    border-radius: 2px;
     color: var(--paper);
-    transition: border-color 0.2s, box-shadow 0.2s;
+    border-radius: 4px;
 }
 
 .player-input:focus {
     outline: none;
     border-color: var(--gold);
-    box-shadow: 0 0 10px rgba(212, 168, 75, 0.3);
+    box-shadow: 0 0 0 2px rgba(212, 168, 75, 0.2);
 }
 
 .player-input::placeholder {
     color: var(--ink-light);
 }
 
-/* ==========================================================================
-   Buttons
-   ========================================================================== */
-
-.btn {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.1rem;
-    letter-spacing: 0.15em;
-    padding: 0.75rem 1.5rem;
-    border: 2px solid var(--gold-dark);
-    border-radius: 2px;
+.btn-add {
     background: transparent;
+    border: 1px dashed var(--gold-dark);
+    color: var(--gold);
+    padding: 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.btn-add:hover {
+    border-style: solid;
+    background: rgba(212, 168, 75, 0.1);
+}
+
+/* Start Button */
+.btn-start {
+    width: 100%;
+    padding: 18px;
+    margin-top: 16px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.15em;
+    background: var(--crimson);
+    border: none;
     color: var(--paper);
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    text-transform: uppercase;
 }
 
-.btn:hover {
-    background: var(--gold-dark);
-    color: var(--ink);
+.btn-start:hover {
+    background: var(--crimson-dark);
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(212, 168, 75, 0.3);
+    box-shadow: 0 4px 20px rgba(139, 26, 26, 0.4);
 }
 
-.btn:active {
+.btn-start:active {
     transform: translateY(0);
 }
 
-.btn-primary {
-    background: var(--crimson);
-    border-color: var(--crimson);
-    font-size: 1.4rem;
-    padding: 1rem 2rem;
-    width: 100%;
-    margin-top: 1rem;
+.setup-footer {
+    padding: 12px;
+    text-align: center;
 }
 
-.btn-primary:hover {
-    background: var(--crimson-dark);
-    border-color: var(--gold);
-    color: var(--gold);
+.connection {
+    font-size: 0.8rem;
+    color: var(--gold-dark);
 }
 
-.btn-small {
-    font-size: 0.9rem;
-    padding: 0.4rem 0.8rem;
-}
-
-.btn-danger {
-    border-color: var(--crimson);
-    color: var(--crimson);
-}
-
-.btn-danger:hover {
-    background: var(--crimson);
-    color: var(--paper);
-}
-
-.button-group {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.game-mode-btn {
-    flex: 1;
-    min-width: 80px;
-}
-
-.game-mode-btn.active {
-    background: var(--gold-dark);
-    color: var(--ink);
+.connection.connected {
+    color: var(--green);
 }
 
 /* ==========================================================================
-   Scoreboard
+   GAME SCREEN - Maximum Space Usage
    ========================================================================== */
+
+.game-screen {
+    display: flex;
+    flex-direction: column;
+}
 
 .game-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid var(--gold-dark);
+    flex-shrink: 0;
+}
+
+.game-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .game-mode {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: var(--gold);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
 }
 
+.legs-info {
+    font-size: 0.85rem;
+    color: var(--paper-dark);
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+}
+
+.btn-end {
+    padding: 8px 14px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    background: transparent;
+    border: 1px solid var(--crimson);
+    color: var(--crimson);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-end:hover {
+    background: var(--crimson);
+    color: var(--paper);
+}
+
+/* Scoreboard - Takes Maximum Space */
 .scoreboard {
+    flex: 1;
     display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    overflow-y: auto;
 }
 
 .player-card {
-    flex: 1;
-    min-width: 150px;
-    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.4);
     border: 2px solid var(--gold-dark);
-    border-radius: 4px;
-    padding: 1rem;
-    text-align: center;
+    border-radius: 8px;
     transition: all 0.3s;
 }
 
 .player-card.active {
     border-color: var(--gold);
-    box-shadow: 
-        0 0 20px rgba(212, 168, 75, 0.3),
-        inset 0 0 20px rgba(212, 168, 75, 0.1);
+    background: rgba(212, 168, 75, 0.1);
+    box-shadow: 0 0 20px rgba(212, 168, 75, 0.2);
 }
 
-.player-card .name {
+.player-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.player-name {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.3rem;
-    letter-spacing: 0.1em;
+    font-size: 1.4rem;
     color: var(--paper);
-    margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
 }
 
-.player-card .score {
+.player-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 0.75rem;
+    color: var(--paper-dark);
+}
+
+.player-stats .legs {
+    color: var(--gold);
+    font-weight: bold;
+}
+
+.player-score {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 3rem;
     color: var(--gold);
     line-height: 1;
 }
 
-.player-card .darts-thrown {
-    font-size: 0.8rem;
-    color: var(--gold-dark);
-    margin-top: 0.25rem;
-}
-
-/* ==========================================================================
-   Current Turn Display
-   ========================================================================== */
-
-.current-turn {
-    background: var(--ink);
-    border: 1px solid var(--gold-dark);
-    border-radius: 4px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-
-.turn-title {
-    font-size: 0.9rem;
-    letter-spacing: 0.2em;
-    color: var(--gold-dark);
-    margin-bottom: 0.75rem;
-}
-
-.darts-display {
+/* Turn Bar - Compact Bottom */
+.turn-bar {
     display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.6);
+    border-top: 1px solid var(--gold-dark);
+    flex-shrink: 0;
+}
+
+.darts-row {
+    display: flex;
+    gap: 8px;
 }
 
 .dart-slot {
-    width: 70px;
-    height: 70px;
-    background: var(--smoke);
-    border: 2px solid var(--gold-dark);
-    border-radius: 4px;
+    width: 56px;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.8rem;
-    color: var(--gold);
-    transition: all 0.3s;
-}
-
-.dart-slot.empty {
+    font-size: 1.3rem;
     color: var(--ink-light);
-    border-style: dashed;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px dashed var(--gold-dark);
+    border-radius: 6px;
+    transition: all 0.2s;
 }
 
 .dart-slot.hit {
-    border-color: var(--gold);
-    box-shadow: 0 0 15px rgba(212, 168, 75, 0.4);
-    animation: dartHit 0.3s ease-out;
-}
-
-.dart-slot .zone {
-    font-size: 0.7rem;
-    color: var(--paper);
-    display: block;
-    margin-top: -0.25rem;
-}
-
-.turn-total {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
-    color: var(--paper);
-    letter-spacing: 0.1em;
-}
-
-.turn-total span {
     color: var(--gold);
-    font-size: 2rem;
+    border-style: solid;
+    border-color: var(--gold);
+    background: rgba(212, 168, 75, 0.15);
+    animation: dart-pop 0.3s ease-out;
 }
 
-@keyframes dartHit {
-    0% { transform: scale(1.3); }
+@keyframes dart-pop {
+    0% { transform: scale(1.2); }
     50% { transform: scale(0.95); }
     100% { transform: scale(1); }
 }
 
-/* ==========================================================================
-   Dartboard Visual
-   ========================================================================== */
-
-.dartboard-container {
+.turn-total {
     display: flex;
-    justify-content: center;
-    margin: 1.5rem 0;
+    flex-direction: column;
+    align-items: flex-end;
 }
 
-.dartboard {
-    width: 300px;
-    height: 300px;
-    filter: drop-shadow(0 5px 20px rgba(0, 0, 0, 0.5));
+.turn-total .label {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--paper-dark);
+}
+
+.turn-total .score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    color: var(--gold);
+    line-height: 1;
 }
 
 /* ==========================================================================
-   Last Throw Callout
+   GAME OVER SCREEN
    ========================================================================== */
 
-.last-throw {
+.gameover-screen {
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.winner-card {
+    text-align: center;
+    padding: 40px 30px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 3px solid var(--gold);
+    border-radius: 16px;
+    max-width: 400px;
+    width: 100%;
+}
+
+.crown {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.winner-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.3em;
+    color: var(--gold-dark);
+}
+
+.winner-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.5rem;
+    color: var(--gold);
+    text-shadow: 3px 3px 0 var(--crimson);
+    margin: 10px 0;
+}
+
+.winner-stats {
+    color: var(--paper-dark);
+    margin-bottom: 30px;
+}
+
+/* ==========================================================================
+   THROW POPUP
+   ========================================================================== */
+
+.throw-popup {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(0);
     background: var(--crimson);
     border: 4px solid var(--gold);
-    border-radius: 8px;
-    padding: 2rem 3rem;
+    border-radius: 12px;
+    padding: 20px 40px;
     text-align: center;
-    z-index: 100;
-    box-shadow: 0 0 60px rgba(139, 26, 26, 0.8);
+    z-index: 1000;
+    pointer-events: none;
 }
 
-.last-throw.show {
-    animation: throwCallout 1.5s ease-out forwards;
+.throw-popup.show {
+    animation: popup-in 1.5s ease-out forwards;
 }
 
-.last-throw .throw-zone {
+.throw-popup .throw-zone {
     display: block;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     letter-spacing: 0.2em;
     color: var(--gold);
 }
 
-.last-throw .throw-score {
+.throw-popup .throw-value {
     display: block;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 5rem;
-    color: var(--paper);
-    line-height: 1;
-    text-shadow: 3px 3px 0 var(--crimson-dark);
-}
-
-@keyframes throwCallout {
-    0% { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
-    20% { transform: translate(-50%, -50%) scale(1.1) rotate(2deg); opacity: 1; }
-    30% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
-    80% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(0.8) rotate(5deg); opacity: 0; }
-}
-
-/* ==========================================================================
-   Game Over
-   ========================================================================== */
-
-.gameover-panel {
-    text-align: center;
-}
-
-.winner-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    letter-spacing: 0.3em;
-    color: var(--gold-dark);
-    margin-bottom: 0.5rem;
-}
-
-.winner-name {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 4rem;
-    color: var(--gold);
-    text-shadow: 3px 3px 0 var(--crimson);
-    margin-bottom: 1rem;
-}
-
-.winner-stats {
     color: var(--paper);
-    margin-bottom: 2rem;
+    line-height: 1;
 }
 
-/* ==========================================================================
-   Connection Status
-   ========================================================================== */
-
-#connection-status {
-    color: var(--gold);
+@keyframes popup-in {
+    0% { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.1) rotate(2deg); opacity: 1; }
+    30% { transform: translate(-50%, -50%) scale(1); }
+    80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
 }
 
-#connection-status.connected {
-    color: #4a9f4a;
-}
-
-#connection-status.disconnected {
-    color: var(--crimson);
-}
-
-/* ==========================================================================
-   Responsive
-   ========================================================================== */
-
-@media (max-width: 600px) {
-    .title {
-        font-size: 2.5rem;
-        letter-spacing: 0.2em;
-    }
-    
-    .tagline {
-        font-size: 0.7rem;
-        letter-spacing: 0.3em;
-    }
-    
-    .panel {
-        padding: 1rem;
-    }
-    
-    .dart-slot {
-        width: 55px;
-        height: 55px;
-        font-size: 1.4rem;
-    }
-    
-    .player-card .score {
-        font-size: 2.5rem;
-    }
-    
-    .dartboard {
-        width: 250px;
-        height: 250px;
-    }
-}
-
-/* ==========================================================================
-   Settings Modal
-   ========================================================================== */
-
-.settings-btn {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    background: transparent;
-    border: 2px solid var(--gold);
-    color: var(--gold);
-    font-size: 1.5rem;
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 100;
-}
-
-.settings-btn:hover {
-    background: var(--gold);
-    color: var(--ink);
-    transform: rotate(90deg);
-}
-
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(5px);
-}
-
-.modal.hidden {
+.throw-popup.hidden {
     display: none;
 }
 
-.modal-content {
-    background: linear-gradient(135deg, var(--smoke) 0%, var(--ink) 100%);
-    border: 2px solid var(--gold);
-    border-radius: 15px;
-    max-width: 800px;
-    width: 90%;
-    max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(212, 168, 75, 0.2);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 25px;
-    border-bottom: 1px solid var(--gold-dark);
-}
-
-.modal-header h2 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.8rem;
-    color: var(--gold);
-    letter-spacing: 2px;
-}
-
-.close-btn {
-    background: transparent;
-    border: none;
-    color: var(--paper);
-    font-size: 2rem;
-    cursor: pointer;
-    transition: color 0.3s;
-}
-
-.close-btn:hover {
-    color: var(--crimson);
-}
-
-/* Settings Tabs */
-.settings-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--gold-dark);
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.tab-btn {
-    flex: 1;
-    padding: 15px;
-    background: transparent;
-    border: none;
-    color: var(--paper-dark);
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.1rem;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.3s;
-    border-bottom: 3px solid transparent;
-}
-
-.tab-btn:hover {
-    color: var(--gold);
-    background: rgba(212, 168, 75, 0.1);
-}
-
-.tab-btn.active {
-    color: var(--gold);
-    border-bottom-color: var(--gold);
-    background: rgba(212, 168, 75, 0.1);
-}
-
-.tab-content {
-    padding: 25px;
-}
-
-.tab-content.hidden {
-    display: none;
-}
-
-.tab-content h3 {
-    font-family: 'Bebas Neue', sans-serif;
-    color: var(--gold);
-    font-size: 1.4rem;
-    margin-bottom: 20px;
-    letter-spacing: 1px;
-}
-
-/* Camera Settings */
-.camera-count-selector {
-    margin-bottom: 25px;
-}
-
-.camera-count-selector label {
-    display: block;
-    margin-bottom: 10px;
-    color: var(--paper-dark);
-}
-
-.cam-count-btn {
-    width: 50px;
-    height: 50px;
-    font-size: 1.2rem;
-}
-
-.cam-count-btn.active {
-    background: var(--gold);
-    color: var(--ink);
-}
-
-.camera-previews {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.camera-preview {
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--gold-dark);
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.preview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.5);
-    font-size: 0.9rem;
-}
-
-.cam-status {
-    font-size: 0.8rem;
-}
-
-.cam-status.online { color: #00ff88; }
-.cam-status.offline { color: #ff4444; }
-.cam-status.checking { color: #ffaa00; }
-
-.preview-frame {
-    aspect-ratio: 4/3;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #111;
-}
-
-.preview-frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.no-signal {
-    color: #666;
-    font-size: 0.85rem;
-}
-
-/* Calibration Settings */
-.calibration-status {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.status-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.status-row:last-child {
-    border-bottom: none;
-}
-
-.cal-badge {
-    padding: 3px 10px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-}
-
-.cal-badge.calibrated {
-    background: rgba(0, 255, 136, 0.2);
-    color: #00ff88;
-}
-
-.cal-badge.not-calibrated {
-    background: rgba(255, 68, 68, 0.2);
-    color: #ff4444;
-}
-
-.calibration-preview {
-    margin-bottom: 20px;
-}
-
-.calibration-preview h4 {
-    color: var(--paper);
-    margin-bottom: 10px;
-}
-
-.hint {
-    color: #888;
-    font-size: 0.85rem;
-    margin-bottom: 15px;
-}
-
-.calibration-view {
-    background: #111;
-    border: 1px solid var(--gold-dark);
-    border-radius: 8px;
-    min-height: 300px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 15px;
-    position: relative;
-    overflow: hidden;
-}
-
-.overlay-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: none;
-}
-
-.overlay-container.active {
-    display: block;
-}
-
-.cal-feed {
-    width: 100%;
-    height: auto;
-}
-
-.cal-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
-
-.no-feed-msg {
-    text-align: center;
-    color: #666;
-}
-
-.calibration-controls {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.calibration-controls select {
-    padding: 10px 15px;
-    background: var(--ink);
-    border: 1px solid var(--gold-dark);
-    color: var(--paper);
-    border-radius: 5px;
-    font-family: inherit;
-}
-
-/* Zone Legend */
-.zone-legend {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 15px;
-    border-radius: 8px;
-}
-
-.zone-legend h4 {
-    margin-bottom: 10px;
-    color: var(--paper);
-}
-
-.legend-items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    color: var(--paper-dark);
-}
-
-.zone-color {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-}
-
-.zone-color.triple { background: #ff6b6b; }
-.zone-color.double { background: #4ecdc4; }
-.zone-color.bull { background: #ffe66d; }
-.zone-color.dbull { background: #ff4444; }
-
-/* System Tab */
-.system-info {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.info-row:last-child {
-    border-bottom: none;
-}
-
-.status-indicator {
-    padding: 3px 10px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-}
-
-.status-indicator.online {
-    background: rgba(0, 255, 136, 0.2);
-    color: #00ff88;
-}
-
-.status-indicator.offline {
-    background: rgba(255, 68, 68, 0.2);
-    color: #ff4444;
-}
-
-.system-links {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.system-links .btn {
-    text-decoration: none;
-}
-
 /* ==========================================================================
-   Legs Display
-   ========================================================================== */
-
-.legs-selector {
-    margin-top: 15px;
-}
-
-.legs-btn {
-    min-width: 50px;
-}
-
-.legs-btn.active {
-    background: var(--gold);
-    color: var(--ink);
-}
-
-.legs-display {
-    font-family: 'Special Elite', monospace;
-    color: var(--gold);
-    font-size: 0.9rem;
-    margin-left: 15px;
-    padding: 5px 12px;
-    background: rgba(212, 168, 75, 0.1);
-    border: 1px solid var(--gold-dark);
-    border-radius: 5px;
-}
-
-.player-stats {
-    display: flex;
-    gap: 15px;
-    font-size: 0.85rem;
-    color: var(--paper-dark);
-    margin-top: 5px;
-}
-
-.legs-won {
-    color: var(--gold);
-    font-weight: bold;
-}
-
-/* ==========================================================================
-   Responsive / Full Screen Layout
-   ========================================================================== */
-
-/* Use full viewport */
-html, body {
-    height: 100%;
-    overflow: hidden;
-}
-
-body {
-    display: flex;
-    flex-direction: column;
-}
-
-.header {
-    flex-shrink: 0;
-    padding: 10px 20px;
-    position: relative;
-}
-
-.game-container {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 10px;
-}
-
-.footer {
-    flex-shrink: 0;
-    padding: 8px;
-    font-size: 0.8rem;
-}
-
-/* Compact header on small screens */
-@media (max-width: 768px) {
-    .title {
-        font-size: 2.5rem;
-        letter-spacing: 0.15em;
-    }
-    
-    .tagline {
-        font-size: 0.7rem;
-        letter-spacing: 0.3em;
-    }
-    
-    .settings-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 1.2rem;
-        top: 10px;
-        right: 10px;
-    }
-}
-
-/* Very small screens (phones) */
-@media (max-width: 480px) {
-    .title {
-        font-size: 2rem;
-        letter-spacing: 0.1em;
-    }
-    
-    .tagline {
-        display: none;
-    }
-    
-    .header {
-        padding: 8px 15px;
-    }
-    
-    .panel {
-        padding: 10px;
-    }
-    
-    .panel-title {
-        font-size: 1.5rem;
-    }
-}
-
-/* ==========================================================================
-   Game Panel - Responsive Grid
-   ========================================================================== */
-
-.game-panel {
-    display: grid;
-    gap: 15px;
-    height: 100%;
-    grid-template-rows: auto 1fr auto;
-}
-
-/* Large screens - side by side layout */
-@media (min-width: 1024px) {
-    .game-panel {
-        grid-template-columns: 1fr 400px;
-        grid-template-rows: auto 1fr auto;
-    }
-    
-    .game-header {
-        grid-column: 1 / -1;
-    }
-    
-    .scoreboard {
-        grid-column: 1;
-        grid-row: 2;
-    }
-    
-    .dartboard-container {
-        grid-column: 2;
-        grid-row: 2 / 4;
-        max-width: 400px;
-    }
-    
-    .current-turn {
-        grid-column: 1;
-        grid-row: 3;
-    }
-}
-
-/* Tablet screens */
-@media (min-width: 768px) and (max-width: 1023px) {
-    .game-panel {
-        grid-template-columns: 1fr 1fr;
-    }
-    
-    .game-header {
-        grid-column: 1 / -1;
-    }
-    
-    .scoreboard {
-        grid-column: 1 / -1;
-    }
-    
-    .dartboard-container {
-        grid-column: 1;
-        max-width: 300px;
-        justify-self: center;
-    }
-    
-    .current-turn {
-        grid-column: 2;
-        align-self: center;
-    }
-}
-
-/* ==========================================================================
-   Scoreboard - Responsive
-   ========================================================================== */
-
-.scoreboard {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-}
-
-.player-card {
-    flex: 1;
-    min-width: 120px;
-    max-width: 200px;
-    padding: 15px;
-    text-align: center;
-}
-
-@media (max-width: 480px) {
-    .player-card {
-        min-width: 100px;
-        padding: 10px;
-    }
-    
-    .player-card .score {
-        font-size: 2rem;
-    }
-    
-    .player-card .name {
-        font-size: 0.9rem;
-    }
-}
-
-/* ==========================================================================
-   Dartboard - Responsive sizing
-   ========================================================================== */
-
-.dartboard-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-}
-
-.dartboard {
-    width: 100%;
-    max-width: 400px;
-    height: auto;
-}
-
-@media (max-width: 480px) {
-    .dartboard {
-        max-width: 280px;
-    }
-}
-
-@media (min-height: 900px) {
-    .dartboard {
-        max-width: 500px;
-    }
-}
-
-/* ==========================================================================
-   Current Turn - Compact on mobile
-   ========================================================================== */
-
-.current-turn {
-    text-align: center;
-    padding: 10px;
-}
-
-.darts-display {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-}
-
-.dart-slot {
-    width: 70px;
-    height: 70px;
-    font-size: 1.2rem;
-}
-
-@media (max-width: 480px) {
-    .dart-slot {
-        width: 55px;
-        height: 55px;
-        font-size: 1rem;
-    }
-    
-    .turn-title {
-        font-size: 1rem;
-    }
-}
-
-/* ==========================================================================
-   Setup Panel - Responsive
-   ========================================================================== */
-
-.setup-panel {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.button-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.button-group .btn {
-    flex: 1;
-    min-width: 70px;
-}
-
-@media (max-width: 480px) {
-    .button-group .btn {
-        padding: 10px 8px;
-        font-size: 0.9rem;
-    }
-    
-    .game-mode-btn {
-        min-width: 60px;
-    }
-}
-
-/* ==========================================================================
-   Full-screen mode support
+   FULLSCREEN BUTTON
    ========================================================================== */
 
 .fullscreen-btn {
     position: fixed;
-    bottom: 60px;
+    bottom: 20px;
     right: 20px;
+    width: 44px;
+    height: 44px;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid var(--gold-dark);
     color: var(--gold);
-    width: 40px;
-    height: 40px;
     border-radius: 50%;
     font-size: 1.2rem;
     cursor: pointer;
@@ -1256,256 +580,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: opacity 0.3s;
 }
 
 .fullscreen-btn:hover {
     background: var(--gold);
     color: var(--ink);
-}
-
-/* Hide scrollbars but allow scroll */
-.game-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.game-container::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.game-container::-webkit-scrollbar-thumb {
-    background: var(--gold-dark);
-    border-radius: 3px;
-}
-
-/* Touch-friendly buttons */
-@media (pointer: coarse) {
-    .btn {
-        min-height: 44px;
-        min-width: 44px;
-    }
-    
-    .player-input {
-        min-height: 44px;
-        font-size: 16px; /* Prevents zoom on iOS */
-    }
-}
-
-/* Landscape phone - more horizontal layout */
-@media (max-height: 500px) and (orientation: landscape) {
-    .header {
-        padding: 5px 15px;
-    }
-    
-    .title {
-        font-size: 1.8rem;
-    }
-    
-    .tagline {
-        display: none;
-    }
-    
-    .game-panel {
-        grid-template-columns: 1fr 250px;
-        grid-template-rows: auto 1fr;
-    }
-    
-    .dartboard {
-        max-width: 200px;
-    }
-}
-
-/* ==========================================================================
-   Background Image Support
-   ========================================================================== */
-
-.background-layer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: -2;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    transition: opacity 1s ease-in-out;
-}
-
-.background-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: -1;
-    background: rgba(0, 0, 0, 0.7);
-    pointer-events: none;
-}
-
-/* ==========================================================================
-   Theme Settings Tab
-   ========================================================================== */
-
-.theme-section {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.theme-section h4 {
-    color: var(--gold);
-    margin-bottom: 12px;
-    font-family: 'Bebas Neue', sans-serif;
-    letter-spacing: 1px;
-}
-
-.form-row {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 10px;
-}
-
-.form-row label {
-    min-width: 100px;
-    color: var(--paper-dark);
-}
-
-.theme-input {
-    flex: 1;
-    padding: 10px 15px;
-    background: var(--ink);
-    border: 1px solid var(--gold-dark);
-    color: var(--paper);
-    border-radius: 5px;
-    font-family: inherit;
-    font-size: 1rem;
-}
-
-.theme-input:focus {
-    outline: none;
-    border-color: var(--gold);
-}
-
-/* Background Gallery */
-.background-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.bg-thumbnail {
-    aspect-ratio: 16/9;
-    background-size: cover;
-    background-position: center;
-    border-radius: 8px;
-    cursor: pointer;
-    border: 3px solid transparent;
-    transition: all 0.2s;
-    position: relative;
-}
-
-.bg-thumbnail:hover {
-    border-color: var(--gold-dark);
-    transform: scale(1.05);
-}
-
-.bg-thumbnail.selected {
-    border-color: var(--gold);
-    box-shadow: 0 0 15px rgba(212, 168, 75, 0.5);
-}
-
-.bg-thumbnail.selected::after {
-    content: '✓';
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: var(--gold);
-    color: var(--ink);
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.background-controls {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-}
-
-.background-controls label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--paper-dark);
-    cursor: pointer;
-}
-
-.slideshow-speed {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.slideshow-speed select {
-    padding: 5px 10px;
-    background: var(--ink);
-    border: 1px solid var(--gold-dark);
-    color: var(--paper);
-    border-radius: 4px;
-}
-
-.upload-section {
-    margin-top: 10px;
-}
-
-.upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-}
-
-/* Opacity slider */
-#overlay-opacity {
-    width: 200px;
-    margin-right: 10px;
-}
-
-#opacity-value {
-    color: var(--gold);
-}
-
-/* Theme buttons */
-#save-theme-btn {
-    margin-right: 10px;
-}
-
-/* ==========================================================================
-   Kiosk/Fullscreen Mode
-   ========================================================================== */
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
-    50% { opacity: 0.8; transform: translateX(-50%) scale(1.05); }
-}
-
-/* Hide browser UI hints in fullscreen */
-:fullscreen {
-    background: var(--ink);
-}
-
-:fullscreen .footer {
-    display: none;
 }
 
 :fullscreen .fullscreen-btn {
@@ -1517,149 +597,710 @@ body {
 }
 
 /* ==========================================================================
-   Calibration Status Indicators
+   RESPONSIVE - Tablet & Desktop Enhancements
    ========================================================================== */
 
-.status-online {
-    color: #4ecdc4;
-    font-weight: bold;
+/* Tablet (768px+) */
+@media (min-width: 768px) {
+    .app-title {
+        font-size: 2.5rem;
+    }
+    
+    .tagline {
+        font-size: 0.8rem;
+    }
+    
+    .setup-card {
+        padding-top: 100px;
+        max-width: 600px;
+    }
+    
+    .card-title {
+        font-size: 2.5rem;
+    }
+    
+    .mode-btn, .legs-btn {
+        padding: 16px 12px;
+        font-size: 1.3rem;
+    }
+    
+    .scoreboard {
+        padding: 20px;
+        gap: 12px;
+    }
+    
+    .player-card {
+        padding: 24px 32px;
+    }
+    
+    .player-name {
+        font-size: 1.8rem;
+    }
+    
+    .player-score {
+        font-size: 4rem;
+    }
+    
+    .dart-slot {
+        width: 70px;
+        height: 70px;
+        font-size: 1.5rem;
+    }
+    
+    .turn-total .score {
+        font-size: 3rem;
+    }
 }
 
-.status-offline {
-    color: #ff6b6b;
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+    .app-title {
+        font-size: 3rem;
+    }
+    
+    .setup-card {
+        max-width: 700px;
+    }
+    
+    /* Scoreboard can be side-by-side on very wide screens */
+    .scoreboard {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 24px;
+    }
+    
+    .player-card {
+        flex: 1;
+        min-width: 280px;
+        max-width: 400px;
+    }
+    
+    .dart-slot {
+        width: 80px;
+        height: 80px;
+        font-size: 1.7rem;
+    }
 }
 
-.cal-badge.calibrated {
-    background: rgba(78, 205, 196, 0.2);
-    color: #4ecdc4;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-weight: bold;
+/* Large Desktop (1440px+) */
+@media (min-width: 1440px) {
+    .player-card {
+        padding: 32px 48px;
+    }
+    
+    .player-name {
+        font-size: 2.2rem;
+    }
+    
+    .player-score {
+        font-size: 5rem;
+    }
 }
 
-.cal-badge.not-calibrated {
-    background: rgba(255, 107, 107, 0.2);
-    color: #ff6b6b;
-    padding: 3px 10px;
-    border-radius: 12px;
-}
-
-.cal-badge.api-offline {
-    background: rgba(255, 193, 7, 0.2);
-    color: #ffc107;
-    padding: 3px 10px;
-    border-radius: 12px;
-}
-
-.calibration-status {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.status-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.status-row:last-child {
-    border-bottom: none;
+/* Landscape Phone */
+@media (max-height: 500px) and (orientation: landscape) {
+    .main-header {
+        padding: 6px 12px;
+    }
+    
+    .app-title {
+        font-size: 1.4rem;
+    }
+    
+    .tagline {
+        display: none;
+    }
+    
+    .setup-card {
+        padding-top: 50px;
+    }
+    
+    .card-title {
+        font-size: 1.5rem;
+        margin-bottom: 12px;
+    }
+    
+    .form-section {
+        margin-bottom: 10px;
+    }
+    
+    .game-header {
+        padding: 6px 12px;
+    }
+    
+    .scoreboard {
+        flex-direction: row;
+        padding: 8px;
+    }
+    
+    .player-card {
+        padding: 10px 16px;
+    }
+    
+    .player-score {
+        font-size: 2rem;
+    }
+    
+    .turn-bar {
+        padding: 8px 12px;
+    }
+    
+    .dart-slot {
+        width: 44px;
+        height: 44px;
+        font-size: 1rem;
+    }
 }
 
 /* ==========================================================================
-   Calibration Camera Grid
+   SETTINGS PAGE STYLES
    ========================================================================== */
 
-.camera-snapshots {
-    margin-top: 20px;
+.settings-page {
+    overflow-y: auto;
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid var(--gold-dark);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.back-link {
+    color: var(--gold);
+    text-decoration: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+}
+
+.settings-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    color: var(--paper);
+    letter-spacing: 0.1em;
+}
+
+.settings-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 16px 80px;
+}
+
+/* Settings Navigation */
+.settings-nav {
+    display: flex;
+    gap: 4px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+.nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    color: var(--paper-dark);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    min-width: 80px;
+}
+
+.nav-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-tab.active {
+    background: rgba(212, 168, 75, 0.15);
+    color: var(--gold);
+}
+
+.tab-icon {
+    font-size: 1.5rem;
+}
+
+.tab-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+}
+
+/* Settings Sections */
+.settings-section {
+    display: none;
+}
+
+.settings-section.active {
+    display: block;
+}
+
+.section-header {
+    margin-bottom: 24px;
+}
+
+.section-header h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+}
+
+.section-desc {
+    color: var(--paper-dark);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+
+/* Status Cards */
+.status-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.status-cards.vertical {
+    grid-template-columns: 1fr;
+}
+
+.status-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-card.wide {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--paper-dark);
+    text-transform: uppercase;
+}
+
+.status-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+}
+
+.status-online { color: var(--green); }
+.status-offline { color: var(--red); }
+.status-warning { color: #f1c40f; }
+.status-checking { color: var(--paper-dark); }
+
+/* Camera Grid */
+.cameras-section h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    color: var(--gold);
+    font-size: 1.2rem;
+    margin-bottom: 16px;
 }
 
 .camera-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 15px;
-    margin: 15px 0;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
 }
 
-.cal-camera-card {
+.camera-card {
     background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.1);
     transition: border-color 0.3s;
 }
 
-.cal-camera-card.calibrated {
-    border-color: #4ecdc4;
+.camera-card.calibrated {
+    border-color: var(--teal);
 }
 
-.cal-camera-card.failed {
-    border-color: #ff6b6b;
+.camera-card.failed {
+    border-color: var(--red);
 }
 
-.cal-cam-header {
+.camera-card.offline {
+    opacity: 0.5;
+}
+
+.camera-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
+    padding: 10px 14px;
     background: rgba(0, 0, 0, 0.3);
+}
+
+.camera-name {
     font-weight: bold;
+    font-size: 0.9rem;
 }
 
-.cal-cam-status {
-    font-size: 1.2rem;
+.camera-status {
+    font-size: 1.1rem;
 }
 
-.cal-cam-preview {
-    position: relative;
+.camera-preview {
     aspect-ratio: 4/3;
     background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
-.cal-cam-img {
+.camera-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: none;
 }
 
-.cal-cam-img.loaded {
+.camera-img.loaded {
     display: block;
 }
 
-.cal-cam-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
-
-.cal-cam-loading {
+.camera-loading {
     color: #666;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
-.cal-cam-img.loaded + .cal-cam-overlay + .cal-cam-loading {
+.camera-img.loaded + .camera-loading {
     display: none;
 }
 
-.calibration-actions {
+.camera-quality {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    color: var(--paper-dark);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.camera-quality.calibrated {
+    color: var(--teal);
+}
+
+.camera-quality.failed {
+    color: var(--red);
+}
+
+/* Action Buttons */
+.action-buttons {
     display: flex;
-    gap: 10px;
-    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
     margin-top: 20px;
 }
 
-.calibration-actions .btn-primary {
-    background: linear-gradient(135deg, #4ecdc4, #44a08d);
+.btn {
+    padding: 14px 24px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: var(--teal);
+    border: none;
+    color: var(--ink);
+    flex: 1;
+}
+
+.btn-primary:hover {
+    background: #3dbdb5;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 2px solid var(--gold-dark);
+    color: var(--paper);
+}
+
+.btn-secondary:hover {
+    border-color: var(--gold);
+    background: rgba(212, 168, 75, 0.1);
+}
+
+/* Zone Legend */
+.zone-legend {
+    margin-top: 24px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+.zone-legend h4 {
+    font-family: 'Bebas Neue', sans-serif;
+    color: var(--gold);
+    margin-bottom: 12px;
+}
+
+.legend-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--paper-dark);
+}
+
+.zone-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.zone-dot.triple { background: #ff6b6b; }
+.zone-dot.double { background: var(--teal); }
+.zone-dot.bull { background: #ffe66d; }
+.zone-dot.dbull { background: #ff4444; }
+
+/* Theme Cards */
+.theme-card {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.theme-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    color: var(--gold);
     font-size: 1.1rem;
-    padding: 12px 30px;
+    margin-bottom: 16px;
+}
+
+.input-group {
+    margin-bottom: 12px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--paper-dark);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.input {
+    width: 100%;
+    padding: 12px 14px;
+    font-family: 'Special Elite', monospace;
+    font-size: 16px;
+    background: var(--ink);
+    border: 1px solid var(--gold-dark);
+    color: var(--paper);
+    border-radius: 4px;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+/* Background Gallery */
+.bg-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.bg-thumb {
+    aspect-ratio: 16/9;
+    background-size: cover;
+    background-position: center;
+    border-radius: 6px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.bg-thumb:hover {
+    border-color: var(--gold-dark);
+    transform: scale(1.05);
+}
+
+.bg-thumb.selected {
+    border-color: var(--gold);
+}
+
+.bg-thumb.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: var(--gold);
+    color: var(--ink);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.custom-badge {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    background: var(--crimson);
+    color: var(--paper);
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.bg-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--paper-dark);
+}
+
+.speed-select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--paper-dark);
+}
+
+.select {
+    padding: 6px 10px;
+    background: var(--ink);
+    border: 1px solid var(--gold-dark);
+    color: var(--paper);
+    border-radius: 4px;
+}
+
+.upload-btn {
+    cursor: pointer;
+}
+
+.hint {
+    color: #888;
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+}
+
+/* Slider */
+.slider-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 6px;
+    background: var(--ink);
+    border-radius: 3px;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--gold);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider-value {
+    color: var(--gold);
+    font-family: 'Bebas Neue', sans-serif;
+    min-width: 40px;
+}
+
+/* Link Buttons */
+.link-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+}
+
+/* Tablet+ Settings */
+@media (min-width: 768px) {
+    .settings-header {
+        padding: 20px 32px;
+    }
+    
+    .settings-title {
+        font-size: 1.8rem;
+    }
+    
+    .settings-container {
+        padding: 0 32px 80px;
+    }
+    
+    .settings-nav {
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .nav-tab {
+        flex: 0;
+        min-width: 120px;
+    }
+    
+    .section-header h2 {
+        font-size: 2.2rem;
+    }
+    
+    .bg-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
 }
