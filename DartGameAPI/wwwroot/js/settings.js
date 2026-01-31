@@ -7,11 +7,11 @@ const DART_GAME_URL = window.location.origin;
 
 // Default backgrounds
 const DEFAULT_BACKGROUNDS = [
-    '/images/backgrounds/speakeasy1.jpg',
-    '/images/backgrounds/speakeasy2.jpg',
-    '/images/backgrounds/speakeasy3.jpg',
-    '/images/backgrounds/speakeasy4.jpg',
-    '/images/backgrounds/speakeasy5.jpg'
+    '/images/backgrounds/speakeasy-1.jpg',
+    '/images/backgrounds/speakeasy-2.jpg',
+    '/images/backgrounds/speakeasy-3.jpg',
+    '/images/backgrounds/speakeasy-4.jpg',
+    '/images/backgrounds/speakeasy-5.jpg'
 ];
 
 // State

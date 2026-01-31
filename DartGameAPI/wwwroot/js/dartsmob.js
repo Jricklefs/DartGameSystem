@@ -58,9 +58,11 @@ function initTheme() {
     
     // Apply background
     const backgrounds = theme.backgrounds || [
-        '/images/backgrounds/speakeasy1.jpg',
-        '/images/backgrounds/speakeasy2.jpg',
-        '/images/backgrounds/speakeasy3.jpg'
+        '/images/backgrounds/speakeasy-1.jpg',
+        '/images/backgrounds/speakeasy-2.jpg',
+        '/images/backgrounds/speakeasy-3.jpg',
+        '/images/backgrounds/speakeasy-4.jpg',
+        '/images/backgrounds/speakeasy-5.jpg'
     ];
     
     if (backgrounds.length > 0) {
