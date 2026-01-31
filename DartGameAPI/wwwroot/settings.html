@@ -15,52 +15,36 @@
     <div id="background-overlay" class="background-overlay"></div>
 
     <header class="settings-header">
-        <a href="/" class="back-link">← Back</a>
+        <a href="/" class="back-link">← BACK</a>
         <h1 class="settings-title">SETTINGS</h1>
+        
+        <!-- Tabs in header -->
+        <nav class="settings-nav-inline">
+            <button class="nav-tab-sm active" data-tab="calibration">🎯 CALIBRATION</button>
+            <button class="nav-tab-sm" data-tab="theme">🎨 THEME</button>
+            <button class="nav-tab-sm" data-tab="system">🖥️ SYSTEM</button>
+        </nav>
     </header>
 
     <main class="settings-container">
-        <!-- Tab Navigation -->
-        <nav class="settings-nav">
-            <button class="nav-tab active" data-tab="calibration">
-                <span class="tab-icon">🎯</span>
-                <span class="tab-label">Calibration</span>
-            </button>
-            <button class="nav-tab" data-tab="theme">
-                <span class="tab-icon">🎨</span>
-                <span class="tab-label">Theme</span>
-            </button>
-            <button class="nav-tab" data-tab="system">
-                <span class="tab-icon">🖥️</span>
-                <span class="tab-label">System</span>
-            </button>
-        </nav>
 
         <!-- Calibration Tab -->
         <section id="tab-calibration" class="settings-section active">
-            <div class="section-header">
-                <h2>Board Calibration</h2>
-                <p class="section-desc">Select a camera to view and calibrate</p>
-            </div>
-
-            <!-- Camera Selector Buttons -->
-            <div class="camera-selector">
-                <button class="cam-btn active" data-cam="0" id="cam-btn-0">
-                    <span class="cam-number">CAM 0</span>
-                    <span class="cam-indicator" id="cam-ind-0">●</span>
+            <!-- Camera Selector Buttons - Compact -->
+            <div class="camera-selector-compact">
+                <button class="cam-btn-sm active" data-cam="0" id="cam-btn-0">
+                    CAM 0 <span class="cam-indicator" id="cam-ind-0">●</span>
                 </button>
-                <button class="cam-btn" data-cam="1" id="cam-btn-1">
-                    <span class="cam-number">CAM 1</span>
-                    <span class="cam-indicator" id="cam-ind-1">●</span>
+                <button class="cam-btn-sm" data-cam="1" id="cam-btn-1">
+                    CAM 1 <span class="cam-indicator" id="cam-ind-1">●</span>
                 </button>
-                <button class="cam-btn" data-cam="2" id="cam-btn-2">
-                    <span class="cam-number">CAM 2</span>
-                    <span class="cam-indicator" id="cam-ind-2">●</span>
+                <button class="cam-btn-sm" data-cam="2" id="cam-btn-2">
+                    CAM 2 <span class="cam-indicator" id="cam-ind-2">●</span>
                 </button>
             </div>
 
             <!-- Large Camera Preview -->
-            <div class="camera-preview-large">
+            <div class="camera-preview-full">
                 <img id="main-camera-img" class="main-cam-img" alt="Camera Preview">
                 <div id="main-camera-loading" class="main-cam-loading">
                     <span>📷 Loading camera...</span>
@@ -70,25 +54,12 @@
                 </div>
             </div>
 
-            <!-- Camera Info & Actions -->
-            <div class="camera-actions">
-                <div class="cam-info">
-                    <span id="cam-quality-label" class="cam-quality-label">Not Calibrated</span>
-                </div>
+            <!-- Camera Actions - Bottom bar -->
+            <div class="camera-actions-bar">
+                <span id="cam-quality-label" class="cam-quality-label">Not Calibrated</span>
                 <div class="cam-buttons">
-                    <button id="refresh-btn" class="btn btn-secondary">🔄 Refresh</button>
-                    <button id="calibrate-btn" class="btn btn-primary">🎯 Calibrate</button>
-                </div>
-            </div>
-
-            <!-- Zone Legend -->
-            <div class="zone-legend">
-                <h4>Scoring Zones</h4>
-                <div class="legend-grid">
-                    <span class="legend-item"><span class="zone-dot triple"></span> Triple</span>
-                    <span class="legend-item"><span class="zone-dot double"></span> Double</span>
-                    <span class="legend-item"><span class="zone-dot bull"></span> Bull</span>
-                    <span class="legend-item"><span class="zone-dot dbull"></span> D-Bull</span>
+                    <button id="refresh-btn" class="btn btn-sm">🔄 Refresh</button>
+                    <button id="calibrate-btn" class="btn btn-sm btn-primary">🎯 Calibrate</button>
                 </div>
             </div>
         </section>

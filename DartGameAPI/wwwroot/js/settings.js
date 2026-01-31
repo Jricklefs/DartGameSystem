@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================================
 
 function initTabs() {
-    const tabs = document.querySelectorAll('.nav-tab');
+    const tabs = document.querySelectorAll('.nav-tab-sm');
     const sections = document.querySelectorAll('.settings-section');
     
     tabs.forEach(tab => {
@@ -125,7 +125,7 @@ function renderBackgroundGallery() {
 
 async function initCalibration() {
     // Set up camera button listeners
-    document.querySelectorAll('.cam-btn').forEach(btn => {
+    document.querySelectorAll('.cam-btn-sm').forEach(btn => {
         btn.addEventListener('click', () => {
             selectCamera(parseInt(btn.dataset.cam));
         });
@@ -186,7 +186,7 @@ async function selectCamera(camIndex) {
     selectedCamera = camIndex;
     
     // Update button states
-    document.querySelectorAll('.cam-btn').forEach(btn => {
+    document.querySelectorAll('.cam-btn-sm').forEach(btn => {
         btn.classList.toggle('active', parseInt(btn.dataset.cam) === camIndex);
     });
     
