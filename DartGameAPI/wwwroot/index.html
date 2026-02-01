@@ -92,6 +92,11 @@
             <button id="start-game-btn" class="btn-start">
                 🎯 START GAME
             </button>
+            
+            <!-- Online Play Button -->
+            <button id="online-play-btn" class="btn-online">
+                🌐 PLAY ONLINE
+            </button>
         </div>
         
         <footer class="setup-footer">
@@ -238,6 +243,72 @@
             
             <div class="modal-footer">
                 <button id="player-select-done" class="btn btn-primary">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Online Lobby Modal -->
+    <div id="online-lobby-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content online-lobby-modal">
+            <div class="modal-header">
+                <h3>🌐 Online Play</h3>
+                <button class="modal-close" id="online-lobby-close">✕</button>
+            </div>
+            
+            <!-- Browse/Create View -->
+            <div id="lobby-browse" class="lobby-section">
+                <div class="lobby-actions">
+                    <button id="create-match-btn" class="btn btn-primary btn-large">
+                        🎯 Create Match
+                    </button>
+                    <div class="divider">— or join existing —</div>
+                </div>
+                
+                <div class="join-by-code">
+                    <input type="text" id="match-code-input" placeholder="Enter Match Code" maxlength="6">
+                    <button id="join-match-btn" class="btn btn-secondary">Join</button>
+                </div>
+                
+                <div class="open-matches">
+                    <h4>Open Matches</h4>
+                    <div id="open-matches-list" class="matches-list">
+                        <p class="loading">Looking for matches...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Match Lobby View (after creating/joining) -->
+            <div id="lobby-match" class="lobby-section hidden">
+                <div class="match-header">
+                    <div class="match-code-box">
+                        <span class="label">MATCH CODE</span>
+                        <span id="match-code-display" class="code">------</span>
+                    </div>
+                    <div class="match-details">
+                        <span id="match-game-mode">501</span>
+                        <span id="match-best-of">Best of 5</span>
+                    </div>
+                </div>
+                
+                <div class="match-players">
+                    <h4>Players</h4>
+                    <div id="match-players-list" class="players-list"></div>
+                    <p class="waiting-text">Waiting for opponent...</p>
+                </div>
+                
+                <div class="match-chat">
+                    <div id="online-chat-messages" class="chat-messages"></div>
+                    <div class="chat-input-row">
+                        <input type="text" id="online-chat-input" placeholder="Chat...">
+                        <button id="online-chat-send" class="btn-send">➤</button>
+                    </div>
+                </div>
+                
+                <div class="match-actions">
+                    <button id="leave-match-btn" class="btn btn-secondary">Leave</button>
+                    <button id="start-online-match-btn" class="btn btn-primary" disabled>Start Match</button>
+                </div>
             </div>
         </div>
     </div>

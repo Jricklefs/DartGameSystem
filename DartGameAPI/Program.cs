@@ -81,8 +81,9 @@ app.UseCors();
 
 app.MapControllers();
 
-// Map SignalR hub
+// Map SignalR hubs
 app.MapHub<GameHub>("/gamehub");
+app.MapHub<OnlineGameHub>("/onlinehub");
 
 // Register default board on startup (can be configured)
 var gameService = app.Services.GetRequiredService<GameService>();

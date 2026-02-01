@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initFullscreen();
     initDartCorrection();
     initPlayerManagement();
+    initOnlinePlay();
 });
 
 // ==========================================================================
@@ -988,3 +989,331 @@ async function registerNewPlayer() {
         alert('Failed to register player');
     }
 }
+// ==========================================================================
+// Online Play
+// ==========================================================================
+
+let onlineConnection = null;
+let currentMatch = null;
+let onlinePlayer = null;
+
+async function initOnlinePlay() {
+    // Online play button in setup
+    document.getElementById('online-play-btn')?.addEventListener('click', openOnlineLobby);
+    document.getElementById('online-lobby-close')?.addEventListener('click', closeOnlineLobby);
+    
+    // Create match
+    document.getElementById('create-match-btn')?.addEventListener('click', createOnlineMatch);
+    
+    // Join match
+    document.getElementById('join-match-btn')?.addEventListener('click', () => {
+        const code = document.getElementById('match-code-input')?.value.trim();
+        if (code) joinOnlineMatch(code);
+    });
+    
+    // Start match (host only)
+    document.getElementById('start-online-match-btn')?.addEventListener('click', startOnlineMatch);
+    
+    // Leave match
+    document.getElementById('leave-match-btn')?.addEventListener('click', leaveOnlineMatch);
+    
+    // Chat
+    document.getElementById('online-chat-send')?.addEventListener('click', sendOnlineChat);
+    document.getElementById('online-chat-input')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendOnlineChat();
+    });
+}
+
+async function connectOnlineHub() {
+    if (onlineConnection?.state === signalR.HubConnectionState.Connected) {
+        return onlineConnection;
+    }
+
+    onlineConnection = new signalR.HubConnectionBuilder()
+        .withUrl('/onlinehub')
+        .withAutomaticReconnect()
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
+
+    // Event handlers
+    onlineConnection.on('Registered', (data) => {
+        onlinePlayer = data;
+        console.log('Registered as:', data.displayName);
+    });
+
+    onlineConnection.on('MatchCreated', (data) => {
+        currentMatch = data;
+        showMatchLobby(data, true);
+    });
+
+    onlineConnection.on('PlayerJoined', (data) => {
+        updateMatchPlayers(data.players);
+        addChatMessage('System', `${data.displayName} joined the match`);
+    });
+
+    onlineConnection.on('PlayerLeft', (data) => {
+        addChatMessage('System', `${data.displayName} left the match`);
+    });
+
+    onlineConnection.on('MatchStarted', (data) => {
+        currentMatch = data;
+        closeOnlineLobby();
+        startOnlineGame(data);
+    });
+
+    onlineConnection.on('DartRelayed', (data) => {
+        handleOnlineDart(data);
+    });
+
+    onlineConnection.on('ScoreUpdated', (data) => {
+        updateOnlineScore(data);
+    });
+
+    onlineConnection.on('TurnEnded', (data) => {
+        handleOnlineTurnEnd(data);
+    });
+
+    onlineConnection.on('LegWon', (data) => {
+        addChatMessage('System', `🎯 ${data.winnerName} won the leg!`);
+    });
+
+    onlineConnection.on('MatchWon', (data) => {
+        showOnlineWinner(data);
+    });
+
+    onlineConnection.on('ChatMessage', (data) => {
+        addChatMessage(data.displayName, data.message);
+    });
+
+    onlineConnection.on('OpenMatches', (matches) => {
+        displayOpenMatches(matches);
+    });
+
+    onlineConnection.on('Error', (message) => {
+        alert('Error: ' + message);
+    });
+
+    try {
+        await onlineConnection.start();
+        console.log('Connected to online hub');
+        
+        // Register with display name
+        const playerName = document.querySelector('.player-input')?.value || 'Player';
+        await onlineConnection.invoke('Register', playerName);
+        
+        return onlineConnection;
+    } catch (err) {
+        console.error('Failed to connect to online hub:', err);
+        throw err;
+    }
+}
+
+function openOnlineLobby() {
+    document.getElementById('online-lobby-modal')?.classList.remove('hidden');
+    connectOnlineHub().then(() => {
+        onlineConnection.invoke('GetOpenMatches');
+    });
+}
+
+function closeOnlineLobby() {
+    document.getElementById('online-lobby-modal')?.classList.add('hidden');
+}
+
+async function createOnlineMatch() {
+    if (!onlineConnection) await connectOnlineHub();
+    
+    const gameMode = getSelectedGameMode();
+    const bestOf = selectedBestOf;
+    
+    await onlineConnection.invoke('CreateMatch', gameMode, bestOf);
+}
+
+async function joinOnlineMatch(code) {
+    if (!onlineConnection) await connectOnlineHub();
+    await onlineConnection.invoke('JoinMatch', code);
+}
+
+function showMatchLobby(match, isHost) {
+    document.getElementById('lobby-browse')?.classList.add('hidden');
+    document.getElementById('lobby-match')?.classList.remove('hidden');
+    
+    document.getElementById('match-code-display').textContent = match.matchCode;
+    document.getElementById('match-game-mode').textContent = formatMode(match.gameMode);
+    document.getElementById('match-best-of').textContent = `Best of ${match.bestOf}`;
+    
+    // Show/hide start button based on host status
+    const startBtn = document.getElementById('start-online-match-btn');
+    if (startBtn) {
+        startBtn.style.display = isHost ? '' : 'none';
+    }
+}
+
+function updateMatchPlayers(players) {
+    const listEl = document.getElementById('match-players-list');
+    if (!listEl) return;
+    
+    listEl.innerHTML = players.map(p => `
+        <div class="match-player ${p.isHost ? 'host' : ''}">
+            <span class="player-name">${escapeHtml(p.displayName)}</span>
+            ${p.isHost ? '<span class="host-badge">HOST</span>' : ''}
+        </div>
+    `).join('');
+    
+    // Enable start if 2 players
+    const startBtn = document.getElementById('start-online-match-btn');
+    if (startBtn && players.length >= 2) {
+        startBtn.disabled = false;
+    }
+}
+
+async function startOnlineMatch() {
+    if (!onlineConnection) return;
+    await onlineConnection.invoke('StartMatch');
+}
+
+async function leaveOnlineMatch() {
+    if (!onlineConnection) return;
+    await onlineConnection.invoke('LeaveMatch');
+    
+    document.getElementById('lobby-match')?.classList.add('hidden');
+    document.getElementById('lobby-browse')?.classList.remove('hidden');
+    currentMatch = null;
+}
+
+function displayOpenMatches(matches) {
+    const listEl = document.getElementById('open-matches-list');
+    if (!listEl) return;
+    
+    if (matches.length === 0) {
+        listEl.innerHTML = '<p class="no-matches">No open matches. Create one!</p>';
+        return;
+    }
+    
+    listEl.innerHTML = matches.map(m => `
+        <div class="open-match" onclick="joinOnlineMatch('${m.matchCode}')">
+            <div class="match-info">
+                <span class="match-host">${escapeHtml(m.hostName)}'s Game</span>
+                <span class="match-mode">${formatMode(m.gameMode)} • Best of ${m.bestOf}</span>
+            </div>
+            <button class="btn-join">Join</button>
+        </div>
+    `).join('');
+}
+
+function startOnlineGame(matchData) {
+    // Set up game with online players
+    isOnlineGame = true;
+    
+    // Create game via API but mark as online
+    const players = matchData.players.map(p => p.displayName);
+    
+    fetch('/api/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            boardId: boardId,
+            mode: matchData.gameMode,
+            playerNames: players,
+            bestOf: matchData.bestOf,
+            isOnline: true,
+            matchCode: matchData.matchCode
+        })
+    }).then(r => r.json()).then(game => {
+        currentGame = game;
+        showScreen('game-screen');
+        updateScoreboard();
+        updateCurrentTurn();
+    });
+}
+
+function handleOnlineDart(data) {
+    // Show opponent's dart throw
+    if (data.playerId !== onlinePlayer?.playerId) {
+        showThrowPopup({
+            zone: data.zone,
+            score: data.score
+        });
+        addChatMessage('System', `${data.playerName} threw ${data.zone} ${data.segment} (${data.score})`);
+    }
+}
+
+function updateOnlineScore(data) {
+    // Update opponent's score in UI
+    if (currentGame) {
+        const player = currentGame.players.find(p => p.id === data.playerId || p.name === data.playerId);
+        if (player) {
+            player.score = data.score;
+            player.dartsThrown = data.dartsThrown;
+            player.legsWon = data.legsWon;
+            updateScoreboard();
+        }
+    }
+}
+
+function handleOnlineTurnEnd(data) {
+    if (currentGame) {
+        currentGame.currentPlayerIndex = currentGame.players.findIndex(
+            p => p.name === data.nextPlayerName
+        );
+        updateScoreboard();
+        clearCurrentTurn();
+    }
+}
+
+function showOnlineWinner(data) {
+    document.getElementById('winner-name').textContent = data.winnerName;
+    document.getElementById('winner-stats').textContent = `Won ${data.legsWon} legs`;
+    showScreen('gameover-screen');
+}
+
+// Relay local dart throws to online opponents
+async function relayDartToOnline(dart) {
+    if (!onlineConnection || !currentMatch) return;
+    
+    await onlineConnection.invoke('RelayDart', 
+        dart.segment, 
+        dart.multiplier, 
+        dart.score, 
+        dart.zone
+    );
+}
+
+async function relayScoreToOnline(player) {
+    if (!onlineConnection || !currentMatch) return;
+    
+    await onlineConnection.invoke('RelayScoreUpdate',
+        player.id || player.name,
+        player.score,
+        player.dartsThrown,
+        player.legsWon || 0
+    );
+}
+
+async function relayTurnEndToOnline(turnScore, busted) {
+    if (!onlineConnection || !currentMatch) return;
+    
+    await onlineConnection.invoke('RelayTurnEnd', turnScore, busted);
+}
+
+function addChatMessage(sender, message) {
+    const chatEl = document.getElementById('online-chat-messages');
+    if (!chatEl) return;
+    
+    const msgEl = document.createElement('div');
+    msgEl.className = 'chat-message';
+    msgEl.innerHTML = `<span class="sender">${escapeHtml(sender)}:</span> ${escapeHtml(message)}`;
+    chatEl.appendChild(msgEl);
+    chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+async function sendOnlineChat() {
+    const input = document.getElementById('online-chat-input');
+    const message = input?.value.trim();
+    
+    if (!message || !onlineConnection) return;
+    
+    await onlineConnection.invoke('SendChat', message);
+    input.value = '';
+}
+
+let isOnlineGame = false;

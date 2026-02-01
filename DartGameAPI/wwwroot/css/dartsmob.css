@@ -2078,3 +2078,281 @@ html, body {
     color: var(--paper-dark);
     padding: 20px;
 }
+
+/* ==========================================================================
+   Online Play Styles
+   ========================================================================== */
+
+.online-lobby-modal {
+    width: 90%;
+    max-width: 450px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.lobby-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+.lobby-section.hidden {
+    display: none;
+}
+
+.lobby-actions {
+    text-align: center;
+}
+
+.btn-large {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.2rem;
+}
+
+.divider {
+    margin: 16px 0;
+    color: var(--paper-dark);
+    font-size: 0.85rem;
+}
+
+.join-by-code {
+    display: flex;
+    gap: 8px;
+}
+
+.join-by-code input {
+    flex: 1;
+    padding: 12px;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 0.2em;
+    background: var(--smoke);
+    border: 1px solid var(--gold-dark);
+    border-radius: 8px;
+    color: var(--paper);
+    font-family: 'Bebas Neue', sans-serif;
+}
+
+.join-by-code input::placeholder {
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+.open-matches h4 {
+    color: var(--gold);
+    margin-bottom: 8px;
+}
+
+.matches-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.open-match {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--smoke);
+    border: 1px solid var(--gold-dark);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.open-match:hover {
+    border-color: var(--gold);
+}
+
+.match-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.match-host {
+    font-weight: bold;
+    color: var(--paper);
+}
+
+.match-mode {
+    font-size: 0.85rem;
+    color: var(--paper-dark);
+}
+
+.btn-join {
+    padding: 8px 16px;
+    background: var(--gold);
+    border: none;
+    border-radius: 6px;
+    color: var(--ink);
+    font-family: 'Special Elite', monospace;
+    cursor: pointer;
+}
+
+.no-matches {
+    color: var(--paper-dark);
+    text-align: center;
+    padding: 20px;
+}
+
+/* Match Lobby */
+.match-header {
+    text-align: center;
+    padding: 16px;
+    background: var(--smoke);
+    border-radius: 8px;
+}
+
+.match-code-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.match-code-box .label {
+    font-size: 0.75rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+}
+
+.match-code-box .code {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    letter-spacing: 0.3em;
+    color: var(--paper);
+}
+
+.match-details {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 0.9rem;
+    color: var(--paper-dark);
+}
+
+.match-players h4 {
+    color: var(--gold);
+    margin-bottom: 8px;
+}
+
+.match-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--smoke);
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+.match-player.host .player-name {
+    color: var(--gold);
+}
+
+.host-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    background: var(--gold);
+    color: var(--ink);
+    border-radius: 4px;
+}
+
+.waiting-text {
+    text-align: center;
+    color: var(--paper-dark);
+    font-style: italic;
+    padding: 10px;
+}
+
+/* Chat */
+.match-chat {
+    flex: 1;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    background: var(--smoke);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 8px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+}
+
+.chat-message {
+    margin-bottom: 4px;
+}
+
+.chat-message .sender {
+    color: var(--gold);
+}
+
+.chat-input-row {
+    display: flex;
+    border-top: 1px solid var(--gold-dark);
+}
+
+.chat-input-row input {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    color: var(--paper);
+    font-family: 'Special Elite', monospace;
+}
+
+.chat-input-row input:focus {
+    outline: none;
+}
+
+.btn-send {
+    padding: 10px 16px;
+    background: var(--gold);
+    border: none;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.match-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.match-actions .btn {
+    flex: 1;
+}
+
+/* Online Play Button on Setup Screen */
+.btn-online {
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    border: 1px solid #3498db;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Special Elite', monospace;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-online:hover {
+    background: linear-gradient(135deg, #34495e, #5dade2);
+    transform: translateY(-1px);
+}
