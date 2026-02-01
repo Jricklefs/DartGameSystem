@@ -404,21 +404,32 @@
         }
 
         function createGlobe() {
-            // Earth sphere
+            // Earth sphere with real texture
             const geometry = new THREE.SphereGeometry(1, 64, 64);
             
-            // Create a basic dark globe with grid lines
+            // Load Earth texture from NASA public domain
+            const textureLoader = new THREE.TextureLoader();
+            const earthTexture = textureLoader.load(
+                'https://unpkg.com/three-globe/example/img/earth-night.jpg',
+                () => { console.log('Earth texture loaded'); },
+                undefined,
+                (err) => { 
+                    console.log('Texture failed, using fallback');
+                    globe.material.color.setHex(0x1a1a2e);
+                }
+            );
+            
             const material = new THREE.MeshPhongMaterial({
-                color: 0x1a1a2e,
+                map: earthTexture,
                 transparent: true,
-                opacity: 0.9
+                opacity: 0.95
             });
             
             globe = new THREE.Mesh(geometry, material);
             scene.add(globe);
 
-            // Add grid lines (latitude/longitude)
-            const gridMaterial = new THREE.LineBasicMaterial({ color: 0x333355, transparent: true, opacity: 0.5 });
+            // Add subtle grid lines on top
+            const gridMaterial = new THREE.LineBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.15 });
             
             // Latitude lines
             for (let lat = -60; lat <= 60; lat += 30) {
@@ -430,6 +441,7 @@
                 const points = curve.getPoints(64);
                 const geom = new THREE.BufferGeometry().setFromPoints(points.map(p => new THREE.Vector3(p.x, y, p.y)));
                 const line = new THREE.Line(geom, gridMaterial);
+                line.position.multiplyScalar(1.001);  // Slightly above surface
                 globe.add(line);
             }
             
@@ -440,9 +452,9 @@
                 const points = curve.getPoints(32);
                 const geom = new THREE.BufferGeometry().setFromPoints(
                     points.map(p => new THREE.Vector3(
-                        p.x * Math.cos(lonRad),
-                        p.y,
-                        p.x * Math.sin(lonRad)
+                        p.x * Math.cos(lonRad) * 1.001,
+                        p.y * 1.001,
+                        p.x * Math.sin(lonRad) * 1.001
                     ))
                 );
                 const line = new THREE.Line(geom, gridMaterial);
