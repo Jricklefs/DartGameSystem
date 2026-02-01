@@ -1831,3 +1831,244 @@ html, body {
     accent-color: var(--gold);
     cursor: pointer;
 }
+
+
+/* ==========================================================================
+   Player Row with Remove Button
+   ========================================================================== */
+
+.player-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.player-row .player-input {
+    flex: 1;
+}
+
+.btn-remove-player {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.btn-remove-player:hover {
+    background: rgba(231, 76, 60, 0.4);
+}
+
+.player-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.btn-select-players {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--smoke-light);
+    border: 1px solid var(--gold-dark);
+    border-radius: 8px;
+    color: var(--gold);
+    font-family: 'Special Elite', monospace;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-select-players:hover {
+    background: var(--smoke);
+}
+
+/* ==========================================================================
+   Player Select Modal
+   ========================================================================== */
+
+.player-select-modal {
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--gold-dark);
+    margin-bottom: 16px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--gold);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--paper);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.player-select-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.player-select-tabs .tab-btn {
+    flex: 1;
+    padding: 10px;
+    background: var(--smoke);
+    border: 1px solid var(--gold-dark);
+    border-radius: 6px;
+    color: var(--paper);
+    font-family: 'Special Elite', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.player-select-tabs .tab-btn.active {
+    background: var(--gold);
+    color: var(--ink);
+    border-color: var(--gold);
+}
+
+.tab-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+.registered-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.registered-player {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--smoke);
+    border: 1px solid var(--gold-dark);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.registered-player:hover {
+    border-color: var(--gold);
+}
+
+.registered-player.selected {
+    background: rgba(212, 168, 75, 0.2);
+    border-color: var(--gold);
+}
+
+.registered-player .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gold-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.registered-player .info {
+    flex: 1;
+}
+
+.registered-player .nickname {
+    font-weight: bold;
+    color: var(--paper);
+}
+
+.registered-player .stats {
+    font-size: 0.8rem;
+    color: var(--paper-dark);
+}
+
+.registered-player .check {
+    font-size: 1.2rem;
+    color: var(--gold);
+    opacity: 0;
+}
+
+.registered-player.selected .check {
+    opacity: 1;
+}
+
+.register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    color: var(--gold);
+}
+
+.form-group input {
+    padding: 12px;
+    background: var(--smoke);
+    border: 1px solid var(--gold-dark);
+    border-radius: 6px;
+    color: var(--paper);
+    font-family: 'Special Elite', monospace;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+.modal-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gold-dark);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.loading {
+    text-align: center;
+    color: var(--paper-dark);
+    padding: 20px;
+}
+
+.no-players {
+    text-align: center;
+    color: var(--paper-dark);
+    padding: 20px;
+}

@@ -74,10 +74,18 @@
             <div class="form-section">
                 <label class="form-label">PLAYERS</label>
                 <div id="players-list" class="players-list">
-                    <input type="text" class="player-input" placeholder="Player 1" value="Player 1">
-                    <input type="text" class="player-input" placeholder="Player 2">
+                    <div class="player-row">
+                        <input type="text" class="player-input" placeholder="Player 1" value="Player 1">
+                    </div>
+                    <div class="player-row">
+                        <input type="text" class="player-input" placeholder="Player 2">
+                        <button class="btn-remove-player" title="Remove">✕</button>
+                    </div>
                 </div>
-                <button id="add-player-btn" class="btn-add">+ Add Player</button>
+                <div class="player-actions">
+                    <button id="add-player-btn" class="btn-add">+ Add Player</button>
+                    <button id="select-players-btn" class="btn-select-players">👤 Select Registered</button>
+                </div>
             </div>
 
             <!-- Start Button -->
@@ -187,6 +195,49 @@
             <div class="correction-actions">
                 <button id="correction-cancel" class="btn btn-secondary">Cancel</button>
                 <button id="correction-confirm" class="btn btn-primary">Enter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Selection Modal -->
+    <div id="player-select-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content player-select-modal">
+            <div class="modal-header">
+                <h3>Select Players</h3>
+                <button class="modal-close" id="player-select-close">✕</button>
+            </div>
+            
+            <div class="player-select-tabs">
+                <button class="tab-btn active" data-tab="registered">Registered</button>
+                <button class="tab-btn" data-tab="register">New Player</button>
+            </div>
+            
+            <!-- Registered Players List -->
+            <div id="registered-tab" class="tab-content active">
+                <div id="registered-players-list" class="registered-list">
+                    <!-- Populated by JS -->
+                    <p class="loading">Loading players...</p>
+                </div>
+            </div>
+            
+            <!-- Register New Player -->
+            <div id="register-tab" class="tab-content hidden">
+                <div class="register-form">
+                    <div class="form-group">
+                        <label>Nickname *</label>
+                        <input type="text" id="reg-nickname" placeholder="Display name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email (optional)</label>
+                        <input type="email" id="reg-email" placeholder="For stats tracking">
+                    </div>
+                    <button id="register-player-btn" class="btn btn-primary">Register Player</button>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="player-select-done" class="btn btn-primary">Done</button>
             </div>
         </div>
     </div>

@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
     initFullscreen();
     initDartCorrection();
+    initPlayerManagement();
 });
 
 // ==========================================================================
@@ -444,16 +445,7 @@ function initEventListeners() {
         });
     });
     
-    // Add player
-    document.getElementById('add-player-btn')?.addEventListener('click', () => {
-        const list = document.getElementById('players-list');
-        const count = list.querySelectorAll('.player-input').length + 1;
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'player-input';
-        input.placeholder = `Player ${count}`;
-        list.appendChild(input);
-    });
+    // Add player - handled in initPlayerManagement
     
     // Start game
     document.getElementById('start-game-btn')?.addEventListener('click', startGame);
@@ -809,5 +801,190 @@ async function submitCorrection() {
     } catch (e) {
         console.error('Correction error:', e);
         alert('Failed to correct dart');
+    }
+}
+// ==========================================================================
+// Player Management
+// ==========================================================================
+
+let selectedRegisteredPlayers = [];
+
+function initPlayerManagement() {
+    // Add player button - now creates a row with remove button
+    document.getElementById('add-player-btn')?.addEventListener('click', addPlayerRow);
+    
+    // Remove player buttons (delegated)
+    document.getElementById('players-list')?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-remove-player')) {
+            const row = e.target.closest('.player-row');
+            if (row && document.querySelectorAll('.player-row').length > 1) {
+                row.remove();
+                renumberPlayers();
+            }
+        }
+    });
+    
+    // Open player select modal
+    document.getElementById('select-players-btn')?.addEventListener('click', openPlayerSelectModal);
+    
+    // Close modal
+    document.getElementById('player-select-close')?.addEventListener('click', closePlayerSelectModal);
+    document.getElementById('player-select-done')?.addEventListener('click', applySelectedPlayers);
+    
+    // Tab switching
+    document.querySelectorAll('.player-select-tabs .tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.player-select-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.getElementById(btn.dataset.tab + '-tab')?.classList.remove('hidden');
+        });
+    });
+    
+    // Register new player
+    document.getElementById('register-player-btn')?.addEventListener('click', registerNewPlayer);
+    
+    // Modal backdrop click to close
+    document.querySelector('#player-select-modal .modal-backdrop')?.addEventListener('click', closePlayerSelectModal);
+}
+
+function addPlayerRow() {
+    const list = document.getElementById('players-list');
+    const count = list.querySelectorAll('.player-row').length + 1;
+    
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+        <input type="text" class="player-input" placeholder="Player ${count}">
+        <button class="btn-remove-player" title="Remove">✕</button>
+    `;
+    list.appendChild(row);
+}
+
+function renumberPlayers() {
+    document.querySelectorAll('.player-row').forEach((row, i) => {
+        const input = row.querySelector('.player-input');
+        if (input && !input.value) {
+            input.placeholder = `Player ${i + 1}`;
+        }
+    });
+}
+
+async function openPlayerSelectModal() {
+    const modal = document.getElementById('player-select-modal');
+    modal?.classList.remove('hidden');
+    selectedRegisteredPlayers = [];
+    await loadRegisteredPlayers();
+}
+
+function closePlayerSelectModal() {
+    document.getElementById('player-select-modal')?.classList.add('hidden');
+}
+
+async function loadRegisteredPlayers() {
+    const listEl = document.getElementById('registered-players-list');
+    if (!listEl) return;
+    
+    listEl.innerHTML = '<p class="loading">Loading players...</p>';
+    
+    try {
+        const response = await fetch('/api/players');
+        if (!response.ok) throw new Error('Failed to load');
+        
+        const players = await response.json();
+        
+        if (players.length === 0) {
+            listEl.innerHTML = '<p class="no-players">No registered players yet. Create one in the "New Player" tab.</p>';
+            return;
+        }
+        
+        listEl.innerHTML = players.map(p => `
+            <div class="registered-player" data-id="${p.id}" data-nickname="${escapeHtml(p.nickname)}">
+                <div class="avatar">${p.nickname.charAt(0).toUpperCase()}</div>
+                <div class="info">
+                    <div class="nickname">${escapeHtml(p.nickname)}</div>
+                    <div class="stats">${p.gamesPlayed || 0} games played</div>
+                </div>
+                <span class="check">✓</span>
+            </div>
+        `).join('');
+        
+        // Click to select
+        listEl.querySelectorAll('.registered-player').forEach(el => {
+            el.addEventListener('click', () => {
+                el.classList.toggle('selected');
+                const id = el.dataset.id;
+                const nickname = el.dataset.nickname;
+                
+                if (el.classList.contains('selected')) {
+                    selectedRegisteredPlayers.push({ id, nickname });
+                } else {
+                    selectedRegisteredPlayers = selectedRegisteredPlayers.filter(p => p.id !== id);
+                }
+            });
+        });
+        
+    } catch (err) {
+        console.error('Error loading players:', err);
+        listEl.innerHTML = '<p class="no-players">Error loading players. Is the API running?</p>';
+    }
+}
+
+function applySelectedPlayers() {
+    if (selectedRegisteredPlayers.length === 0) {
+        closePlayerSelectModal();
+        return;
+    }
+    
+    const list = document.getElementById('players-list');
+    list.innerHTML = '';
+    
+    selectedRegisteredPlayers.forEach((player, i) => {
+        const row = document.createElement('div');
+        row.className = 'player-row';
+        row.innerHTML = `
+            <input type="text" class="player-input" value="${escapeHtml(player.nickname)}" data-player-id="${player.id}">
+            ${i > 0 ? '<button class="btn-remove-player" title="Remove">✕</button>' : ''}
+        `;
+        list.appendChild(row);
+    });
+    
+    closePlayerSelectModal();
+}
+
+async function registerNewPlayer() {
+    const nickname = document.getElementById('reg-nickname')?.value.trim();
+    const email = document.getElementById('reg-email')?.value.trim();
+    
+    if (!nickname) {
+        alert('Please enter a nickname');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/players', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname, email })
+        });
+        
+        if (!response.ok) {
+            const error = await response.text();
+            alert('Error: ' + error);
+            return;
+        }
+        
+        // Clear form
+        document.getElementById('reg-nickname').value = '';
+        document.getElementById('reg-email').value = '';
+        
+        // Switch to registered tab and reload
+        document.querySelector('.tab-btn[data-tab="registered"]')?.click();
+        await loadRegisteredPlayers();
+        
+    } catch (err) {
+        console.error('Error registering player:', err);
+        alert('Failed to register player');
     }
 }
