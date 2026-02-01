@@ -159,6 +159,28 @@ public class GamesController : ControllerBase
     }
 
     /// <summary>
+    /// Advance to next player's turn (Next button)
+    /// </summary>
+    [HttpPost("{id}/next-turn")]
+    public async Task<ActionResult> NextTurn(string id)
+    {
+        var game = _gameService.GetGame(id);
+        if (game == null) return NotFound();
+        if (game.State != GameState.InProgress)
+            return BadRequest(new { error = "Game is not in progress" });
+        
+        // Save current turn info before advancing
+        var previousTurn = game.CurrentTurn ?? new Turn();
+        
+        _gameService.NextTurn(game);
+        
+        // Notify connected clients that turn ended
+        await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+        
+        return Ok(new { game = game });
+    }
+
+    /// <summary>
     /// Clear the board (darts removed)
     /// </summary>
     [HttpPost("board/{boardId}/clear")]

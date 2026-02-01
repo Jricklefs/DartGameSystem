@@ -213,6 +213,9 @@ function updateScoreboard() {
             legsDisplay.style.display = 'none';
         }
     }
+    
+    // Update round display
+    updateRoundDisplay();
 }
 
 function updateCurrentTurn() {
@@ -317,6 +320,30 @@ async function endGame() {
     }
 }
 
+async function nextTurn() {
+    if (!currentGame) return;
+    
+    try {
+        const response = await fetch(`/api/games/${currentGame.id}/next-turn`, { method: 'POST' });
+        if (response.ok) {
+            const result = await response.json();
+            currentGame = result.game;
+            updateScoreboard();
+            updateCurrentTurn();
+            updateRoundDisplay();
+        }
+    } catch (err) {
+        console.error('Error advancing turn:', err);
+    }
+}
+
+function updateRoundDisplay() {
+    const roundDisplay = document.getElementById('round-display');
+    if (roundDisplay && currentGame) {
+        roundDisplay.textContent = `Round ${currentGame.currentRound || 1}`;
+    }
+}
+
 // ==========================================================================
 // Event Listeners
 // ==========================================================================
@@ -362,6 +389,9 @@ function initEventListeners() {
     
     // End game
     document.getElementById('end-game-btn')?.addEventListener('click', endGame);
+    
+    // Next turn
+    document.getElementById('next-turn-btn')?.addEventListener('click', nextTurn);
     
     // New game
     document.getElementById('new-game-btn')?.addEventListener('click', () => {
@@ -539,7 +569,7 @@ function getSegmentAndScore() {
     }
     
     const score = segment * correctionMultiplier;
-    const prefix = correctionMultiplier === 3 ? 'T' : correctionMultiplier === 2 ? 'D' : '';
+    const prefix = correctionMultiplier === 3 ? 'T' : correctionMultiplier === 2 ? 'D' : 'S';
     const display = prefix + segment;
     
     return { segment, score, display };
@@ -552,7 +582,8 @@ function updateCorrectionDisplay() {
     if (correctionInput === '' && correctionMultiplier === 1) {
         displayEl.textContent = '—';
     } else {
-        displayEl.textContent = `${display} = ${score}`;
+        // Show S12, D20, T19, BULL, D-BULL, MISS
+        displayEl.textContent = display;
     }
 }
 

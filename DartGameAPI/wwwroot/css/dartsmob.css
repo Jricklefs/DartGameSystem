@@ -341,6 +341,37 @@ html, body {
     color: var(--paper);
 }
 
+.game-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-next {
+    padding: 8px 16px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    background: var(--teal);
+    border: 1px solid var(--teal);
+    color: var(--paper);
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+}
+
+.btn-next:hover {
+    background: var(--green);
+    border-color: var(--green);
+}
+
+.round-info {
+    font-size: 0.85rem;
+    color: var(--paper-dark);
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+}
+
 /* Scoreboard - Takes Maximum Space */
 .scoreboard {
     flex: 1;

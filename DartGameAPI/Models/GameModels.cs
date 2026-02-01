@@ -96,6 +96,9 @@ public class Game
     public int CurrentLeg { get; set; } = 1;
     public string? LegWinnerId { get; set; }  // Who won the current/last leg
     
+    // Round tracking (one round = each player throws once)
+    public int CurrentRound { get; set; } = 1;
+    
     // Known dart positions on board (to detect new vs existing)
     public List<KnownDart> KnownDarts { get; set; } = new();
     

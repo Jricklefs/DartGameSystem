@@ -288,12 +288,38 @@ public class GameService
         }
 
         // Next player
+        var prevIndex = game.CurrentPlayerIndex;
         game.CurrentPlayerIndex = (game.CurrentPlayerIndex + 1) % game.Players.Count;
+        
+        // Track rounds - a round completes when we wrap back to player 0
+        if (game.CurrentPlayerIndex == 0 && prevIndex != 0)
+        {
+            game.CurrentRound++;
+            _logger.LogInformation("Round {Round} starting", game.CurrentRound);
+        }
+        
         game.CurrentTurn = new Turn
         {
             TurnNumber = game.CurrentPlayer?.Turns.Count + 1 ?? 1,
             PlayerId = game.CurrentPlayer?.Id ?? ""
         };
+    }
+    
+    /// <summary>
+    /// Manually advance to next player's turn (for "Next" button)
+    /// </summary>
+    public void NextTurn(Game game)
+    {
+        if (game == null || game.State != GameState.InProgress) return;
+        
+        // Clear known darts (player pulled their darts)
+        game.KnownDarts.Clear();
+        
+        // End current turn and move to next player
+        EndTurn(game);
+        
+        _logger.LogInformation("Manual next turn - now player {Index}: {Name}", 
+            game.CurrentPlayerIndex, game.CurrentPlayer?.Name);
     }
 
     /// <summary>
