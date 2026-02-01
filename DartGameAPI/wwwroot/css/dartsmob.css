@@ -127,6 +127,13 @@ html, body {
 .setup-screen {
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.setup-screen::-webkit-scrollbar {
+    display: none;
 }
 
 .setup-screen .main-header {
@@ -142,7 +149,6 @@ html, body {
     max-width: 500px;
     margin: 0 auto;
     width: 100%;
-    overflow-y: auto;
 }
 
 .card-title {
@@ -379,7 +385,7 @@ html, body {
     flex-direction: column;
     gap: 8px;
     padding: 12px;
-    overflow-y: auto;
+    overflow: visible;
 }
 
 .player-card {
@@ -622,7 +628,7 @@ html, body {
     padding: 20px;
     max-width: 90vw;
     max-height: 90vh;
-    overflow-y: auto;
+    overflow: visible;
 }
 
 .correction-modal h3 {
@@ -1027,7 +1033,7 @@ html, body {
    ========================================================================== */
 
 .settings-page {
-    overflow-y: auto;
+    overflow: visible;
 }
 
 .settings-header {
@@ -1951,7 +1957,7 @@ html, body {
 
 .tab-content {
     flex: 1;
-    overflow-y: auto;
+    overflow: visible;
 }
 
 .tab-content.hidden {
@@ -1963,7 +1969,7 @@ html, body {
     flex-direction: column;
     gap: 8px;
     max-height: 300px;
-    overflow-y: auto;
+    overflow: visible;
 }
 
 .registered-player {
