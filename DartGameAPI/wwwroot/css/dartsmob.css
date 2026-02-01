@@ -2356,3 +2356,47 @@ html, body {
     background: linear-gradient(135deg, #34495e, #5dade2);
     transform: translateY(-1px);
 }
+  
+/* Theme tab scroll fix */  
+#tab-theme { overflow-y: auto !important; padding-bottom: 40px; }  
+#tab-theme .action-buttons { position: sticky; bottom: 0; background: linear-gradient(transparent, var(--ink) 20%%); padding: 20px 0 10px; margin-top: auto; } 
+
+/* Online status in footer */
+.online-status-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    border-radius: 20px;
+    transition: all 0.2s;
+}
+
+.online-status-link:hover {
+    background: rgba(46, 204, 113, 0.2);
+    border-color: #2ecc71;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #2ecc71;
+    border-radius: 50%;
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px #2ecc71; }
+    50% { opacity: 0.5; box-shadow: 0 0 8px #2ecc71; }
+}
+
+.setup-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+}

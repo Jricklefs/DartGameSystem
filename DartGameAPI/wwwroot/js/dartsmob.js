@@ -1022,6 +1022,26 @@ async function initOnlinePlay() {
     document.getElementById('online-chat-input')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendOnlineChat();
     });
+    
+    // Fetch online count for footer display
+    fetchOnlineCount();
+    setInterval(fetchOnlineCount, 30000); // Refresh every 30s
+}
+
+async function fetchOnlineCount() {
+    try {
+        const r = await fetch('/api/online/status');
+        if (r.ok) {
+            const data = await r.json();
+            const el = document.getElementById('online-count-display');
+            if (el) el.textContent = data.onlineCount || 0;
+        }
+    } catch (e) {
+        console.log('Could not fetch online count');
+    }
+}
+        if (e.key === 'Enter') sendOnlineChat();
+    });
 }
 
 async function connectOnlineHub() {
