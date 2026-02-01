@@ -62,6 +62,37 @@ public class OnlineController : ControllerBase
     }
 
     /// <summary>
+    /// Get leaderboard - top players by rating
+    /// </summary>
+    [HttpGet("leaderboard")]
+    public async Task<IActionResult> GetLeaderboard([FromQuery] string gameMode = "Game501", [FromQuery] int limit = 50)
+    {
+        var players = await _db.Set<PlayerRating>()
+            .Where(r => r.GameMode == gameMode && r.GamesPlayed > 0)
+            .OrderByDescending(r => r.Rating)
+            .Take(limit)
+            .Join(_db.Players, r => r.PlayerId, p => p.PlayerId, (r, p) => new { Rating = r, Player = p })
+            .Join(_db.Set<RegisteredBoard>(), x => x.Rating.PlayerId, b => b.OwnerId, 
+                  (x, b) => new { x.Rating, x.Player, Board = b })
+            .Select(x => new
+            {
+                playerId = x.Player.PlayerId,
+                nickname = x.Player.Nickname,
+                location = x.Board.Location,
+                rating = x.Rating.Rating,
+                gamesPlayed = x.Rating.GamesPlayed,
+                wins = x.Rating.Wins,
+                losses = x.Rating.Losses,
+                averageScore = x.Rating.AverageScore,
+                checkoutPct = x.Rating.CheckoutPercentage,
+                highest180s = x.Rating.Highest180s
+            })
+            .ToListAsync();
+
+        return Ok(new { players, gameMode, total = players.Count });
+    }
+
+    /// <summary>
     /// Get online player count and map data (from database)
     /// </summary>
     [HttpGet("status")]

@@ -26,6 +26,71 @@ public class GamesController : ControllerBase
     }
 
     /// <summary>
+    /// Get recent games with player info
+    /// </summary>
+    [HttpGet("recent")]
+    public async Task<ActionResult> GetRecentGames([FromQuery] int count = 20)
+    {
+        var today = DateTime.UtcNow.Date;
+        
+        var games = await _db.Games
+            .Where(g => g.GameState == 2) // Completed
+            .OrderByDescending(g => g.EndedAt)
+            .Take(count)
+            .Select(g => new
+            {
+                gameId = g.GameId,
+                gameMode = g.GameMode,
+                startedAt = g.StartedAt,
+                endedAt = g.EndedAt,
+                durationSeconds = g.DurationSeconds,
+                winnerId = g.WinnerPlayerId
+            })
+            .ToListAsync();
+
+        // Get player info for each game
+        var gameIds = games.Select(g => g.gameId).ToList();
+        var gamePlayers = await _db.GamePlayers
+            .Where(gp => gameIds.Contains(gp.GameId))
+            .Join(_db.Players, gp => gp.PlayerId, p => p.PlayerId, (gp, p) => new { gp, p })
+            .Select(x => new
+            {
+                x.gp.GameId,
+                x.gp.PlayerId,
+                x.gp.PlayerOrder,
+                x.gp.FinalScore,
+                x.gp.IsWinner,
+                x.gp.HighestTurn,
+                Name = x.p.Nickname
+            })
+            .ToListAsync();
+
+        var result = games.Select(g =>
+        {
+            var players = gamePlayers.Where(p => p.GameId == g.gameId).OrderBy(p => p.PlayerOrder).ToList();
+            return new
+            {
+                g.gameId,
+                g.gameMode,
+                g.endedAt,
+                g.durationSeconds,
+                player1 = players.ElementAtOrDefault(0) is var p1 && p1 != null ? new { name = p1.Name, score = p1.IsWinner ? 3 : (3 - 1), isWinner = p1.IsWinner } : null,
+                player2 = players.ElementAtOrDefault(1) is var p2 && p2 != null ? new { name = p2.Name, score = p2.IsWinner ? 3 : (3 - 1), isWinner = p2.IsWinner } : null,
+                winner = players.FirstOrDefault(p => p.IsWinner)?.Name
+            };
+        });
+
+        var gamesToday = await _db.Games.CountAsync(g => g.StartedAt >= today);
+        var totalGames = await _db.Games.CountAsync();
+
+        return Ok(new { 
+            games = result, 
+            gamesToday, 
+            totalGames 
+        });
+    }
+
+    /// <summary>
     /// Get all registered boards
     /// </summary>
     [HttpGet("boards")]

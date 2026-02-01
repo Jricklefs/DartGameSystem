@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stats - DartsMob</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/css/dartsmob.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        .stats-page {
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .stats-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: rgba(0,0,0,0.5);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+        }
+        
+        .stats-header h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            color: var(--gold);
+            font-size: 1.8rem;
+            letter-spacing: 0.1em;
+        }
+        
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .stats-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding-bottom: 12px;
+        }
+        
+        .stats-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px 8px 0 0;
+            color: var(--cream);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .stats-tab:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+        
+        .stats-tab.active {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        
+        .stats-section {
+            display: none;
+        }
+        
+        .stats-section.active {
+            display: block;
+        }
+        
+        .leaderboard {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .leaderboard-header {
+            display: grid;
+            grid-template-columns: 60px 1fr 100px 100px 100px 100px;
+            padding: 12px 16px;
+            background: rgba(212, 175, 55, 0.15);
+            font-family: 'Bebas Neue', sans-serif;
+            color: var(--gold);
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+        }
+        
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 60px 1fr 100px 100px 100px 100px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .leaderboard-row:hover {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        
+        .leaderboard-row:last-child {
+            border-bottom: none;
+        }
+        
+        .rank {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.2rem;
+            color: var(--gold);
+        }
+        
+        .rank.gold { color: #ffd700; }
+        .rank.silver { color: #c0c0c0; }
+        .rank.bronze { color: #cd7f32; }
+        
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .player-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ink);
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        
+        .player-name {
+            font-size: 1rem;
+            color: var(--cream);
+        }
+        
+        .player-location {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .stat-value {
+            text-align: center;
+            color: var(--cream);
+        }
+        
+        .stat-value.highlight {
+            color: var(--gold);
+            font-weight: bold;
+        }
+        
+        /* Recent Games */
+        .games-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .game-card {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .game-player {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .game-player.right {
+            flex-direction: row-reverse;
+            text-align: right;
+        }
+        
+        .game-player.winner .player-name {
+            color: var(--gold);
+        }
+        
+        .game-vs {
+            text-align: center;
+        }
+        
+        .game-score {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            color: var(--gold);
+        }
+        
+        .game-meta {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+        }
+        
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .summary-card .value {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            color: var(--gold);
+        }
+        
+        .summary-card .label {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+        }
+        
+        @media (max-width: 800px) {
+            .leaderboard-header,
+            .leaderboard-row {
+                grid-template-columns: 40px 1fr 70px 70px;
+            }
+            .leaderboard-header > :nth-child(5),
+            .leaderboard-header > :nth-child(6),
+            .leaderboard-row > :nth-child(5),
+            .leaderboard-row > :nth-child(6) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="stats-page">
+    <div id="background-layer" class="background-layer"></div>
+    <div id="background-overlay" class="background-overlay"></div>
+
+    <header class="stats-header">
+        <a href="/" class="back-link">← MENU</a>
+        <h1>STATS & LEADERBOARDS</h1>
+        <div></div>
+    </header>
+
+    <main class="stats-container">
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="value" id="total-games">--</div>
+                <div class="label">Total Games</div>
+            </div>
+            <div class="summary-card">
+                <div class="value" id="total-players">--</div>
+                <div class="label">Active Players</div>
+            </div>
+            <div class="summary-card">
+                <div class="value" id="games-today">--</div>
+                <div class="label">Games Today</div>
+            </div>
+            <div class="summary-card">
+                <div class="value" id="highest-rating">--</div>
+                <div class="label">Top Rating</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="stats-tabs">
+            <button class="stats-tab active" data-tab="leaderboard">🏆 Leaderboard</button>
+            <button class="stats-tab" data-tab="recent">📋 Recent Games</button>
+            <button class="stats-tab" data-tab="records">🎯 Records</button>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <section id="leaderboard-section" class="stats-section active">
+            <div class="leaderboard">
+                <div class="leaderboard-header">
+                    <span>Rank</span>
+                    <span>Player</span>
+                    <span>Rating</span>
+                    <span>W-L</span>
+                    <span>Avg</span>
+                    <span>180s</span>
+                </div>
+                <div id="leaderboard-body">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Games Tab -->
+        <section id="recent-section" class="stats-section">
+            <div id="games-list" class="games-list">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- Records Tab -->
+        <section id="records-section" class="stats-section">
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="value" id="highest-avg">--</div>
+                    <div class="label">Highest Average</div>
+                </div>
+                <div class="summary-card">
+                    <div class="value" id="most-180s">--</div>
+                    <div class="label">Most 180s (Single Player)</div>
+                </div>
+                <div class="summary-card">
+                    <div class="value" id="longest-streak">--</div>
+                    <div class="label">Longest Win Streak</div>
+                </div>
+                <div class="summary-card">
+                    <div class="value" id="fastest-game">--</div>
+                    <div class="label">Fastest 501 (darts)</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Theme
+        const theme = JSON.parse(localStorage.getItem('dartsmob-theme') || '{}');
+        const backgrounds = theme.backgrounds || ['/images/backgrounds/speakeasy-1.jpg'];
+        document.getElementById('background-layer').style.backgroundImage = `url('${backgrounds[0]}')`;
+        const overlay = document.getElementById('background-overlay');
+        if (overlay) overlay.style.background = `rgba(0, 0, 0, ${(theme.overlayOpacity ?? 70) / 100})`;
+
+        // Tabs
+        document.querySelectorAll('.stats-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.stats-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.stats-section').forEach(s => s.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-section').classList.add('active');
+            });
+        });
+
+        // Load data
+        async function loadStats() {
+            try {
+                // Load leaderboard
+                const ratingsRes = await fetch('/api/online/leaderboard');
+                if (ratingsRes.ok) {
+                    const data = await ratingsRes.json();
+                    renderLeaderboard(data.players || data);
+                    
+                    // Update summary
+                    document.getElementById('total-players').textContent = data.players?.length || data.length || 0;
+                    if (data.players?.length > 0 || data.length > 0) {
+                        const players = data.players || data;
+                        document.getElementById('highest-rating').textContent = Math.max(...players.map(p => p.rating || 0));
+                    }
+                }
+
+                // Load recent games
+                const gamesRes = await fetch('/api/games/recent?count=20');
+                if (gamesRes.ok) {
+                    const games = await gamesRes.json();
+                    renderRecentGames(games);
+                    document.getElementById('total-games').textContent = games.totalGames || games.length;
+                    document.getElementById('games-today').textContent = games.gamesToday || 0;
+                }
+
+                // Load records
+                const recordsRes = await fetch('/api/stats/records');
+                if (recordsRes.ok) {
+                    const records = await recordsRes.json();
+                    document.getElementById('highest-avg').textContent = records.highestAvg?.toFixed(1) || '--';
+                    document.getElementById('most-180s').textContent = records.most180s || '--';
+                    document.getElementById('longest-streak').textContent = records.longestStreak || '--';
+                    document.getElementById('fastest-game').textContent = records.fastestGame || '--';
+                }
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        function renderLeaderboard(players) {
+            const body = document.getElementById('leaderboard-body');
+            if (!players || players.length === 0) {
+                body.innerHTML = '<div class="leaderboard-row"><span colspan="6" style="grid-column: 1/-1; text-align: center; color: rgba(255,255,255,0.5);">No player data yet</span></div>';
+                return;
+            }
+
+            body.innerHTML = players.slice(0, 25).map((p, i) => `
+                <div class="leaderboard-row">
+                    <span class="rank ${i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''}">#${i + 1}</span>
+                    <div class="player-info">
+                        <div class="player-avatar">${(p.nickname || p.name || 'P').charAt(0).toUpperCase()}</div>
+                        <div>
+                            <div class="player-name">${p.nickname || p.name || 'Unknown'}</div>
+                            <div class="player-location">${p.location || ''}</div>
+                        </div>
+                    </div>
+                    <span class="stat-value highlight">${p.rating || 1200}</span>
+                    <span class="stat-value">${p.wins || 0}-${p.losses || 0}</span>
+                    <span class="stat-value">${(p.averageScore || p.avg || 0).toFixed(1)}</span>
+                    <span class="stat-value">${p.highest180s || p.t180s || 0}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderRecentGames(data) {
+            const list = document.getElementById('games-list');
+            const games = data.games || data;
+            
+            if (!games || games.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5);">No games recorded yet</p>';
+                return;
+            }
+
+            list.innerHTML = games.slice(0, 20).map(g => `
+                <div class="game-card">
+                    <div class="game-player ${g.winner === g.player1?.name ? 'winner' : ''}">
+                        <div class="player-avatar">${(g.player1?.name || 'P1').charAt(0)}</div>
+                        <div class="player-name">${g.player1?.name || 'Player 1'}</div>
+                    </div>
+                    <div class="game-vs">
+                        <div class="game-score">${g.player1?.score || 0} - ${g.player2?.score || 0}</div>
+                        <div class="game-meta">${g.gameMode || '501'} • ${formatDate(g.endedAt || g.date)}</div>
+                    </div>
+                    <div class="game-player right ${g.winner === g.player2?.name ? 'winner' : ''}">
+                        <div class="player-avatar">${(g.player2?.name || 'P2').charAt(0)}</div>
+                        <div class="player-name">${g.player2?.name || 'Player 2'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const now = new Date();
+            const diff = now - d;
+            
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
+            return d.toLocaleDateString();
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>
