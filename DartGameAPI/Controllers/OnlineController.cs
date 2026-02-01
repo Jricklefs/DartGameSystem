@@ -62,39 +62,68 @@ public class OnlineController : ControllerBase
     }
 
     /// <summary>
-    /// Get online player count and map data
+    /// Get online player count and map data (from database)
     /// </summary>
     [HttpGet("status")]
-    public IActionResult GetOnlineStatus()
+    public async Task<IActionResult> GetOnlineStatus()
     {
-        var count = _matchmaking.GetOnlineCount();
-        var mapPoints = _matchmaking.GetPlayerMapPoints();
+        // Get registered boards with recent activity (simulating online)
+        var recentBoards = await _db.Set<RegisteredBoard>()
+            .Where(b => b.IsPublic && b.LastOnlineAt > DateTime.UtcNow.AddHours(-1))
+            .CountAsync();
+        
+        // Also include live in-memory players
+        var liveCount = _matchmaking.GetOnlineCount();
 
         return Ok(new
         {
-            OnlineCount = count,
-            Players = mapPoints
+            OnlineCount = recentBoards + liveCount,
+            LivePlayers = liveCount,
+            RecentBoards = recentBoards
         });
     }
 
     /// <summary>
-    /// Get full player map for globe visualization
+    /// Get full player map for globe visualization (from database)
     /// </summary>
     [HttpGet("map")]
-    public IActionResult GetPlayerMap()
+    public async Task<IActionResult> GetPlayerMap()
     {
-        var points = _matchmaking.GetPlayerMapPoints()
+        // Get registered boards with locations
+        var dbPlayers = await _db.Set<RegisteredBoard>()
+            .Where(b => b.IsPublic && b.Latitude.HasValue && b.Longitude.HasValue)
+            .Include(b => b.Owner)
+            .Select(b => new
+            {
+                playerId = b.OwnerId,
+                name = b.Owner != null ? b.Owner.Nickname : "Unknown",
+                lat = b.Latitude!.Value,
+                lon = b.Longitude!.Value,
+                location = b.Location,
+                status = b.LastOnlineAt > DateTime.UtcNow.AddMinutes(-5) ? "online" 
+                       : b.LastOnlineAt > DateTime.UtcNow.AddHours(-1) ? "away" 
+                       : "offline"
+            })
+            .ToListAsync();
+        
+        // Also get live in-memory players
+        var livePoints = _matchmaking.GetPlayerMapPoints()
             .Select(p => new
             {
+                playerId = p.PlayerId,
+                name = "Live Player",
                 lat = p.Latitude,
                 lon = p.Longitude,
+                location = (string?)null,
                 status = p.Status.ToString().ToLower()
             });
 
+        var allPlayers = dbPlayers.Concat(livePoints).ToList();
+
         return Ok(new
         {
-            total = _matchmaking.GetOnlineCount(),
-            players = points
+            total = allPlayers.Count,
+            players = allPlayers
         });
     }
 
