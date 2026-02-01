@@ -87,6 +87,58 @@
                 grid-column: 1 / -1;
             }
         }
+        
+        /* Info tooltip */
+        .info-icon {
+            position: relative;
+            cursor: help;
+            font-size: 1rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .info-icon:hover, .info-icon:focus {
+            opacity: 1;
+        }
+        
+        .info-tooltip {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            width: 280px;
+            padding: 16px;
+            background: rgba(20, 20, 30, 0.98);
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            color: var(--cream);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+            z-index: 100;
+            pointer-events: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        .info-tooltip strong {
+            color: var(--gold);
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .info-tooltip em {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.8rem;
+        }
+        
+        .info-icon:hover .info-tooltip,
+        .info-icon:focus .info-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-8px);
+        }
     </style>
 </head>
 <body>
@@ -180,6 +232,16 @@
                     <span class="toggle-text">🔍 Find Online Opponent</span>
                 </label>
                 <span id="match-search-status" class="match-status"></span>
+                <span class="info-icon" tabindex="0">ℹ️
+                    <div class="info-tooltip">
+                        <strong>Background Matchmaking</strong><br><br>
+                        Enable this to search for an online opponent while you play locally.<br><br>
+                        • Play practice games or local matches while waiting<br>
+                        • Get notified when a matching player is found<br>
+                        • Accept or decline the match when ready<br><br>
+                        <em>Your skill level and preferences are used to find suitable opponents.</em>
+                    </div>
+                </span>
             </div>
             
             <!-- Online Play Button -->
