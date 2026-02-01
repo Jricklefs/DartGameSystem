@@ -18,13 +18,14 @@ public class PlayersController : ControllerBase
     }
 
     /// <summary>
-    /// Get all active players
+    /// Get all active players (excludes fake/test players)
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PlayerDto>>> GetPlayers()
     {
         var players = await _db.Players
             .Where(p => p.IsActive)
+            .Where(p => p.Email == null || !p.Email.EndsWith("@dartsmob.fake"))  // Exclude fake players
             .OrderBy(p => p.Nickname)
             .Select(p => new PlayerDto
             {
