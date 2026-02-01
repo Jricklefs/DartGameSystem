@@ -374,23 +374,20 @@ const gameConfig = {
         variants: [
             { value: 'CricketStandard', label: 'Standard' },
             { value: 'CricketCutThroat', label: 'Cut-Throat' },
-            { value: 'CricketWild', label: 'Wild (Random Numbers)' }
+            { value: 'CricketNoPoints', label: 'No Points (Close Only)' }
         ],
         defaultVariant: 'CricketStandard',
-        rules: [
-            { id: 'points-to-win', label: 'Points Required', default: false }
-        ]
+        rules: []
     },
     around: {
         label: '🔄 Around the World',
         variants: [
-            { value: 'AroundTheClock', label: 'Around the Clock (1-20)' },
+            { value: 'AroundTheClock', label: 'Around the Clock' },
             { value: 'Shanghai', label: 'Shanghai' }
         ],
         defaultVariant: 'AroundTheClock',
         rules: [
-            { id: 'include-bull', label: 'Include Bull', default: true },
-            { id: 'doubles-only', label: 'Doubles Only', default: false }
+            { id: 'include-bull', label: 'Include Bull', default: true }
         ]
     },
     killer: {
@@ -401,7 +398,7 @@ const gameConfig = {
         ],
         defaultVariant: 'Killer',
         rules: [
-            { id: 'lives', label: 'Lives: 3', default: true }
+            { id: 'lives-5', label: '5 Lives (vs 3)', default: false }
         ]
     },
     practice: {
