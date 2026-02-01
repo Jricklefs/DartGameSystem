@@ -130,14 +130,12 @@
         <div class="modal-content correction-modal">
             <h3>Correct Dart <span id="correction-dart-num">1</span></h3>
             
-            <!-- Multiplier selector -->
-            <div class="multiplier-row">
-                <button class="mult-btn active" data-mult="1">SINGLE</button>
-                <button class="mult-btn" data-mult="2">DOUBLE</button>
-                <button class="mult-btn" data-mult="3">TRIPLE</button>
+            <!-- Display showing what they typed -->
+            <div class="correction-display">
+                <span id="correction-input-display">—</span>
             </div>
             
-            <!-- Number keypad -->
+            <!-- Number keypad 0-9 -->
             <div class="keypad">
                 <button class="key-btn" data-val="1">1</button>
                 <button class="key-btn" data-val="2">2</button>
@@ -148,35 +146,25 @@
                 <button class="key-btn" data-val="7">7</button>
                 <button class="key-btn" data-val="8">8</button>
                 <button class="key-btn" data-val="9">9</button>
-                <button class="key-btn" data-val="10">10</button>
-                <button class="key-btn" data-val="11">11</button>
-                <button class="key-btn" data-val="12">12</button>
-                <button class="key-btn" data-val="13">13</button>
-                <button class="key-btn" data-val="14">14</button>
-                <button class="key-btn" data-val="15">15</button>
-                <button class="key-btn" data-val="16">16</button>
-                <button class="key-btn" data-val="17">17</button>
-                <button class="key-btn" data-val="18">18</button>
-                <button class="key-btn" data-val="19">19</button>
-                <button class="key-btn" data-val="20">20</button>
+                <button class="key-btn" data-val="0">0</button>
             </div>
             
             <!-- Special buttons -->
             <div class="special-row">
-                <button class="key-btn miss-btn" data-val="0">MISS</button>
-                <button class="key-btn bull-btn" data-val="25" data-mult="1">BULL</button>
-                <button class="key-btn dbull-btn" data-val="25" data-mult="2">D-BULL</button>
+                <button class="key-btn special-btn" data-special="bull">BULL</button>
+                <button class="key-btn special-btn" data-special="miss">MISS</button>
             </div>
             
-            <!-- Preview and confirm -->
-            <div class="correction-preview">
-                <span id="correction-preview-text">—</span>
-                <span id="correction-preview-score">0</span>
+            <!-- Modifier buttons -->
+            <div class="modifier-row">
+                <button class="mod-btn" data-mod="double">DOUBLE</button>
+                <button class="mod-btn" data-mod="triple">TRIPLE</button>
             </div>
             
+            <!-- Action buttons -->
             <div class="correction-actions">
                 <button id="correction-cancel" class="btn btn-secondary">Cancel</button>
-                <button id="correction-confirm" class="btn btn-primary">Confirm</button>
+                <button id="correction-confirm" class="btn btn-primary">Enter</button>
             </div>
         </div>
     </div>

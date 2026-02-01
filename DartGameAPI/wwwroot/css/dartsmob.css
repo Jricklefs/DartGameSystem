@@ -603,6 +603,64 @@ html, body {
     letter-spacing: 0.1em;
 }
 
+
+/* Input display for correction modal */
+.correction-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    min-height: 60px;
+}
+
+#correction-input-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    color: var(--paper);
+    letter-spacing: 0.1em;
+}
+
+/* Modifier row for DOUBLE/TRIPLE */
+.modifier-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.mod-btn {
+    flex: 1;
+    padding: 14px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: var(--paper);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mod-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.mod-btn.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ink);
+}
+
+.special-btn {
+    flex: 1;
+    padding: 14px 8px;
+    font-size: 1.1rem;
+}
+
 .multiplier-row {
     display: flex;
     gap: 8px;

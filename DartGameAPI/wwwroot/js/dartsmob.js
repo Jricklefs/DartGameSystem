@@ -438,8 +438,8 @@ function formatMode(mode) {
 // ==========================================================================
 
 let correctionDartIndex = null;
-let correctionSegment = null;
-let correctionMultiplier = 1;
+let correctionInput = '';  // String input like "20" or "bull"
+let correctionMultiplier = 1;  // 1=single, 2=double, 3=triple
 
 function initDartCorrection() {
     // Make dart slots clickable
@@ -450,48 +450,44 @@ function initDartCorrection() {
         });
     });
     
-    // Multiplier buttons
-    document.querySelectorAll('.mult-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            correctionMultiplier = parseInt(btn.dataset.mult);
-            updateCorrectionPreview();
-        });
-    });
-    
-    // Number keypad
+    // Number keypad (0-9)
     document.querySelectorAll('.keypad .key-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.keypad .key-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            correctionSegment = parseInt(btn.dataset.val);
-            updateCorrectionPreview();
+            const val = btn.dataset.val;
+            appendDigit(val);
         });
     });
     
-    // Special buttons (Miss, Bull, D-Bull)
-    document.querySelector('.miss-btn')?.addEventListener('click', () => {
-        clearKeypadSelection();
-        correctionSegment = 0;
-        correctionMultiplier = 1;
-        updateCorrectionPreview();
+    // Special buttons (Bull, Miss)
+    document.querySelectorAll('.special-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const special = btn.dataset.special;
+            if (special === 'bull') {
+                correctionInput = 'bull';
+                correctionMultiplier = 1;  // Reset to single bull
+            } else if (special === 'miss') {
+                correctionInput = 'miss';
+                correctionMultiplier = 1;
+            }
+            updateCorrectionDisplay();
+        });
     });
     
-    document.querySelector('.bull-btn')?.addEventListener('click', () => {
-        clearKeypadSelection();
-        correctionSegment = 25;
-        correctionMultiplier = 1;
-        document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
-        updateCorrectionPreview();
-    });
-    
-    document.querySelector('.dbull-btn')?.addEventListener('click', () => {
-        clearKeypadSelection();
-        correctionSegment = 25;
-        correctionMultiplier = 2;
-        document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
-        updateCorrectionPreview();
+    // Modifier buttons (Double, Triple)
+    document.querySelectorAll('.mod-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mod = btn.dataset.mod;
+            // Toggle - if already active, turn off (go back to single)
+            if (btn.classList.contains('active')) {
+                btn.classList.remove('active');
+                correctionMultiplier = 1;
+            } else {
+                document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                correctionMultiplier = mod === 'double' ? 2 : 3;
+            }
+            updateCorrectionDisplay();
+        });
     });
     
     // Cancel button
@@ -500,30 +496,78 @@ function initDartCorrection() {
     // Backdrop click to close
     document.querySelector('#dart-correction-modal .modal-backdrop')?.addEventListener('click', closeCorrectionModal);
     
-    // Confirm button
+    // Confirm/Enter button
     document.getElementById('correction-confirm')?.addEventListener('click', submitCorrection);
 }
 
-function clearKeypadSelection() {
-    document.querySelectorAll('.keypad .key-btn').forEach(b => b.classList.remove('selected'));
-    document.querySelectorAll('.special-row .key-btn').forEach(b => b.classList.remove('selected'));
+function appendDigit(digit) {
+    // If input is special (bull/miss), clear it
+    if (correctionInput === 'bull' || correctionInput === 'miss') {
+        correctionInput = '';
+    }
+    
+    // Build number string
+    const newInput = correctionInput + digit;
+    const num = parseInt(newInput, 10);
+    
+    // Valid dart segments are 1-20, but we type 0-9
+    // Allow up to 2 digits, max value 20
+    if (num <= 20) {
+        correctionInput = newInput;
+    } else if (digit !== '0' && correctionInput === '') {
+        // Single digit 1-9 is valid
+        correctionInput = digit;
+    }
+    
+    updateCorrectionDisplay();
+}
+
+function getSegmentAndScore() {
+    if (correctionInput === 'miss' || correctionInput === '') {
+        return { segment: 0, score: 0, display: 'MISS' };
+    }
+    
+    if (correctionInput === 'bull') {
+        const score = correctionMultiplier === 2 ? 50 : 25;
+        const display = correctionMultiplier === 2 ? 'D-BULL' : 'BULL';
+        return { segment: 25, score, display };
+    }
+    
+    const segment = parseInt(correctionInput, 10);
+    if (isNaN(segment) || segment < 1 || segment > 20) {
+        return { segment: 0, score: 0, display: '—' };
+    }
+    
+    const score = segment * correctionMultiplier;
+    const prefix = correctionMultiplier === 3 ? 'T' : correctionMultiplier === 2 ? 'D' : '';
+    const display = prefix + segment;
+    
+    return { segment, score, display };
+}
+
+function updateCorrectionDisplay() {
+    const displayEl = document.getElementById('correction-input-display');
+    const { display, score } = getSegmentAndScore();
+    
+    if (correctionInput === '' && correctionMultiplier === 1) {
+        displayEl.textContent = '—';
+    } else {
+        displayEl.textContent = `${display} = ${score}`;
+    }
 }
 
 function openCorrectionModal(dartIndex) {
     if (!currentGame) return;
     
     correctionDartIndex = dartIndex;
-    correctionSegment = null;
+    correctionInput = '';
     correctionMultiplier = 1;
     
     // Reset UI
-    document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('.mult-btn[data-mult="1"]')?.classList.add('active');
-    clearKeypadSelection();
+    document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
     
     document.getElementById('correction-dart-num').textContent = dartIndex + 1;
-    document.getElementById('correction-preview-text').textContent = '—';
-    document.getElementById('correction-preview-score').textContent = '0';
+    document.getElementById('correction-input-display').textContent = '—';
     
     document.getElementById('dart-correction-modal')?.classList.remove('hidden');
 }
@@ -533,35 +577,16 @@ function closeCorrectionModal() {
     correctionDartIndex = null;
 }
 
-function updateCorrectionPreview() {
-    const textEl = document.getElementById('correction-preview-text');
-    const scoreEl = document.getElementById('correction-preview-score');
-    
-    if (correctionSegment === null) {
-        textEl.textContent = '—';
-        scoreEl.textContent = '0';
-        return;
-    }
-    
-    if (correctionSegment === 0) {
-        textEl.textContent = 'MISS';
-        scoreEl.textContent = '0';
-        return;
-    }
-    
-    if (correctionSegment === 25) {
-        textEl.textContent = correctionMultiplier === 2 ? 'D-BULL' : 'BULL';
-        scoreEl.textContent = correctionSegment * correctionMultiplier;
-        return;
-    }
-    
-    const prefix = correctionMultiplier === 3 ? 'T' : correctionMultiplier === 2 ? 'D' : 'S';
-    textEl.textContent = `${prefix}${correctionSegment}`;
-    scoreEl.textContent = correctionSegment * correctionMultiplier;
-}
-
 async function submitCorrection() {
-    if (correctionDartIndex === null || correctionSegment === null || !currentGame) {
+    const { segment, score, display } = getSegmentAndScore();
+    
+    if (correctionDartIndex === null || !currentGame) {
+        return;
+    }
+    
+    // Allow miss (segment 0)
+    if (correctionInput === '' && segment === 0 && correctionMultiplier === 1) {
+        // Nothing entered - treat as cancel or require input
         return;
     }
     
@@ -571,7 +596,7 @@ async function submitCorrection() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 dartIndex: correctionDartIndex,
-                segment: correctionSegment,
+                segment: segment,
                 multiplier: correctionMultiplier
             })
         });
