@@ -45,6 +45,9 @@ builder.Services.AddHttpClient<DartDetectClient>();
 // Game service (singleton - holds all state)
 builder.Services.AddSingleton<GameService>();
 
+// Matchmaking service (singleton - manages online play)
+builder.Services.AddSingleton<MatchmakingService>();
+
 var app = builder.Build();
 
 // Verify database connection on startup

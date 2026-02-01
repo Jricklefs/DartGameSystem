@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using DartGameAPI.Services;
 using System.Collections.Concurrent;
 
 namespace DartGameAPI.Hubs;
@@ -9,13 +10,16 @@ namespace DartGameAPI.Hubs;
 public class OnlineGameHub : Hub
 {
     private readonly ILogger<OnlineGameHub> _logger;
+    private readonly MatchmakingService _matchmaking;
     private static readonly ConcurrentDictionary<string, OnlineMatch> _matches = new();
     private static readonly ConcurrentDictionary<string, string> _connectionToMatch = new();
     private static readonly ConcurrentDictionary<string, OnlinePlayer> _players = new();
+    private static readonly ConcurrentDictionary<string, Guid> _connectionToPlayerId = new();
 
-    public OnlineGameHub(ILogger<OnlineGameHub> logger)
+    public OnlineGameHub(ILogger<OnlineGameHub> logger, MatchmakingService matchmaking)
     {
         _logger = logger;
+        _matchmaking = matchmaking;
     }
 
     public override async Task OnConnectedAsync()
@@ -28,6 +32,12 @@ public class OnlineGameHub : Hub
     {
         var connectionId = Context.ConnectionId;
         _logger.LogInformation("Online player disconnected: {ConnectionId}", connectionId);
+
+        // Notify matchmaking service
+        if (_connectionToPlayerId.TryRemove(connectionId, out var playerId))
+        {
+            await _matchmaking.PlayerDisconnected(playerId);
+        }
 
         // Clean up player from match
         if (_connectionToMatch.TryRemove(connectionId, out var matchCode))
@@ -58,19 +68,25 @@ public class OnlineGameHub : Hub
     }
 
     /// <summary>
-    /// Register as an online player
+    /// Register as an online player with optional geo-location
     /// </summary>
-    public async Task Register(string displayName, string? playerId = null)
+    public async Task Register(string displayName, string? playerId = null, Guid? boardId = null, double? lat = null, double? lon = null)
     {
+        var pId = playerId != null ? Guid.Parse(playerId) : Guid.NewGuid();
+        
         var player = new OnlinePlayer
         {
             ConnectionId = Context.ConnectionId,
-            PlayerId = playerId ?? Guid.NewGuid().ToString(),
+            PlayerId = pId.ToString(),
             DisplayName = displayName,
             JoinedAt = DateTime.UtcNow
         };
 
         _players[Context.ConnectionId] = player;
+        _connectionToPlayerId[Context.ConnectionId] = pId;
+        
+        // Register with matchmaking service
+        await _matchmaking.PlayerConnected(pId, Context.ConnectionId, boardId, lat, lon);
         
         await Clients.Caller.SendAsync("Registered", new
         {
@@ -430,6 +446,74 @@ public class OnlineGameHub : Hub
             .ToList();
 
         await Clients.Caller.SendAsync("OpenMatches", openMatches);
+    }
+
+    /// <summary>
+    /// Join matchmaking queue
+    /// </summary>
+    public async Task JoinMatchmakingQueue(string gameMode, string preference = "anyone", int? minRating = null, int? maxRating = null)
+    {
+        if (!_connectionToPlayerId.TryGetValue(Context.ConnectionId, out var playerId))
+        {
+            await Clients.Caller.SendAsync("Error", "Please register first");
+            return;
+        }
+
+        var pref = preference.ToLower() switch
+        {
+            "similar" => Models.MatchmakingPreference.SimilarSkill,
+            "chosen" => Models.MatchmakingPreference.ChosenSkill,
+            "friends" => Models.MatchmakingPreference.FriendsOnly,
+            _ => Models.MatchmakingPreference.Anyone
+        };
+
+        await _matchmaking.JoinQueue(playerId, Guid.Empty, gameMode, pref, minRating, maxRating);
+    }
+
+    /// <summary>
+    /// Leave matchmaking queue
+    /// </summary>
+    public async Task LeaveMatchmakingQueue()
+    {
+        if (_connectionToPlayerId.TryGetValue(Context.ConnectionId, out var playerId))
+        {
+            await _matchmaking.LeaveQueue(playerId);
+        }
+    }
+
+    /// <summary>
+    /// Get friends with online status
+    /// </summary>
+    public async Task GetFriends()
+    {
+        if (!_connectionToPlayerId.TryGetValue(Context.ConnectionId, out var playerId))
+        {
+            await Clients.Caller.SendAsync("Error", "Please register first");
+            return;
+        }
+
+        var friends = await _matchmaking.GetFriendsWithStatus(playerId);
+        await Clients.Caller.SendAsync("FriendsList", friends);
+    }
+
+    /// <summary>
+    /// Get online player count
+    /// </summary>
+    public async Task GetOnlineCount()
+    {
+        var count = _matchmaking.GetOnlineCount();
+        await Clients.Caller.SendAsync("OnlineCount", count);
+    }
+
+    /// <summary>
+    /// Heartbeat to keep session alive
+    /// </summary>
+    public void Heartbeat()
+    {
+        if (_connectionToPlayerId.TryGetValue(Context.ConnectionId, out var playerId))
+        {
+            _matchmaking.UpdateHeartbeat(playerId);
+        }
     }
 
     private static string GenerateMatchCode()

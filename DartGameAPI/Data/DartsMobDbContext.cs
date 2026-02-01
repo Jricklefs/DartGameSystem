@@ -18,6 +18,12 @@ public class DartsMobDbContext : DbContext
     public DbSet<GamePlayerEntity> GamePlayers => Set<GamePlayerEntity>();
     public DbSet<ThrowEntity> Throws => Set<ThrowEntity>();
     public DbSet<CalibrationEntity> Calibrations => Set<CalibrationEntity>();
+    
+    // Online play entities
+    public DbSet<RegisteredBoard> RegisteredBoards => Set<RegisteredBoard>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<PlayerRating> PlayerRatings => Set<PlayerRating>();
+    public DbSet<Availability> Availabilities => Set<Availability>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -90,6 +96,67 @@ public class DartsMobDbContext : DbContext
             entity.Property(e => e.CameraId).HasMaxLength(50).IsRequired();
             entity.HasIndex(e => e.CameraId).IsUnique();
         });
+
+        // ============================================================================
+        // Online Play Entities
+        // ============================================================================
+
+        // RegisteredBoards
+        modelBuilder.Entity<RegisteredBoard>(entity =>
+        {
+            entity.ToTable("RegisteredBoards");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Location).HasMaxLength(100);
+            entity.Property(e => e.Timezone).HasMaxLength(50);
+            entity.HasOne(e => e.Owner)
+                  .WithMany()
+                  .HasForeignKey(e => e.OwnerId)
+                  .HasPrincipalKey(p => p.PlayerId);
+        });
+
+        // Friendships
+        modelBuilder.Entity<Friendship>(entity =>
+        {
+            entity.ToTable("Friendships");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Requester)
+                  .WithMany()
+                  .HasForeignKey(e => e.RequesterId)
+                  .HasPrincipalKey(p => p.PlayerId)
+                  .OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.Addressee)
+                  .WithMany()
+                  .HasForeignKey(e => e.AddresseeId)
+                  .HasPrincipalKey(p => p.PlayerId)
+                  .OnDelete(DeleteBehavior.NoAction);
+            entity.HasIndex(e => new { e.RequesterId, e.AddresseeId }).IsUnique();
+        });
+
+        // PlayerRatings
+        modelBuilder.Entity<PlayerRating>(entity =>
+        {
+            entity.ToTable("PlayerRatings");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.GameMode).HasMaxLength(50).IsRequired();
+            entity.HasOne(e => e.Player)
+                  .WithMany()
+                  .HasForeignKey(e => e.PlayerId)
+                  .HasPrincipalKey(p => p.PlayerId);
+            entity.HasIndex(e => new { e.PlayerId, e.GameMode }).IsUnique();
+        });
+
+        // Availability
+        modelBuilder.Entity<Availability>(entity =>
+        {
+            entity.ToTable("Availability");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Timezone).HasMaxLength(50);
+            entity.HasOne(e => e.Player)
+                  .WithMany()
+                  .HasForeignKey(e => e.PlayerId)
+                  .HasPrincipalKey(p => p.PlayerId);
+        });
     }
 }
 
@@ -106,6 +173,9 @@ public class PlayerEntity
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public bool IsActive { get; set; }
+    
+    // For navigation from online models
+    public string Name => Nickname;
 }
 
 public class BoardEntity
