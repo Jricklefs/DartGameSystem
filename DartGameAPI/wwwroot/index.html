@@ -35,11 +35,11 @@
             <div class="form-section">
                 <label class="form-label">GAME</label>
                 <select id="game-category" class="form-select">
-                    <option value="practice">🎯 Practice</option>
-                    <option value="x01" selected>🔢 X01 (301, 501...)</option>
+                    <option value="x01" selected>🔢 X01</option>
                     <option value="cricket">🦗 Cricket</option>
                     <option value="around">🔄 Around the World</option>
                     <option value="killer">💀 Killer</option>
+                    <option value="practice">🎯 Practice</option>
                 </select>
             </div>
 
@@ -47,23 +47,15 @@
             <div class="form-section" id="variant-section">
                 <label class="form-label">VARIANT</label>
                 <select id="game-variant" class="form-select">
-                    <option value="301">301</option>
-                    <option value="501" selected>501</option>
-                    <option value="701">701</option>
-                    <option value="1001">1001</option>
+                    <!-- Populated by JS based on category -->
                 </select>
             </div>
 
-            <!-- Rules (changes based on category) -->
+            <!-- Rules (dynamically generated based on category) -->
             <div class="form-section" id="rules-section">
-                <label class="form-label">RULES</label>
+                <label class="form-label">OPTIONS</label>
                 <div class="rules-options">
-                    <label class="rule-option">
-                        <input type="checkbox" id="rule-double-in"> Double In
-                    </label>
-                    <label class="rule-option">
-                        <input type="checkbox" id="rule-double-out" checked> Double Out
-                    </label>
+                    <!-- Populated by JS based on category -->
                 </div>
             </div>
 

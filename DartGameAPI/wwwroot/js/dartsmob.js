@@ -279,10 +279,9 @@ async function startGame() {
         players.push('Player 1');
     }
     
-    // Get game mode from dropdowns
+    // Get game mode and rules from dropdowns
     const gameMode = getSelectedGameMode();
-    const doubleIn = document.getElementById('rule-double-in')?.checked || false;
-    const doubleOut = document.getElementById('rule-double-out')?.checked || true;
+    const rules = getSelectedRules();
     
     try {
         const response = await fetch('/api/games', {
@@ -293,8 +292,7 @@ async function startGame() {
                 mode: gameMode,
                 playerNames: players,
                 bestOf: selectedBestOf,
-                doubleIn: doubleIn,
-                doubleOut: doubleOut
+                rules: rules
             })
         });
         
@@ -355,33 +353,68 @@ function updateRoundDisplay() {
 // Event Listeners
 // ==========================================================================
 
-// Game variants by category
-const gameVariants = {
-    practice: [
-        { value: 'CountUp', label: 'Count Up' },
-        { value: 'HighScore', label: 'High Score' },
-        { value: 'Doubles', label: 'Doubles Practice' },
-        { value: 'Triples', label: 'Triples Practice' }
-    ],
-    x01: [
-        { value: '301', label: '301' },
-        { value: '501', label: '501' },
-        { value: '701', label: '701' },
-        { value: '1001', label: '1001' }
-    ],
-    cricket: [
-        { value: 'CricketStandard', label: 'Standard Cricket' },
-        { value: 'CricketCutThroat', label: 'Cut-Throat' },
-        { value: 'CricketWild', label: 'Wild Cricket' }
-    ],
-    around: [
-        { value: 'AroundTheClock', label: 'Around the Clock' },
-        { value: 'Shanghai', label: 'Shanghai' }
-    ],
-    killer: [
-        { value: 'Killer', label: 'Killer' },
-        { value: 'BlindKiller', label: 'Blind Killer' }
-    ]
+// Game definitions with category-specific options
+const gameConfig = {
+    x01: {
+        label: '🔢 X01',
+        variants: [
+            { value: '301', label: '301' },
+            { value: '501', label: '501' },
+            { value: '701', label: '701' },
+            { value: '1001', label: '1001' }
+        ],
+        defaultVariant: '501',
+        rules: [
+            { id: 'double-in', label: 'Double In', default: false },
+            { id: 'double-out', label: 'Double Out', default: true }
+        ]
+    },
+    cricket: {
+        label: '🦗 Cricket',
+        variants: [
+            { value: 'CricketStandard', label: 'Standard' },
+            { value: 'CricketCutThroat', label: 'Cut-Throat' },
+            { value: 'CricketWild', label: 'Wild (Random Numbers)' }
+        ],
+        defaultVariant: 'CricketStandard',
+        rules: [
+            { id: 'points-to-win', label: 'Points Required', default: false }
+        ]
+    },
+    around: {
+        label: '🔄 Around the World',
+        variants: [
+            { value: 'AroundTheClock', label: 'Around the Clock (1-20)' },
+            { value: 'Shanghai', label: 'Shanghai' }
+        ],
+        defaultVariant: 'AroundTheClock',
+        rules: [
+            { id: 'include-bull', label: 'Include Bull', default: true },
+            { id: 'doubles-only', label: 'Doubles Only', default: false }
+        ]
+    },
+    killer: {
+        label: '💀 Killer',
+        variants: [
+            { value: 'Killer', label: 'Killer' },
+            { value: 'BlindKiller', label: 'Blind Killer' }
+        ],
+        defaultVariant: 'Killer',
+        rules: [
+            { id: 'lives', label: 'Lives: 3', default: true }
+        ]
+    },
+    practice: {
+        label: '🎯 Practice',
+        variants: [
+            { value: 'FreePlay', label: 'Free Play (Count Up)' },
+            { value: 'DoublesTraining', label: 'Doubles Training' },
+            { value: 'TriplesTraining', label: 'Triples Training' },
+            { value: 'BullseyeTraining', label: 'Bullseye Training' }
+        ],
+        defaultVariant: 'FreePlay',
+        rules: []
+    }
 };
 
 function initEventListeners() {
@@ -391,13 +424,10 @@ function initEventListeners() {
         categorySelect.addEventListener('change', function() {
             const category = this.value;
             updateVariants(category);
-            updateRulesVisibility(category);
+            updateRulesSection(category);
             
-            // Show/hide legs/variant/rules sections
+            // Show/hide legs section (hide for practice)
             const legsSection = document.getElementById('legs-section');
-            const variantSection = document.getElementById('variant-section');
-            const rulesSection = document.getElementById('rules-section');
-            
             if (legsSection) {
                 legsSection.style.display = category === 'practice' ? 'none' : '';
             }
@@ -405,7 +435,7 @@ function initEventListeners() {
         
         // Initialize for default selection
         updateVariants(categorySelect.value);
-        updateRulesVisibility(categorySelect.value);
+        updateRulesSection(categorySelect.value);
     }
     
     // Legs buttons
@@ -453,12 +483,17 @@ function initEventListeners() {
 function updateVariants(category) {
     const variantSelect = document.getElementById('game-variant');
     const variantSection = document.getElementById('variant-section');
-    const variants = gameVariants[category] || [];
+    const config = gameConfig[category];
 
-    if (!variantSection || !variantSelect) return;
+    if (!variantSection || !variantSelect || !config) return;
 
+    const variants = config.variants || [];
+    
     if (variants.length <= 1) {
         variantSection.style.display = 'none';
+        if (variants.length === 1) {
+            variantSelect.innerHTML = `<option value="${variants[0].value}">${variants[0].label}</option>`;
+        }
         return;
     }
 
@@ -467,35 +502,62 @@ function updateVariants(category) {
         `<option value="${v.value}">${v.label}</option>`
     ).join('');
     
-    // Select 501 by default for x01
-    if (category === 'x01') {
-        variantSelect.value = '501';
+    // Set default
+    if (config.defaultVariant) {
+        variantSelect.value = config.defaultVariant;
     }
 }
 
-function updateRulesVisibility(category) {
+function updateRulesSection(category) {
     const rulesSection = document.getElementById('rules-section');
-    if (!rulesSection) return;
+    const rulesContainer = document.querySelector('.rules-options');
+    const config = gameConfig[category];
+    
+    if (!rulesSection || !rulesContainer) return;
 
-    // Show rules only for x01
-    if (category === 'x01') {
-        rulesSection.style.display = '';
-    } else {
+    const rules = config?.rules || [];
+    
+    if (rules.length === 0) {
         rulesSection.style.display = 'none';
+        return;
     }
+
+    rulesSection.style.display = '';
+    rulesContainer.innerHTML = rules.map(rule => `
+        <label class="rule-option">
+            <input type="checkbox" id="rule-${rule.id}" ${rule.default ? 'checked' : ''}> ${rule.label}
+        </label>
+    `).join('');
 }
 
 function getSelectedGameMode() {
     const category = document.getElementById('game-category')?.value || 'x01';
-    const variant = document.getElementById('game-variant')?.value || '501';
+    const variant = document.getElementById('game-variant')?.value;
+    const config = gameConfig[category];
     
-    if (category === 'practice') {
-        return variant || 'Practice';
-    } else if (category === 'x01') {
-        return `Game${variant}`;
+    // Use variant if selected, otherwise default
+    const gameVariant = variant || config?.defaultVariant || '501';
+    
+    if (category === 'x01') {
+        return `Game${gameVariant}`;
     } else {
-        return variant;
+        return gameVariant;
     }
+}
+
+function getSelectedRules() {
+    const category = document.getElementById('game-category')?.value || 'x01';
+    const config = gameConfig[category];
+    const rules = {};
+    
+    if (config?.rules) {
+        config.rules.forEach(rule => {
+            const checkbox = document.getElementById(`rule-${rule.id}`);
+            rules[rule.id] = checkbox?.checked ?? rule.default;
+        });
+    }
+    
+    return rules;
 }
 
 // ==========================================================================
