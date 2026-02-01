@@ -279,15 +279,22 @@ async function startGame() {
         players.push('Player 1');
     }
     
+    // Get game mode from dropdowns
+    const gameMode = getSelectedGameMode();
+    const doubleIn = document.getElementById('rule-double-in')?.checked || false;
+    const doubleOut = document.getElementById('rule-double-out')?.checked || true;
+    
     try {
         const response = await fetch('/api/games', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 boardId,
-                mode: selectedMode,
+                mode: gameMode,
                 playerNames: players,
-                bestOf: selectedBestOf
+                bestOf: selectedBestOf,
+                doubleIn: doubleIn,
+                doubleOut: doubleOut
             })
         });
         
@@ -348,21 +355,58 @@ function updateRoundDisplay() {
 // Event Listeners
 // ==========================================================================
 
+// Game variants by category
+const gameVariants = {
+    practice: [
+        { value: 'CountUp', label: 'Count Up' },
+        { value: 'HighScore', label: 'High Score' },
+        { value: 'Doubles', label: 'Doubles Practice' },
+        { value: 'Triples', label: 'Triples Practice' }
+    ],
+    x01: [
+        { value: '301', label: '301' },
+        { value: '501', label: '501' },
+        { value: '701', label: '701' },
+        { value: '1001', label: '1001' }
+    ],
+    cricket: [
+        { value: 'CricketStandard', label: 'Standard Cricket' },
+        { value: 'CricketCutThroat', label: 'Cut-Throat' },
+        { value: 'CricketWild', label: 'Wild Cricket' }
+    ],
+    around: [
+        { value: 'AroundTheClock', label: 'Around the Clock' },
+        { value: 'Shanghai', label: 'Shanghai' }
+    ],
+    killer: [
+        { value: 'Killer', label: 'Killer' },
+        { value: 'BlindKiller', label: 'Blind Killer' }
+    ]
+};
+
 function initEventListeners() {
-    // Game mode buttons
-    document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedMode = btn.dataset.mode;
+    // Game category dropdown
+    const categorySelect = document.getElementById('game-category');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            const category = this.value;
+            updateVariants(category);
+            updateRulesVisibility(category);
             
-            // Show/hide legs selector
+            // Show/hide legs/variant/rules sections
             const legsSection = document.getElementById('legs-section');
+            const variantSection = document.getElementById('variant-section');
+            const rulesSection = document.getElementById('rules-section');
+            
             if (legsSection) {
-                legsSection.style.display = selectedMode === 'Practice' ? 'none' : '';
+                legsSection.style.display = category === 'practice' ? 'none' : '';
             }
         });
-    });
+        
+        // Initialize for default selection
+        updateVariants(categorySelect.value);
+        updateRulesVisibility(categorySelect.value);
+    }
     
     // Legs buttons
     document.querySelectorAll('.legs-btn').forEach(btn => {
@@ -398,10 +442,59 @@ function initEventListeners() {
         showScreen('setup-screen');
     });
     
-    // Hide legs section initially for Practice mode
+    // Initialize game selection state
     const legsSection = document.getElementById('legs-section');
-    if (legsSection) {
-        legsSection.style.display = 'none';
+    const categorySelect = document.getElementById('game-category');
+    if (legsSection && categorySelect) {
+        legsSection.style.display = categorySelect.value === 'practice' ? 'none' : '';
+    }
+}
+
+function updateVariants(category) {
+    const variantSelect = document.getElementById('game-variant');
+    const variantSection = document.getElementById('variant-section');
+    const variants = gameVariants[category] || [];
+
+    if (!variantSection || !variantSelect) return;
+
+    if (variants.length <= 1) {
+        variantSection.style.display = 'none';
+        return;
+    }
+
+    variantSection.style.display = '';
+    variantSelect.innerHTML = variants.map(v => 
+        `<option value="${v.value}">${v.label}</option>`
+    ).join('');
+    
+    // Select 501 by default for x01
+    if (category === 'x01') {
+        variantSelect.value = '501';
+    }
+}
+
+function updateRulesVisibility(category) {
+    const rulesSection = document.getElementById('rules-section');
+    if (!rulesSection) return;
+
+    // Show rules only for x01
+    if (category === 'x01') {
+        rulesSection.style.display = '';
+    } else {
+        rulesSection.style.display = 'none';
+    }
+}
+
+function getSelectedGameMode() {
+    const category = document.getElementById('game-category')?.value || 'x01';
+    const variant = document.getElementById('game-variant')?.value || '501';
+    
+    if (category === 'practice') {
+        return variant || 'Practice';
+    } else if (category === 'x01') {
+        return `Game${variant}`;
+    } else {
+        return variant;
     }
 }
 
@@ -454,12 +547,22 @@ function escapeHtml(text) {
 }
 
 function formatMode(mode) {
+    // Handle X01 games
+    const x01Match = mode.match(/^Game(\d+)$/);
+    if (x01Match) return x01Match[1];
+    
+    // Handle other modes
     switch (mode) {
-        case 'Practice': return 'PRACTICE';
-        case 'Game501': return '501';
-        case 'Game301': return '301';
-        case 'Cricket': return 'CRICKET';
-        default: return mode;
+        case 'Practice': 
+        case 'CountUp':
+        case 'HighScore':
+            return 'PRACTICE';
+        case 'CricketStandard': return 'CRICKET';
+        case 'CricketCutThroat': return 'CUT-THROAT';
+        case 'AroundTheClock': return 'AROUND';
+        case 'Shanghai': return 'SHANGHAI';
+        case 'Killer': return 'KILLER';
+        default: return mode.toUpperCase();
     }
 }
 

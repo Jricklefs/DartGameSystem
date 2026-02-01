@@ -30,7 +30,7 @@ html, body {
     height: 100%;
     overflow: hidden;
     font-family: 'Special Elite', monospace;
-    background: var(--ink);
+    background: transparent;
     color: var(--paper);
 }
 
@@ -211,7 +211,7 @@ html, body {
     padding: 14px 16px;
     font-family: 'Special Elite', monospace;
     font-size: 16px; /* Prevents iOS zoom */
-    background: var(--ink);
+    background: transparent;
     border: 1px solid var(--gold-dark);
     color: var(--paper);
     border-radius: 4px;
@@ -616,7 +616,7 @@ html, body {
 
 .modal-content {
     position: relative;
-    background: var(--ink);
+    background: transparent;
     border: 2px solid var(--gold);
     border-radius: 12px;
     padding: 20px;
@@ -1597,7 +1597,7 @@ html, body {
     padding: 12px 14px;
     font-family: 'Special Elite', monospace;
     font-size: 16px;
-    background: var(--ink);
+    background: transparent;
     border: 1px solid var(--gold-dark);
     color: var(--paper);
     border-radius: 4px;
@@ -1689,7 +1689,7 @@ html, body {
 
 .select {
     padding: 6px 10px;
-    background: var(--ink);
+    background: transparent;
     border: 1px solid var(--gold-dark);
     color: var(--paper);
     border-radius: 4px;
@@ -1716,7 +1716,7 @@ html, body {
     flex: 1;
     -webkit-appearance: none;
     height: 6px;
-    background: var(--ink);
+    background: transparent;
     border-radius: 3px;
 }
 
@@ -1774,4 +1774,60 @@ html, body {
     .bg-gallery {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     }
+}
+
+
+/* ==========================================================================
+   Form Select Dropdown (Game Category/Variant)
+   ========================================================================== */
+
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    font-family: 'Special Elite', monospace;
+    font-size: 1rem;
+    background: var(--smoke);
+    border: 1px solid var(--gold-dark);
+    border-radius: 8px;
+    color: var(--paper);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23d4a84b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(212, 168, 75, 0.2);
+}
+
+.form-select option {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8px;
+}
+
+/* Rules Options (Double In/Out checkboxes) */
+.rules-options {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.rule-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--paper);
+}
+
+.rule-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--gold);
+    cursor: pointer;
 }

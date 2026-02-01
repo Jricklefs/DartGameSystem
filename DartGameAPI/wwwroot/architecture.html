@@ -581,7 +581,7 @@
                     const boards = await response.json();
                     const board = boards[0];
                     if (board) {
-                        setStatus('status-board', board.isCalibrated ? 'online' : 'offline');
+                        setStatus('status-board', 'online');
                         document.getElementById('board-id').textContent = board.boardId;
                         document.getElementById('board-location').textContent = board.location || 'Not set';
                         document.getElementById('board-calibration').textContent = 
