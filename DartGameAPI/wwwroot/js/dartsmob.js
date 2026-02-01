@@ -471,9 +471,9 @@ function initEventListeners() {
     
     // Initialize game selection state
     const legsSection = document.getElementById('legs-section');
-    const categorySelect = document.getElementById('game-category');
-    if (legsSection && categorySelect) {
-        legsSection.style.display = categorySelect.value === 'practice' ? 'none' : '';
+    const catSelect = document.getElementById('game-category');
+    if (legsSection && catSelect) {
+        legsSection.style.display = catSelect.value === 'practice' ? 'none' : '';
     }
 }
 
