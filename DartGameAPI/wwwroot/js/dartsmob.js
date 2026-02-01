@@ -18,6 +18,7 @@ let connection = null;
 let currentGame = null;
 let selectedMode = 'Practice';
 let selectedBestOf = 5;
+let lookingForMatch = false;  // Looking for match toggle state
 
 // ==========================================================================
 // Initialization
@@ -1023,6 +1024,9 @@ async function initOnlinePlay() {
         if (e.key === 'Enter') sendOnlineChat();
     });
     
+    // Looking for match toggle
+    document.getElementById('looking-for-match-toggle')?.addEventListener('change', toggleLookingForMatch);
+    
     // Fetch online count for footer display
     fetchOnlineCount();
     setInterval(fetchOnlineCount, 30000); // Refresh every 30s
@@ -1040,8 +1044,38 @@ async function fetchOnlineCount() {
         console.log('Could not fetch online count');
     }
 }
-        if (e.key === 'Enter') sendOnlineChat();
-    });
+
+// Toggle looking for match - stays in queue while playing locally
+async function toggleLookingForMatch(e) {
+    lookingForMatch = e.target.checked;
+    const statusEl = document.getElementById('match-search-status');
+    
+    if (lookingForMatch) {
+        // Connect to online hub and join queue
+        try {
+            await connectOnlineHub();
+            await onlineConnection.invoke('JoinMatchmakingQueue', 'Game501', 'anyone', null, null);
+            if (statusEl) {
+                statusEl.textContent = '🔍 Searching for opponent...';
+                statusEl.classList.add('active');
+            }
+        } catch (err) {
+            console.error('Failed to join queue:', err);
+            e.target.checked = false;
+            lookingForMatch = false;
+        }
+    } else {
+        // Leave queue
+        try {
+            await onlineConnection?.invoke('LeaveMatchmakingQueue');
+            if (statusEl) {
+                statusEl.textContent = '';
+                statusEl.classList.remove('active');
+            }
+        } catch (err) {
+            console.error('Failed to leave queue:', err);
+        }
+    }
 }
 
 async function connectOnlineHub() {

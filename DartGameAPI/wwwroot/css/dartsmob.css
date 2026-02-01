@@ -2400,3 +2400,78 @@ html, body {
     align-items: center;
     padding: 12px 20px;
 }
+
+/* Looking for Match Toggle */
+.match-search-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-input {
+    display: none;
+}
+
+.toggle-switch {
+    width: 44px;
+    height: 24px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    position: relative;
+    transition: background 0.3s;
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #888;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s;
+}
+
+.toggle-input:checked + .toggle-switch {
+    background: rgba(46, 204, 113, 0.3);
+}
+
+.toggle-input:checked + .toggle-switch::after {
+    left: 22px;
+    background: #2ecc71;
+    box-shadow: 0 0 8px #2ecc71;
+}
+
+.toggle-text {
+    color: var(--gold);
+    font-size: 0.9rem;
+}
+
+.match-status {
+    color: #2ecc71;
+    font-size: 0.85rem;
+    animation: pulse-text 2s infinite;
+}
+
+.match-status:not(.active) {
+    display: none;
+}
+
+@keyframes pulse-text {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
