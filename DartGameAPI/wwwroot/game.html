@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DartsMob - New Game</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="apple-touch-icon" href="/favicon.svg">
+    <link rel="stylesheet" href="/css/dartsmob.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        /* Compact layout for desktop - avoid scrolling */
+        @media (min-width: 900px) {
+            .setup-card {
+                max-width: 800px;
+                padding: 20px 30px;
+            }
+            .setup-card h2 {
+                font-size: 1.8rem;
+                margin-bottom: 16px;
+            }
+            .form-section {
+                margin-bottom: 12px;
+            }
+            .form-label {
+                font-size: 0.75rem;
+                margin-bottom: 4px;
+            }
+            .form-select {
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+            .rules-options {
+                gap: 16px;
+            }
+            .legs-group {
+                gap: 8px;
+            }
+            .legs-btn {
+                padding: 8px 20px;
+                font-size: 1rem;
+            }
+            .players-list {
+                gap: 6px;
+            }
+            .player-input {
+                padding: 8px 12px;
+            }
+            .player-actions {
+                margin-top: 8px;
+                gap: 8px;
+            }
+            .btn-start {
+                padding: 14px 24px;
+                font-size: 1.1rem;
+                margin-top: 12px;
+            }
+            .match-search-row {
+                padding: 8px 12px;
+                margin-bottom: 8px;
+            }
+            .btn-online {
+                padding: 10px 20px;
+                font-size: 0.95rem;
+            }
+            .setup-footer {
+                padding: 8px 16px;
+            }
+            .main-header {
+                padding: 12px 20px;
+            }
+        }
+        
+        /* Two-column layout for wide screens */
+        @media (min-width: 1100px) {
+            .setup-card {
+                max-width: 900px;
+            }
+            .form-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            .form-grid .full-width {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="background-layer" class="background-layer"></div>
+    <div id="background-overlay" class="background-overlay"></div>
+
+    <!-- ================================================================== -->
+    <!-- SETUP SCREEN - Full viewport                                      -->
+    <!-- ================================================================== -->
+    <main id="setup-screen" class="screen setup-screen">
+        <!-- Header inside screen so it's not covered -->
+        <header class="main-header">
+            <a href="/" class="back-link" title="Back to Menu">← MENU</a>
+            <div class="brand">
+                <h1 id="app-title" class="app-title">DARTS<span class="accent">MOB</span></h1>
+                <p id="app-tagline" class="tagline">— The Family's Game —</p>
+            </div>
+            <a href="/settings.html" class="settings-link" title="Settings">⚙️</a>
+        </header>
+
+        <div class="setup-card">
+            <h2 class="card-title">NEW GAME</h2>
+            
+            <!-- Game Category -->
+            <div class="form-section">
+                <label class="form-label">GAME</label>
+                <select id="game-category" class="form-select">
+                    <option value="x01" selected>🔢 X01</option>
+                    <option value="cricket">🦗 Cricket</option>
+                    <option value="around">🔄 Around the World</option>
+                    <option value="killer">💀 Killer</option>
+                    <option value="practice">🎯 Practice</option>
+                </select>
+            </div>
+
+            <!-- Game Variant (changes based on category) -->
+            <div class="form-section" id="variant-section">
+                <label class="form-label">VARIANT</label>
+                <select id="game-variant" class="form-select">
+                    <!-- Populated by JS based on category -->
+                </select>
+            </div>
+
+            <!-- Rules (dynamically generated based on category) -->
+            <div class="form-section" id="rules-section">
+                <label class="form-label">OPTIONS</label>
+                <div class="rules-options">
+                    <!-- Populated by JS based on category -->
+                </div>
+            </div>
+
+            <!-- Legs (hidden for Practice) -->
+            <div class="form-section" id="legs-section">
+                <label class="form-label">BEST OF</label>
+                <div class="btn-group legs-group">
+                    <button class="legs-btn" data-legs="1">1</button>
+                    <button class="legs-btn" data-legs="3">3</button>
+                    <button class="legs-btn active" data-legs="5">5</button>
+                    <button class="legs-btn" data-legs="7">7</button>
+                </div>
+            </div>
+
+            <!-- Players -->
+            <div class="form-section">
+                <label class="form-label">PLAYERS</label>
+                <div id="players-list" class="players-list">
+                    <div class="player-row">
+                        <input type="text" class="player-input" placeholder="Player 1" value="Player 1">
+                    </div>
+                    <div class="player-row">
+                        <input type="text" class="player-input" placeholder="Player 2">
+                        <button class="btn-remove-player" title="Remove">✕</button>
+                    </div>
+                </div>
+                <div class="player-actions">
+                    <button id="add-player-btn" class="btn-add">+ Add Player</button>
+                    <button id="select-players-btn" class="btn-select-players">👤 Select Registered</button>
+                </div>
+            </div>
+
+            <!-- Start Button -->
+            <button id="start-game-btn" class="btn-start">
+                🎯 START GAME
+            </button>
+            
+            <!-- Looking for Match Toggle -->
+            <div class="match-search-row">
+                <label class="toggle-label">
+                    <input type="checkbox" id="looking-for-match-toggle" class="toggle-input">
+                    <span class="toggle-switch"></span>
+                    <span class="toggle-text">🔍 Find Online Opponent</span>
+                </label>
+                <span id="match-search-status" class="match-status"></span>
+            </div>
+            
+            <!-- Online Play Button -->
+            <button id="online-play-btn" class="btn-online">
+                🌐 PLAY ONLINE
+            </button>
+        </div>
+        
+        <footer class="setup-footer">
+            <a href="/globe.html" class="online-status-link">
+                <span class="pulse-dot"></span>
+                <span id="online-count-display">--</span> players online
+            </a>
+            <span id="connection-status" class="connection">🔌 Connecting...</span>
+        </footer>
+    </main>
+
+    <!-- ================================================================== -->
+    <!-- GAME SCREEN - Full viewport, maximum space                        -->
+    <!-- ================================================================== -->
+    <main id="game-screen" class="screen game-screen hidden">
+        <!-- Compact Game Header -->
+        <header class="game-header">
+            <div class="game-info">
+                <span id="game-mode-display" class="game-mode">501</span>
+                <span id="legs-display" class="legs-info">Leg 1/5</span>
+                <span id="round-display" class="round-info">Round 1</span>
+            </div>
+            <div class="game-actions">
+                <button id="next-turn-btn" class="btn-next">Next Player</button>
+                <button id="end-game-btn" class="btn-end">✕ End</button>
+            </div>
+        </header>
+
+        <!-- Scoreboard - Takes most of the space -->
+        <section id="scoreboard" class="scoreboard">
+            <!-- Player cards inserted dynamically -->
+        </section>
+
+        <!-- Current Turn - Compact bottom bar -->
+        <section class="turn-bar">
+            <div class="darts-row">
+                <div class="dart-slot" data-dart="0">—</div>
+                <div class="dart-slot" data-dart="1">—</div>
+                <div class="dart-slot" data-dart="2">—</div>
+            </div>
+            <div class="turn-total">
+                <span class="label">TURN</span>
+                <span id="turn-score" class="score">0</span>
+            </div>
+        </section>
+    </main>
+
+    <!-- ================================================================== -->
+    <!-- GAME OVER SCREEN                                                  -->
+    <!-- ================================================================== -->
+    <main id="gameover-screen" class="screen gameover-screen hidden">
+        <div class="winner-card">
+            <span class="crown">👑</span>
+            <h2 class="winner-label">WINNER</h2>
+            <p id="winner-name" class="winner-name">PLAYER</p>
+            <p id="winner-stats" class="winner-stats">15 darts</p>
+            <button id="new-game-btn" class="btn-start">🎯 PLAY AGAIN</button>
+        </div>
+    </main>
+
+    <!-- Last Throw Popup -->
+    <div id="throw-popup" class="throw-popup hidden">
+        <span class="throw-zone">TRIPLE</span>
+        <span class="throw-value">20</span>
+    </div>
+
+    <!-- Dart Correction Modal -->
+    <div id="dart-correction-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content correction-modal">
+            <h3>Correct Dart <span id="correction-dart-num">1</span></h3>
+            
+            <!-- Display showing what they typed -->
+            <div class="correction-display">
+                <span id="correction-input-display">—</span>
+            </div>
+            
+            <!-- Number keypad 0-9 -->
+            <div class="keypad">
+                <button class="key-btn" data-val="1">1</button>
+                <button class="key-btn" data-val="2">2</button>
+                <button class="key-btn" data-val="3">3</button>
+                <button class="key-btn" data-val="4">4</button>
+                <button class="key-btn" data-val="5">5</button>
+                <button class="key-btn" data-val="6">6</button>
+                <button class="key-btn" data-val="7">7</button>
+                <button class="key-btn" data-val="8">8</button>
+                <button class="key-btn" data-val="9">9</button>
+                <button class="key-btn" data-val="0">0</button>
+            </div>
+            
+            <!-- Special buttons -->
+            <div class="special-row">
+                <button class="key-btn special-btn" data-special="bull">BULL</button>
+                <button class="key-btn special-btn" data-special="miss">MISS</button>
+            </div>
+            
+            <!-- Modifier buttons -->
+            <div class="modifier-row">
+                <button class="mod-btn" data-mod="double">DOUBLE</button>
+                <button class="mod-btn" data-mod="triple">TRIPLE</button>
+            </div>
+            
+            <!-- Action buttons -->
+            <div class="correction-actions">
+                <button id="correction-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="correction-confirm" class="btn btn-primary">Enter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Selection Modal -->
+    <div id="player-select-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content player-select-modal">
+            <div class="modal-header">
+                <h3>Select Players</h3>
+                <button class="modal-close" id="player-select-close">✕</button>
+            </div>
+            
+            <div class="player-select-tabs">
+                <button class="tab-btn active" data-tab="registered">Registered</button>
+                <button class="tab-btn" data-tab="register">New Player</button>
+            </div>
+            
+            <!-- Registered Players List -->
+            <div id="registered-tab" class="tab-content active">
+                <div id="registered-players-list" class="registered-list">
+                    <!-- Populated by JS -->
+                    <p class="loading">Loading players...</p>
+                </div>
+            </div>
+            
+            <!-- Register New Player -->
+            <div id="register-tab" class="tab-content hidden">
+                <div class="register-form">
+                    <div class="form-group">
+                        <label>Nickname *</label>
+                        <input type="text" id="reg-nickname" placeholder="Display name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email (optional)</label>
+                        <input type="email" id="reg-email" placeholder="For stats tracking">
+                    </div>
+                    <button id="register-player-btn" class="btn btn-primary">Register Player</button>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="player-select-done" class="btn btn-primary">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Online Lobby Modal -->
+    <div id="online-lobby-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content online-lobby-modal">
+            <div class="modal-header">
+                <h3>🌐 Online Play</h3>
+                <button class="modal-close" id="online-lobby-close">✕</button>
+            </div>
+            
+            <!-- Browse/Create View -->
+            <div id="lobby-browse" class="lobby-section">
+                <div class="lobby-actions">
+                    <button id="create-match-btn" class="btn btn-primary btn-large">
+                        🎯 Create Match
+                    </button>
+                    <div class="divider">— or join existing —</div>
+                </div>
+                
+                <div class="join-by-code">
+                    <input type="text" id="match-code-input" placeholder="Enter Match Code" maxlength="6">
+                    <button id="join-match-btn" class="btn btn-secondary">Join</button>
+                </div>
+                
+                <div class="open-matches">
+                    <h4>Open Matches</h4>
+                    <div id="open-matches-list" class="matches-list">
+                        <p class="loading">Looking for matches...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Match Lobby View (after creating/joining) -->
+            <div id="lobby-match" class="lobby-section hidden">
+                <div class="match-header">
+                    <div class="match-code-box">
+                        <span class="label">MATCH CODE</span>
+                        <span id="match-code-display" class="code">------</span>
+                    </div>
+                    <div class="match-details">
+                        <span id="match-game-mode">501</span>
+                        <span id="match-best-of">Best of 5</span>
+                    </div>
+                </div>
+                
+                <div class="match-players">
+                    <h4>Players</h4>
+                    <div id="match-players-list" class="players-list"></div>
+                    <p class="waiting-text">Waiting for opponent...</p>
+                </div>
+                
+                <div class="match-chat">
+                    <div id="online-chat-messages" class="chat-messages"></div>
+                    <div class="chat-input-row">
+                        <input type="text" id="online-chat-input" placeholder="Chat...">
+                        <button id="online-chat-send" class="btn-send">➤</button>
+                    </div>
+                </div>
+                
+                <div class="match-actions">
+                    <button id="leave-match-btn" class="btn btn-secondary">Leave</button>
+                    <button id="start-online-match-btn" class="btn btn-primary" disabled>Start Match</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Toggle -->
+    <button id="fullscreen-btn" class="fullscreen-btn">⛶</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="/js/dartsmob.js"></script>
+</body>
+</html>
