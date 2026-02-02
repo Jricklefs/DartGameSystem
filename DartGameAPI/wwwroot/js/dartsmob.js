@@ -286,8 +286,12 @@ async function startGame() {
     const gameMode = getSelectedGameMode();
     const rules = getSelectedRules();
     
-    // Show game screen IMMEDIATELY for instant feedback
-    showScreen('game-screen');
+    // Disable start button and show loading state
+    const startBtn = document.getElementById('start-game-btn');
+    if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.textContent = '⏳ Starting...';
+    }
     
     try {
         const response = await fetch('/api/games', {
@@ -304,16 +308,56 @@ async function startGame() {
         
         if (response.ok) {
             currentGame = await response.json();
+            showScreen('game-screen');
             updateScoreboard();
             updateCurrentTurn();
         } else {
-            console.error('Failed to start game:', await response.text());
-            showScreen('setup-screen');  // Go back on error
+            // Parse error response and show meaningful message
+            const error = await response.json();
+            showStartGameError(error);
         }
     } catch (err) {
         console.error('Error starting game:', err);
-        showScreen('setup-screen');  // Go back on error
+        showStartGameError({ error: 'Network error', message: 'Could not connect to server' });
+    } finally {
+        // Re-enable start button
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.textContent = 'START GAME';
+        }
     }
+}
+
+function showStartGameError(error) {
+    // Map error codes to user-friendly messages
+    const messages = {
+        'NO_CAMERAS': '📷 No cameras registered. Go to Settings to set up cameras.',
+        'NOT_CALIBRATED': '🎯 Cameras not calibrated. Go to Settings → Calibration.',
+        'SENSOR_DISCONNECTED': '📡 DartSensor not connected. Please start the sensor.',
+        'BOARD_NOT_FOUND': '🎯 Board not found. Check your settings.'
+    };
+    
+    const friendlyMessage = messages[error.code] || error.message || error.error || 'Failed to start game';
+    
+    // Show error modal
+    let modal = document.getElementById('start-error-modal');
+    if (!modal) {
+        // Create modal if it doesn't exist
+        modal = document.createElement('div');
+        modal.id = 'start-error-modal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal art-deco-card" style="max-width: 400px; text-align: center;">
+                <h2 style="color: var(--gold); margin-bottom: 1rem;">⚠️ Cannot Start Game</h2>
+                <p id="start-error-message" style="margin-bottom: 1.5rem; color: #ccc;"></p>
+                <button class="btn-gold" onclick="document.getElementById('start-error-modal').classList.add('hidden')">OK</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    document.getElementById('start-error-message').textContent = friendlyMessage;
+    modal.classList.remove('hidden');
 }
 
 async function endGame() {

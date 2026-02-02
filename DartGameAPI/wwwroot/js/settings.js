@@ -278,6 +278,9 @@ async function refreshCurrentCamera() {
     const qualityLabel = document.getElementById('cam-quality-label');
     
     img.classList.remove('loaded');
+    img.src = '';  // Clear existing image immediately
+    baseImg.style.display = 'none';
+    lastCameraSnapshot = null;
     loading.classList.remove('hidden');
     loading.querySelector('span').textContent = '📷 Loading live view...';
     offline.classList.add('hidden');
@@ -305,10 +308,15 @@ async function refreshCurrentCamera() {
         }
     } catch (e) {
         console.error(`Camera ${selectedCamera} error:`, e);
+        // Clear everything when camera is offline
+        img.src = '';
+        img.classList.remove('loaded');
+        baseImg.style.display = 'none';
+        lastCameraSnapshot = null;
         loading.classList.add('hidden');
         offline.classList.remove('hidden');
-        offline.querySelector('span').textContent = '❌ Camera Offline';
-        qualityLabel.textContent = 'Camera Offline';
+        offline.querySelector('span').textContent = '❌ Camera Offline - Check DartSensor';
+        qualityLabel.textContent = '❌ Camera Offline';
         qualityLabel.className = 'cam-quality-label failed';
     }
 }
