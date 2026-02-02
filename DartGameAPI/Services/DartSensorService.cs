@@ -1,8 +1,10 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using DartGameAPI.Models;
 using DartGameAPI.Hubs;
+using DartGameAPI.Data;
 
 namespace DartGameAPI.Services;
 
@@ -34,11 +36,12 @@ public class DartSensorService : BackgroundService
             {
                 using var scope = _scopeFactory.CreateScope();
                 var gameService = scope.ServiceProvider.GetRequiredService<GameService>();
+                var db = scope.ServiceProvider.GetRequiredService<DartsMobDbContext>();
                 var activeGame = gameService.GetGameForBoard("default");
                 
                 if (activeGame != null && activeGame.State == GameState.InProgress)
                 {
-                    await CheckForDartsAsync(gameService, activeGame, stoppingToken);
+                    await CheckForDartsAsync(gameService, db, activeGame, stoppingToken);
                 }
             }
             catch (Exception ex)
@@ -49,7 +52,7 @@ public class DartSensorService : BackgroundService
         }
     }
 
-    private async Task CheckForDartsAsync(GameService gameService, Game game, CancellationToken ct)
+    private async Task CheckForDartsAsync(GameService gameService, DartsMobDbContext db, Game game, CancellationToken ct)
     {
         try
         {
@@ -63,7 +66,22 @@ public class DartSensorService : BackgroundService
             }
             if (!cameras.Any()) return;
 
-            var response = await httpClient.PostAsJsonAsync("/v1/detect", new DetectRequest { Cameras = cameras }, ct);
+            // Get the rotation offset from calibration (Mark 20 feature)
+            // Use the first camera's calibration for now
+            double rotationOffsetDegrees = 0;
+            var calibration = await db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == "cam0", ct);
+            if (calibration?.TwentyAngle != null)
+            {
+                rotationOffsetDegrees = calibration.TwentyAngle.Value;
+            }
+
+            var detectRequest = new 
+            { 
+                Cameras = cameras,
+                RotationOffsetDegrees = rotationOffsetDegrees
+            };
+
+            var response = await httpClient.PostAsJsonAsync("/v1/detect", detectRequest, ct);
             if (!response.IsSuccessStatusCode) return;
             
             var detectResult = await response.Content.ReadFromJsonAsync<DetectResponse>(cancellationToken: ct);

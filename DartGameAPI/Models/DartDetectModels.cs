@@ -33,6 +33,7 @@ public class CalibrateResponse
 public class DetectRequest
 {
     public List<CameraImage> Cameras { get; set; } = new();
+    public double? RotationOffsetDegrees { get; set; }
 }
 
 public class DetectedTip
