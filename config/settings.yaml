@@ -1,0 +1,15 @@
+cameras:
+- device: 0
+  id: cam0
+- device: 1
+  id: cam1
+- device: 2
+  id: cam2
+detection:
+  base_threshold_pct: 10.0
+  blur_kernel_size: 5
+  clear_threshold_pct: 5.0
+  cooldown_ms: 300
+  dart_threshold_pct: 8.0
+  drift_blend_alpha: 0.05
+  settling_ms: 150

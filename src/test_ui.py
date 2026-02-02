@@ -1,0 +1,990 @@
+"""
+DartSensor API
+OpenCV-based dart detection with visual debug UI.
+Connects to DartGame API via SignalR for game events.
+Sends dart detections to DartGame API (the hub).
+"""
+
+import sys
+import os
+
+# Ensure we can import from same directory
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import cv2
+import numpy as np
+import time
+import logging
+import json
+import threading
+import requests
+import base64
+from pathlib import Path
+from typing import Optional, List, Tuple
+from dataclasses import dataclass, asdict
+
+from detector_v2 import MultiCameraDartDetector, DartDetectorV2, DetectorConfig, BoardState
+
+# SignalR client
+try:
+    from signalrcore.hub_connection_builder import HubConnectionBuilder
+    SIGNALR_AVAILABLE = True
+except ImportError:
+    SIGNALR_AVAILABLE = False
+    print("[WARN] signalrcore not installed - SignalR disabled. Install with: pip install signalrcore")
+
+# === Configuration ===
+DARTGAME_API_URL = os.environ.get("DARTGAME_URL", "http://localhost:5000")
+BOARD_ID = os.environ.get("BOARD_ID", "default")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+# === SignalR Hub Connection ===
+class HubConnection:
+    """SignalR connection to DartGame API hub."""
+    
+    def __init__(self, hub_url: str, board_id: str, on_start_game, on_stop_game, on_rebase):
+        self.hub_url = hub_url
+        self.board_id = board_id
+        self.on_start_game = on_start_game
+        self.on_stop_game = on_stop_game
+        self.on_rebase = on_rebase
+        self.connection = None
+        self.connected = False
+        self._reconnect_thread = None
+        self._stop_reconnect = False
+    
+    def connect(self):
+        """Connect to SignalR hub."""
+        if not SIGNALR_AVAILABLE:
+            print("[HUB] SignalR not available")
+            return False
+        
+        try:
+            # Build SignalR hub URL
+            signalr_url = f"{self.hub_url}/gamehub"
+            print(f"[HUB] Connecting to {signalr_url}...")
+            
+            self.connection = HubConnectionBuilder()\
+                .with_url(signalr_url)\
+                .with_automatic_reconnect({
+                    "type": "raw",
+                    "keep_alive_interval": 10,
+                    "reconnect_interval": 5,
+                    "max_attempts": 10
+                })\
+                .build()
+            
+            # Register event handlers
+            self.connection.on("StartGame", self._on_start_game)
+            self.connection.on("StopGame", self._on_stop_game)
+            self.connection.on("Rebase", self._on_rebase)
+            self.connection.on("Registered", self._on_registered)
+            
+            # Connection lifecycle
+            self.connection.on_open(self._on_open)
+            self.connection.on_close(self._on_close)
+            self.connection.on_error(self._on_error)
+            
+            # Start connection
+            self.connection.start()
+            return True
+            
+        except Exception as e:
+            print(f"[HUB] Connection failed: {e}")
+            return False
+    
+    def _on_open(self):
+        """Called when connection opens."""
+        print(f"[HUB] ========== CONNECTED ==========")
+        self.connected = True
+        # Register this board with the hub
+        try:
+            self.connection.send("RegisterBoard", [self.board_id])
+            print(f"[HUB] Registering as board: {self.board_id}")
+        except Exception as e:
+            print(f"[HUB] Failed to register: {e}")
+    
+    def _on_close(self):
+        """Called when connection closes."""
+        print(f"[HUB] ========== DISCONNECTED ==========")
+        self.connected = False
+    
+    def _on_error(self, error):
+        """Called on connection error."""
+        print(f"[HUB] Error: {error}")
+    
+    def _on_registered(self, args):
+        """Called when hub confirms registration."""
+        print(f"[HUB] Registered successfully: {args}")
+    
+    def _on_start_game(self, args):
+        """Called when hub says to start game."""
+        print(f"[HUB] ========== START GAME RECEIVED ==========")
+        print(f"[HUB] Args: {args}")
+        if self.on_start_game:
+            self.on_start_game(args)
+    
+    def _on_stop_game(self, args):
+        """Called when hub says to stop game."""
+        print(f"[HUB] ========== STOP GAME RECEIVED ==========")
+        if self.on_stop_game:
+            self.on_stop_game(args)
+    
+    def _on_rebase(self, args):
+        """Called when hub says to capture new baseline."""
+        print(f"[HUB] ========== REBASE RECEIVED ==========")
+        if self.on_rebase:
+            self.on_rebase(args)
+    
+    def disconnect(self):
+        """Disconnect from hub."""
+        self._stop_reconnect = True
+        if self.connection:
+            try:
+                self.connection.stop()
+            except:
+                pass
+        self.connected = False
+
+
+class DartGameClient:
+    """HTTP client to send detections to DartGame API."""
+    
+    def __init__(self, base_url: str, board_id: str):
+        self.base_url = base_url.rstrip('/')
+        self.board_id = board_id
+        self.session = requests.Session()
+        self.session.headers["Content-Type"] = "application/json"
+    
+    def encode_image(self, frame: np.ndarray) -> str:
+        """Encode frame as base64 JPEG."""
+        _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        return base64.b64encode(buffer).decode('utf-8')
+    
+    def send_dart_images(self, frames: dict) -> dict:
+        """
+        Send camera frames to DartGame API for detection.
+        frames: dict of {camera_id: numpy_frame}
+        """
+        try:
+            images = []
+            for cam_id, frame in frames.items():
+                if frame is not None:
+                    images.append({
+                        "cameraId": cam_id,
+                        "image": self.encode_image(frame)
+                    })
+            
+            payload = {
+                "boardId": self.board_id,
+                "images": images
+            }
+            
+            print(f"[DART] Sending {len(images)} images to {self.base_url}/api/games/detect")
+            
+            resp = self.session.post(
+                f"{self.base_url}/api/games/detect",
+                json=payload,
+                timeout=5
+            )
+            
+            if resp.ok:
+                result = resp.json()
+                print(f"[DART] Response: {result}")
+                return result
+            else:
+                print(f"[DART] Error: {resp.status_code} - {resp.text}")
+                return {"error": resp.text}
+                
+        except Exception as e:
+            print(f"[DART] Failed to send: {e}")
+            return {"error": str(e)}
+    
+    def notify_board_clear(self):
+        """Notify API that board was cleared."""
+        try:
+            print(f"[CLEAR] Notifying board clear")
+            resp = self.session.post(
+                f"{self.base_url}/api/games/events/clear",
+                json={"boardId": self.board_id},
+                timeout=2
+            )
+            if resp.ok:
+                print(f"[CLEAR] Board cleared acknowledged")
+        except Exception as e:
+            print(f"[CLEAR] Failed: {e}")
+    
+    def health_check(self) -> bool:
+        """Check if DartGame API is reachable."""
+        try:
+            resp = self.session.get(f"{self.base_url}/api/games/health", timeout=2)
+            return resp.ok
+        except:
+            return False
+
+
+@dataclass 
+class CameraInfo:
+    index: int
+    cap: cv2.VideoCapture
+    name: str
+    last_frame: Optional[np.ndarray] = None
+
+
+class DartSensorUI:
+    """DartSensor with visual debug UI - connects to DartGame API via SignalR."""
+    
+    def __init__(self):
+        self.cameras: List[CameraInfo] = []
+        self.detector = MultiCameraDartDetector(DetectorConfig())
+        
+        # API client for sending detections (HTTP)
+        self.api_client = DartGameClient(DARTGAME_API_URL, BOARD_ID)
+        print(f"[INIT] DartSensor for board '{BOARD_ID}'")
+        print(f"[INIT] API URL: {DARTGAME_API_URL}")
+        
+        # SignalR connection for game events
+        self.hub = HubConnection(
+            DARTGAME_API_URL, 
+            BOARD_ID,
+            on_start_game=self._on_hub_start_game,
+            on_stop_game=self._on_hub_stop_game,
+            on_rebase=self._on_hub_rebase
+        )
+        
+        # UI state
+        self.selected_camera = 0
+        self.show_debug = True
+        self.game_started = False
+        self.paused = False
+        
+        # Detection state
+        self.detected_darts: List[dict] = []
+        self.log_messages: List[str] = []
+        
+        # Window names
+        self.main_window = "DartSensor Test UI"
+        self.config_window = "Configuration"
+        
+        # Config sliders
+        self.config_values = {
+            'base_threshold': 100,     # /10 = 10.0%
+            'dart_threshold': 80,      # /10 = 8.0%
+            'clear_threshold': 50,     # /10 = 5.0%
+            'hand_threshold': 3000,    # /10 = 300.0%
+            'clearing_threshold': 1500, # /10 = 150.0%
+            'blur_kernel': 2,          # *2+1 = 5
+            'drift_alpha': 5,          # /100 = 0.05
+            'settling_ms': 150,
+            'cooldown_ms': 300,
+        }
+    
+    def log(self, message: str):
+        """Add message to log."""
+        timestamp = time.strftime("%H:%M:%S")
+        self.log_messages.append(f"[{timestamp}] {message}")
+        if len(self.log_messages) > 20:
+            self.log_messages.pop(0)
+        logger.info(message)
+    
+    # === SignalR Event Handlers ===
+    
+    def _on_hub_start_game(self, args):
+        """Hub says: start game, capture baseline."""
+        self.log("Game started via SignalR - capturing baseline")
+        self.game_started = True
+        self.detector.dart_count = 0
+        
+        # Capture baseline for all cameras
+        for cam in self.cameras:
+            if cam.last_frame is not None:
+                cam_id = f"cam{cam.index}"
+                self.detector.set_baseline(cam_id, cam.last_frame)
+        
+        self.detector.clear_all_image1()
+        print(f"[HUB] Baseline captured, detection ACTIVE")
+    
+    def _on_hub_stop_game(self, args):
+        """Hub says: stop game."""
+        self.log("Game stopped via SignalR")
+        self.game_started = False
+        print(f"[HUB] Detection INACTIVE")
+    
+    def _on_hub_rebase(self, args):
+        """Hub says: capture new baseline (darts removed)."""
+        self.log("Rebase via SignalR - capturing new baseline")
+        
+        for cam in self.cameras:
+            if cam.last_frame is not None:
+                cam_id = f"cam{cam.index}"
+                self.detector.set_baseline(cam_id, cam.last_frame)
+        
+        self.detector.dart_count = 0
+        self.detector.clear_all_image1()
+        print(f"[HUB] Rebase complete")
+    
+    def connect_to_hub(self):
+        """Connect to SignalR hub."""
+        if SIGNALR_AVAILABLE:
+            threading.Thread(target=self.hub.connect, daemon=True).start()
+        else:
+            self.log("SignalR not available - manual mode only")
+    
+    def find_cameras(self, max_check: int = 10) -> List[int]:
+        """Scan for available cameras."""
+        available = []
+        self.log(f"Scanning for cameras (0-{max_check-1})...")
+        
+        for i in range(max_check):
+            cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
+            if cap.isOpened():
+                ret, frame = cap.read()
+                if ret and frame is not None:
+                    available.append(i)
+                    self.log(f"  Found camera at index {i}")
+                cap.release()
+            time.sleep(0.3)
+        
+        self.log(f"Found {len(available)} camera(s)")
+        return available
+    
+    def init_cameras(self, indices: List[int], width: int = 640, height: int = 480):
+        """Initialize cameras at specified indices."""
+        self.log(f"Initializing {len(indices)} camera(s)...")
+        
+        for i, idx in enumerate(indices):
+            time.sleep(1.5)  # Staggered init
+            cap = cv2.VideoCapture(idx, cv2.CAP_MSMF)
+            
+            if not cap.isOpened():
+                cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
+            
+            if cap.isOpened():
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                
+                ret, frame = cap.read()
+                if ret:
+                    self.cameras.append(CameraInfo(
+                        index=idx,
+                        cap=cap,
+                        name=f"Camera {idx}",
+                        last_frame=frame
+                    ))
+                    self.log(f"  Camera {idx} ready")
+                else:
+                    cap.release()
+                    self.log(f"  Camera {idx} failed to grab frame")
+            else:
+                self.log(f"  Camera {idx} failed to open")
+    
+    def read_cameras(self):
+        """Read frames from all cameras."""
+        for cam in self.cameras:
+            ret, frame = cam.cap.read()
+            if ret:
+                cam.last_frame = frame
+    
+    def get_primary_frame(self) -> Optional[np.ndarray]:
+        """Get frame from selected camera."""
+        if 0 <= self.selected_camera < len(self.cameras):
+            return self.cameras[self.selected_camera].last_frame
+        return None
+    
+    def update_detector_config(self):
+        """Update detector config from slider values."""
+        self.detector.config.base_threshold_pct = self.config_values['base_threshold'] / 10.0
+        self.detector.config.dart_threshold_pct = self.config_values['dart_threshold'] / 10.0
+        self.detector.config.clear_threshold_pct = self.config_values['clear_threshold'] / 10.0
+        self.detector.config.hand_threshold_pct = self.config_values['hand_threshold'] / 10.0
+        self.detector.config.clearing_start_pct = self.config_values['clearing_threshold'] / 10.0
+        self.detector.config.blur_kernel_size = self.config_values['blur_kernel'] * 2 + 1
+        self.detector.config.drift_blend_alpha = self.config_values['drift_alpha'] / 100.0
+        self.detector.config.settling_ms = self.config_values['settling_ms']
+        self.detector.config.cooldown_ms = self.config_values['cooldown_ms']
+    
+    def create_config_window(self):
+        """Create configuration window with trackbars."""
+        cv2.namedWindow(self.config_window, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(self.config_window, 500, 450)
+        
+        def nothing(x): pass
+        
+        # Threshold sliders (scaled values, divide by 10 for actual %)
+        cv2.createTrackbar('Base %', self.config_window, 
+                          self.config_values['base_threshold'], 500, nothing)
+        cv2.createTrackbar('Dart %', self.config_window,
+                          self.config_values['dart_threshold'], 500, nothing)
+        cv2.createTrackbar('Clear %', self.config_window,
+                          self.config_values['clear_threshold'], 200, nothing)
+        cv2.createTrackbar('Hand %', self.config_window,
+                          self.config_values['hand_threshold'], 5000, nothing)
+        cv2.createTrackbar('Clearing %', self.config_window,
+                          self.config_values['clearing_threshold'], 2000, nothing)
+        cv2.createTrackbar('Blur', self.config_window,
+                          self.config_values['blur_kernel'], 10, nothing)
+        cv2.createTrackbar('Drift', self.config_window,
+                          self.config_values['drift_alpha'], 50, nothing)
+        cv2.createTrackbar('Settle ms', self.config_window,
+                          self.config_values['settling_ms'], 500, nothing)
+        cv2.createTrackbar('Cooldown ms', self.config_window,
+                          self.config_values['cooldown_ms'], 1000, nothing)
+    
+    def draw_config_help(self):
+        """Draw config explanations on the config window."""
+        # Create a help image to display in the config window
+        help_img = np.zeros((250, 500, 3), dtype=np.uint8)
+        help_img[:] = (50, 50, 50)
+        
+        y = 20
+        line_h = 20
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        
+        def put(text, color=(200, 200, 200)):
+            nonlocal y
+            cv2.putText(help_img, text, (10, y), font, 0.35, color, 1)
+            y += line_h
+        
+        # Show actual computed values with explanations
+        base_pct = self.config_values['base_threshold'] / 10.0
+        dart_pct = self.config_values['dart_threshold'] / 10.0
+        clear_pct = self.config_values['clear_threshold'] / 10.0
+        hand_pct = self.config_values['hand_threshold'] / 10.0
+        clearing_pct = self.config_values['clearing_threshold'] / 10.0
+        blur_k = self.config_values['blur_kernel'] * 2 + 1
+        drift_a = self.config_values['drift_alpha'] / 100.0
+        
+        put(f"Base %: {base_pct:.1f}% - Diff to detect dart landed", (0, 255, 255))
+        put(f"Dart %: {dart_pct:.1f}% - Diff to detect NEW dart (vs Image1)", (0, 255, 255))
+        put(f"Clear %: {clear_pct:.1f}% - Max diff to consider board clear", (0, 255, 255))
+        put(f"Hand %: {hand_pct:.1f}% - Diff = hand blocking camera (ignore)", (0, 200, 200))
+        put(f"Clearing %: {clearing_pct:.1f}% - Diff = pulling darts (ignore)", (0, 200, 200))
+        put(f"Blur: {blur_k}x{blur_k} - Gaussian blur for noise reduction", (0, 255, 255))
+        put(f"Drift: {drift_a:.0%} - Lighting adaptation speed", (0, 255, 255))
+        put(f"Settle: {self.config_values['settling_ms']}ms - Wait after motion", (0, 255, 255))
+        put(f"Cooldown: {self.config_values['cooldown_ms']}ms - Min time between detections", (0, 255, 255))
+        y += 5
+        put("Lower % = more sensitive | Higher % = fewer false positives", (150, 150, 150))
+        
+        cv2.imshow(self.config_window, help_img)
+    
+    def read_config_trackbars(self):
+        """Read current trackbar values."""
+        self.config_values['base_threshold'] = cv2.getTrackbarPos('Base %', self.config_window)
+        self.config_values['dart_threshold'] = cv2.getTrackbarPos('Dart %', self.config_window)
+        self.config_values['clear_threshold'] = cv2.getTrackbarPos('Clear %', self.config_window)
+        self.config_values['hand_threshold'] = cv2.getTrackbarPos('Hand %', self.config_window)
+        self.config_values['clearing_threshold'] = cv2.getTrackbarPos('Clearing %', self.config_window)
+        self.config_values['blur_kernel'] = max(1, cv2.getTrackbarPos('Blur', self.config_window))
+        self.config_values['drift_alpha'] = cv2.getTrackbarPos('Drift', self.config_window)
+        self.config_values['settling_ms'] = cv2.getTrackbarPos('Settle ms', self.config_window)
+        self.config_values['cooldown_ms'] = cv2.getTrackbarPos('Cooldown ms', self.config_window)
+        self.update_detector_config()
+    
+    def create_info_panel(self, width: int, height: int) -> np.ndarray:
+        """Create the right-side info panel."""
+        panel = np.zeros((height, width, 3), dtype=np.uint8)
+        panel[:] = (40, 40, 40)
+        
+        y = 30
+        line_height = 25
+        
+        def put_text(text, color=(255, 255, 255), size=0.6):
+            nonlocal y
+            cv2.putText(panel, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, size, color, 1)
+            y += line_height
+        
+        # Title
+        put_text("=== DartSensor Test ===", (0, 255, 255), 0.7)
+        y += 10
+        
+        # Game state
+        if self.game_started:
+            put_text("Game: STARTED", (0, 255, 0))
+        else:
+            put_text("Game: STOPPED", (0, 0, 255))
+        
+        put_text(f"Camera: {self.selected_camera + 1}/{len(self.cameras)}")
+        put_text(f"Debug: {'ON' if self.show_debug else 'OFF'}")
+        y += 10
+        
+        # Detector state
+        put_text("--- Detector ---", (255, 255, 0))
+        put_text(f"Darts detected: {self.detector.dart_count}")
+        
+        # Count cameras with baselines/image1
+        cams_with_base = sum(1 for c in self.detector.cameras.values() if c.base_image is not None)
+        cams_with_img1 = sum(1 for c in self.detector.cameras.values() if c.image1 is not None)
+        total_cams = len(self.detector.cameras)
+        put_text(f"Baselines: {cams_with_base}/{total_cams}")
+        put_text(f"Image1s: {cams_with_img1}/{total_cams}")
+        put_text(f"Min agree: {self.detector.config.min_cameras_agree}")
+        y += 10
+        
+        # Config summary
+        put_text("--- Config ---", (255, 255, 0))
+        put_text(f"Base thresh: {self.detector.config.base_threshold_pct:.1f}%")
+        put_text(f"Dart thresh: {self.detector.config.dart_threshold_pct:.1f}%")
+        put_text(f"Clear thresh: {self.detector.config.clear_threshold_pct:.1f}%")
+        y += 10
+        
+        # Controls
+        put_text("--- Controls ---", (255, 255, 0))
+        put_text("[SPACE] Start/Stop game")
+        put_text("[B] Capture baseline")
+        put_text("[C] Clear Image1")
+        put_text("[R] Reset all")
+        put_text("[D] Toggle debug view")
+        put_text("[1-3] Select camera")
+        put_text("[S] Save config")
+        put_text("[Q] Quit")
+        y += 10
+        
+        # Log
+        put_text("--- Log ---", (255, 255, 0))
+        for msg in self.log_messages[-6:]:
+            put_text(msg[:45], (180, 180, 180), 0.4)
+            y += -5  # Tighter spacing for log
+        
+        return panel
+    
+    def create_reference_panel(self, width: int, height: int) -> np.ndarray:
+        """Create panel showing baseline and Image1 for selected camera."""
+        panel = np.zeros((height, width, 3), dtype=np.uint8)
+        panel[:] = (30, 30, 30)
+        
+        thumb_h = height // 2 - 20
+        thumb_w = width - 20
+        
+        # Get selected camera state
+        selected_cam_id = None
+        cam_state = None
+        if self.cameras and self.selected_camera < len(self.cameras):
+            selected_cam_id = f"cam{self.cameras[self.selected_camera].index}"
+            cam_state = self.detector.get_camera_state(selected_cam_id)
+        
+        # Baseline thumbnail
+        cv2.putText(panel, f"Baseline ({selected_cam_id}):", (10, 20), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+        if cam_state is not None and cam_state.base_image_raw is not None:
+            thumb = cv2.resize(cam_state.base_image_raw, (thumb_w, thumb_h))
+            panel[30:30+thumb_h, 10:10+thumb_w] = thumb
+        else:
+            cv2.putText(panel, "Not set", (10, 30 + thumb_h//2),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (100, 100, 100), 1)
+        
+        # Image1 thumbnail
+        y_offset = height // 2 + 10
+        cv2.putText(panel, f"Image1 ({selected_cam_id}):", (10, y_offset), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+        if cam_state is not None and cam_state.image1_raw is not None:
+            thumb = cv2.resize(cam_state.image1_raw, (thumb_w, thumb_h))
+            panel[y_offset+10:y_offset+10+thumb_h, 10:10+thumb_w] = thumb
+        else:
+            cv2.putText(panel, "Not set (board clear)", (10, y_offset + thumb_h//2),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, (100, 100, 100), 1)
+        
+        return panel
+    
+    def run(self):
+        """Main UI loop."""
+        # Find and init cameras
+        available = self.find_cameras()
+        if not available:
+            self.log("No cameras found!")
+            return
+        
+        # Use up to 3 cameras
+        self.init_cameras(available[:3])
+        if not self.cameras:
+            self.log("Failed to initialize any cameras!")
+            return
+        
+        # Connect to SignalR hub
+        self.connect_to_hub()
+        
+        # Create windows
+        cv2.namedWindow(self.main_window, cv2.WINDOW_NORMAL)
+        self.create_config_window()
+        
+        self.log("UI ready - waiting for game start via SignalR (or press SPACE for manual)")
+        
+        settling_start = None
+        
+        try:
+            while True:
+                # Read config
+                self.read_config_trackbars()
+                
+                # Update config help window
+                self.draw_config_help()
+                
+                # Read cameras
+                if not self.paused:
+                    self.read_cameras()
+                
+                frame = self.get_primary_frame()
+                if frame is None:
+                    time.sleep(0.1)
+                    continue
+                
+                # Build frames dict for all cameras
+                all_frames = {}
+                for cam in self.cameras:
+                    if cam.last_frame is not None:
+                        cam_id = f"cam{cam.index}"
+                        all_frames[cam_id] = cam.last_frame
+                
+                # Check if we have baselines
+                has_baselines = len(self.detector.cameras) > 0 and any(
+                    c.base_image is not None for c in self.detector.cameras.values()
+                )
+                
+                # Always process frames to update diff values (for display)
+                # but only act on detection when game is started
+                result = None
+                if has_baselines and all_frames:
+                    result = self.detector.process_frames(all_frames)
+                    
+                    # Only handle dart detection if game is started
+                    if self.game_started:
+                        # Hand in frame = someone reaching in, reset and wait
+                        if result.state == BoardState.HAND_IN_FRAME:
+                            settling_start = None
+                            if self.detector.dart_count > 0:
+                                self.log("Hand detected - resetting darts")
+                                self.detector.clear_all_image1()
+                        # Clearing = pulling darts, reset and wait
+                        elif result.state == BoardState.CLEARING:
+                            settling_start = None
+                            if self.detector.dart_count > 0:
+                                self.log("Clearing detected - resetting darts")
+                                self.detector.clear_all_image1()
+                        elif result.state == BoardState.NEW_DART:
+                            if settling_start is None:
+                                settling_start = time.time()
+                                self.log(f"Motion detected, settling...")
+                            elif (time.time() - settling_start) * 1000 >= self.detector.config.settling_ms:
+                                # Settled - capture dart
+                                self.detector.dart_count += 1
+                                self.detector.set_all_image1(all_frames)
+                                self.detector.mark_detection()
+                                self.log(f"DART {self.detector.dart_count} captured!")
+                                print(f"[DART] ========== DART {self.detector.dart_count} DETECTED ==========")
+                                
+                                # Send to DartGame API
+                                frames_to_send = {f"cam{cam.index}": cam.last_frame 
+                                                  for cam in self.cameras if cam.last_frame is not None}
+                                threading.Thread(
+                                    target=self.api_client.send_dart_images,
+                                    args=(frames_to_send,),
+                                    daemon=True
+                                ).start()
+                                
+                                settling_start = None
+                        else:
+                            settling_start = None
+                        
+                        if result.state == BoardState.BOARD_CLEARED:
+                            self.log("Board cleared!")
+                            print("[CLEAR] ========== BOARD CLEARED ==========")
+                            threading.Thread(
+                                target=self.api_client.notify_board_clear,
+                                daemon=True
+                            ).start()
+                
+                # Build display - use selected camera
+                selected_cam_id = f"cam{self.cameras[self.selected_camera].index}" if self.cameras else "cam0"
+                if self.show_debug and has_baselines:
+                    main_view = self.detector.get_debug_frame(selected_cam_id, frame)
+                else:
+                    main_view = frame.copy()
+                
+                # Overlay state indicator
+                if result:
+                    state_colors = {
+                        BoardState.CLEAR: ((0, 255, 0), "CLEAR"),
+                        BoardState.HAS_DARTS: ((255, 255, 0), "HAS DARTS"),
+                        BoardState.NEW_DART: ((0, 165, 255), "NEW DART!"),
+                        BoardState.BOARD_CLEARED: ((255, 0, 255), "CLEARED"),
+                        BoardState.HAND_IN_FRAME: ((0, 0, 255), "HAND!"),
+                        BoardState.CLEARING: ((0, 100, 255), "CLEARING..."),
+                    }
+                    color, text = state_colors.get(result.state, ((255, 255, 255), "???"))
+                    cv2.putText(main_view, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
+                
+                # Resize main view
+                main_h = 480
+                main_w = int(main_h * frame.shape[1] / frame.shape[0])
+                main_view = cv2.resize(main_view, (main_w, main_h))
+                
+                # Create side panels
+                info_panel = self.create_info_panel(300, main_h)
+                ref_panel = self.create_reference_panel(200, main_h)
+                
+                # Combine
+                display = np.hstack([ref_panel, main_view, info_panel])
+                
+                # Show camera thumbnails at bottom if multiple cameras
+                if len(self.cameras) > 1:
+                    thumb_row = []
+                    thumb_size = (160, 120)
+                    for i, cam in enumerate(self.cameras):
+                        if cam.last_frame is not None:
+                            thumb = cv2.resize(cam.last_frame, thumb_size)
+                            # Highlight selected
+                            if i == self.selected_camera:
+                                cv2.rectangle(thumb, (0, 0), (thumb_size[0]-1, thumb_size[1]-1), 
+                                            (0, 255, 0), 3)
+                            cv2.putText(thumb, f"Cam {i+1}", (5, 20),
+                                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                            
+                            # Add diff percentages overlay
+                            cam_id = f"cam{cam.index}"
+                            cam_state = self.detector.get_camera_state(cam_id)
+                            if cam_state is not None:
+                                diff_base = cam_state.last_diff_base
+                                diff_img1 = cam_state.last_diff_img1
+                                # Color code: green=low, yellow=medium, red=high
+                                base_color = (0, 255, 0) if diff_base < 1.5 else (0, 255, 255) if diff_base < 3.0 else (0, 0, 255)
+                                img1_color = (0, 255, 0) if diff_img1 < 1.5 else (0, 255, 255) if diff_img1 < 3.0 else (0, 0, 255)
+                                cv2.putText(thumb, f"B:{diff_base:.1f}%", (5, 40),
+                                           cv2.FONT_HERSHEY_SIMPLEX, 0.4, base_color, 1)
+                                cv2.putText(thumb, f"I:{diff_img1:.1f}%", (5, 55),
+                                           cv2.FONT_HERSHEY_SIMPLEX, 0.4, img1_color, 1)
+                            
+                            thumb_row.append(thumb)
+                    
+                    if thumb_row:
+                        thumb_strip = np.hstack(thumb_row)
+                        # Pad to match display width
+                        if thumb_strip.shape[1] < display.shape[1]:
+                            pad = np.zeros((thumb_size[1], display.shape[1] - thumb_strip.shape[1], 3), dtype=np.uint8)
+                            thumb_strip = np.hstack([thumb_strip, pad])
+                        elif thumb_strip.shape[1] > display.shape[1]:
+                            thumb_strip = thumb_strip[:, :display.shape[1]]
+                        
+                        display = np.vstack([display, thumb_strip])
+                
+                cv2.imshow(self.main_window, display)
+                
+                # Handle keys
+                key = cv2.waitKey(16) & 0xFF
+                
+                if key == ord('q'):
+                    break
+                elif key == ord(' '):
+                    self.game_started = not self.game_started
+                    if self.game_started:
+                        self.log("Game STARTED")
+                        if not has_baselines and all_frames:
+                            self.detector.set_all_baselines(all_frames)
+                            self.log(f"Auto-captured baselines ({len(all_frames)} cameras)")
+                    else:
+                        self.log("Game STOPPED")
+                elif key == ord('b'):
+                    if all_frames:
+                        self.detector.set_all_baselines(all_frames)
+                        self.log(f"Baselines captured ({len(all_frames)} cameras)")
+                elif key == ord('c'):
+                    self.detector.clear_all_image1()
+                    self.log("All Image1 cleared")
+                elif key == ord('r'):
+                    if all_frames:
+                        self.detector.set_all_baselines(all_frames)
+                        self.detector.clear_all_image1()
+                        self.detected_darts = []
+                        self.log("Reset complete")
+                elif key == ord('d'):
+                    self.show_debug = not self.show_debug
+                elif key == ord('p'):
+                    self.paused = not self.paused
+                    self.log("PAUSED" if self.paused else "RESUMED")
+                elif key == ord('s'):
+                    self.save_config()
+                elif key in [ord('1'), ord('2'), ord('3')]:
+                    idx = key - ord('1')
+                    if idx < len(self.cameras):
+                        self.selected_camera = idx
+                        self.log(f"Selected camera {idx + 1}")
+        
+        finally:
+            for cam in self.cameras:
+                cam.cap.release()
+            cv2.destroyAllWindows()
+    
+    def save_config(self):
+        """Save current config to file."""
+        config_path = Path(__file__).parent.parent / "config" / "settings.yaml"
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        config = {
+            'detection': {
+                'base_threshold_pct': self.detector.config.base_threshold_pct,
+                'dart_threshold_pct': self.detector.config.dart_threshold_pct,
+                'clear_threshold_pct': self.detector.config.clear_threshold_pct,
+                'blur_kernel_size': self.detector.config.blur_kernel_size,
+                'drift_blend_alpha': self.detector.config.drift_blend_alpha,
+                'settling_ms': self.detector.config.settling_ms,
+                'cooldown_ms': self.detector.config.cooldown_ms,
+            },
+            'cameras': [
+                {'id': f'cam{cam.index}', 'device': cam.index}
+                for cam in self.cameras
+            ]
+        }
+        
+        import yaml
+        with open(config_path, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+        
+        self.log(f"Config saved to {config_path}")
+
+
+# === HTTP API Server (runs in background thread) ===
+from flask import Flask, jsonify, request
+import threading
+
+# Global reference to the UI (set in main)
+_sensor_ui = None
+
+api = Flask(__name__)
+api.logger.setLevel(logging.WARNING)  # Reduce Flask noise
+
+@api.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok", "game_started": _sensor_ui.game_started if _sensor_ui else False})
+
+@api.route('/start', methods=['POST'])
+def start_game():
+    """Called by DartGame API when a game starts - triggers baseline capture."""
+    if _sensor_ui is None:
+        return jsonify({"error": "Sensor not initialized"}), 500
+    
+    print("[API] ========== START GAME RECEIVED ==========")
+    _sensor_ui.game_started = True
+    _sensor_ui.detector.dart_count = 0
+    
+    # Capture baseline for all cameras
+    frames = {f"cam{cam.index}": cam.last_frame for cam in _sensor_ui.cameras if cam.last_frame is not None}
+    for cam_id, frame in frames.items():
+        if frame is not None:
+            _sensor_ui.detector.set_baseline(cam_id, frame)
+    
+    _sensor_ui.detector.clear_all_image1()
+    _sensor_ui.log("Game started - baseline captured")
+    print(f"[API] Baseline captured for {len(frames)} cameras")
+    
+    return jsonify({"status": "started", "cameras": len(frames)})
+
+@api.route('/stop', methods=['POST'])
+def stop_game():
+    """Called when game ends."""
+    if _sensor_ui is None:
+        return jsonify({"error": "Sensor not initialized"}), 500
+    
+    print("[API] ========== STOP GAME RECEIVED ==========")
+    _sensor_ui.game_started = False
+    _sensor_ui.log("Game stopped")
+    
+    return jsonify({"status": "stopped"})
+
+@api.route('/rebase', methods=['POST'])
+def rebase():
+    """Capture new baseline (e.g., after darts removed)."""
+    if _sensor_ui is None:
+        return jsonify({"error": "Sensor not initialized"}), 500
+    
+    print("[API] ========== REBASE RECEIVED ==========")
+    frames = {f"cam{cam.index}": cam.last_frame for cam in _sensor_ui.cameras if cam.last_frame is not None}
+    for cam_id, frame in frames.items():
+        if frame is not None:
+            _sensor_ui.detector.set_baseline(cam_id, frame)
+    
+    _sensor_ui.detector.dart_count = 0
+    _sensor_ui.detector.clear_all_image1()
+    _sensor_ui.log("Rebase complete")
+    print(f"[API] Rebase complete for {len(frames)} cameras")
+    
+    return jsonify({"status": "rebased", "cameras": len(frames)})
+
+@api.route('/config', methods=['GET'])
+def get_config():
+    """Get current detection config."""
+    if _sensor_ui is None:
+        return jsonify({"error": "Sensor not initialized"}), 500
+    
+    cfg = _sensor_ui.detector.config
+    return jsonify({
+        "base_threshold_pct": cfg.base_threshold_pct,
+        "dart_threshold_pct": cfg.dart_threshold_pct,
+        "clear_threshold_pct": cfg.clear_threshold_pct,
+        "settling_ms": cfg.settling_ms,
+        "cooldown_ms": cfg.cooldown_ms,
+    })
+
+@api.route('/config', methods=['PUT'])
+def update_config():
+    """Update detection config."""
+    if _sensor_ui is None:
+        return jsonify({"error": "Sensor not initialized"}), 500
+    
+    data = request.json or {}
+    cfg = _sensor_ui.detector.config
+    
+    if 'base_threshold_pct' in data:
+        cfg.base_threshold_pct = float(data['base_threshold_pct'])
+    if 'dart_threshold_pct' in data:
+        cfg.dart_threshold_pct = float(data['dart_threshold_pct'])
+    if 'clear_threshold_pct' in data:
+        cfg.clear_threshold_pct = float(data['clear_threshold_pct'])
+    if 'settling_ms' in data:
+        cfg.settling_ms = int(data['settling_ms'])
+    if 'cooldown_ms' in data:
+        cfg.cooldown_ms = int(data['cooldown_ms'])
+    
+    print(f"[API] Config updated: {data}")
+    _sensor_ui.log(f"Config updated via API")
+    
+    return jsonify({"status": "updated"})
+
+@api.route('/status', methods=['GET'])
+def status():
+    """Get sensor status."""
+    if _sensor_ui is None:
+        return jsonify({"error": "Sensor not initialized"}), 500
+    
+    return jsonify({
+        "game_started": _sensor_ui.game_started,
+        "dart_count": _sensor_ui.detector.dart_count,
+        "cameras": len(_sensor_ui.cameras),
+        "baselines_captured": sum(1 for c in _sensor_ui.detector.cameras.values() if c.base_image is not None)
+    })
+
+def run_api_server(port=8001):
+    """Run Flask API in background."""
+    print(f"[API] Starting sensor API on port {port}")
+    api.run(host='0.0.0.0', port=port, threaded=True, use_reloader=False)
+
+
+def main():
+    global _sensor_ui
+    
+    # Start API server in background
+    api_thread = threading.Thread(target=run_api_server, args=(8001,), daemon=True)
+    api_thread.start()
+    
+    ui = DartSensorUI()
+    _sensor_ui = ui  # Set global reference for API endpoints
+    ui.run()
+
+
+if __name__ == "__main__":
+    main()
