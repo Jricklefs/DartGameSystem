@@ -1,0 +1,41 @@
+# DartSensor Configuration
+
+server:
+  url: "http://localhost:8000"
+  api_key: ""  # optional, for authenticated endpoints
+  timeout_ms: 5000
+
+board:
+  id: "board1"  # unique identifier for this board
+
+cameras:
+  - id: "cam0"
+    device: 0  # /dev/video0 or camera index
+    width: 1280
+    height: 720
+    fps: 30
+  
+  # Add more cameras as needed
+  # - id: "cam1"
+  #   device: 1
+  #   width: 1280
+  #   height: 720
+  #   fps: 30
+
+detection:
+  # Frame difference detection
+  diff_threshold: 25          # pixel intensity difference to count as change
+  min_contour_area: 500       # minimum changed area (pixels) to trigger detection
+  max_contour_area: 50000     # maximum area (filter out large movements like hands)
+  
+  # Timing
+  settling_ms: 150            # wait after motion stops before capturing
+  cooldown_ms: 500            # minimum time between dart detections
+  
+  # Baseline comparison
+  baseline_match_pct: 97      # percentage match to baseline = board is clear
+  baseline_update_on_clear: true  # update baseline when board clears
+
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  file: ""     # optional log file path
