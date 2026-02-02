@@ -14,6 +14,9 @@ const DEFAULT_BACKGROUNDS = [
     '/images/backgrounds/speakeasy-5.jpg'
 ];
 
+// Dartboard segment order (clockwise starting from 20 at top)
+const SEGMENT_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+
 // State
 let selectedBackgrounds = [];
 let customBackgrounds = [];
@@ -21,8 +24,67 @@ let storedCalibrations = {};  // From database
 let selectedCamera = 0;
 let mark20Mode = false;
 
-// twentyAngle is stored in the database and used by DartSensorService
-// to remap segment numbers - no visual rotation needed
+// Draw segment numbers on canvas overlay, rotated by twentyAngle
+function drawSegmentNumbers(twentyAngle) {
+    const canvas = document.getElementById('segment-numbers-canvas');
+    const img = document.getElementById('main-camera-img');
+    if (!canvas || !img) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Match canvas size to container
+    const container = canvas.parentElement;
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Find the actual image bounds (object-fit: contain)
+    const imgAspect = img.naturalWidth / img.naturalHeight;
+    const containerAspect = canvas.width / canvas.height;
+    
+    let drawWidth, drawHeight, offsetX, offsetY;
+    if (imgAspect > containerAspect) {
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / imgAspect;
+        offsetX = 0;
+        offsetY = (canvas.height - drawHeight) / 2;
+    } else {
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * imgAspect;
+        offsetX = (canvas.width - drawWidth) / 2;
+        offsetY = 0;
+    }
+    
+    const centerX = offsetX + drawWidth / 2;
+    const centerY = offsetY + drawHeight / 2;
+    const radius = Math.min(drawWidth, drawHeight) * 0.42; // Position numbers near edge
+    
+    // twentyAngle is where 20 actually is on the physical board (in degrees from top)
+    // We need to offset all labels by this amount
+    const offsetAngle = twentyAngle || 0;
+    
+    ctx.font = `bold ${Math.max(14, drawWidth * 0.04)}px Arial`;
+    ctx.fillStyle = '#FFD700';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    SEGMENT_ORDER.forEach((num, i) => {
+        // Each segment is 18 degrees (360/20)
+        // Standard: 20 is at top (0°), going clockwise
+        const standardAngle = i * 18;
+        // Actual angle = standard angle + offset from Mark 20
+        const angle = (standardAngle + offsetAngle) * (Math.PI / 180) - Math.PI / 2;
+        
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        
+        ctx.strokeText(num.toString(), x, y);
+        ctx.fillText(num.toString(), x, y);
+    });
+}
 
 // ============================================================================
 // Initialization
@@ -207,6 +269,9 @@ async function selectCamera(camIndex) {
         loading.classList.add('hidden');
         offline.classList.add('hidden');
         
+        // Draw segment numbers with rotation offset
+        drawSegmentNumbers(stored.twentyAngle);
+        
         // Show 20-angle info if Mark 20 was used
         const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
         
@@ -218,6 +283,9 @@ async function selectCamera(camIndex) {
         loading.classList.add('hidden');
         offline.classList.remove('hidden');
         offline.querySelector('span').textContent = '📷 No calibration stored - click Calibrate';
+        
+        // Draw default segment numbers (no offset)
+        drawSegmentNumbers(0);
         
         qualityLabel.textContent = '❌ Not Calibrated';
         qualityLabel.className = 'cam-quality-label failed';
@@ -388,10 +456,12 @@ async function handleImageClick(e) {
         
         if (res.ok) {
             const result = await res.json();
-            storedCalibrations[`cam${selectedCamera}`] = result;
             
             // Store the result (angle saved in DB, used by DartSensorService)
             storedCalibrations[`cam${selectedCamera}`] = result;
+            
+            // Redraw segment numbers with the new offset
+            drawSegmentNumbers(result.twentyAngle);
             
             const qualityLabel = document.getElementById('cam-quality-label');
             qualityLabel.textContent = `✅ 20 marked at ${Math.round(result.twentyAngle)}°`;
