@@ -136,25 +136,60 @@ public class CalibrationsController : ControllerBase
         if (cal == null)
             return NotFound(new { error = $"No calibration found for {cameraId}" });
 
-        // Calculate angle from click position (assuming center is 0.5, 0.5)
-        double centerX = 0.5;
-        double centerY = 0.5;
-        double dx = request.X - centerX;
-        double dy = request.Y - centerY;
+        // Call DartDetectionAI to update segment_20_index in its calibration store
+        try
+        {
+            using var httpClient = new HttpClient();
+            var dartDetectUrl = $"http://192.168.0.158:8000/api/calibrations/{cameraId}/mark20?x={request.X}&y={request.Y}";
+            var response = await httpClient.PostAsync(dartDetectUrl, null);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<Mark20Response>();
+                if (result != null)
+                {
+                    cal.TwentyAngle = result.TwentyAngle;
+                    _logger.LogInformation("DartDetect updated segment_20_index to {Index} for {CameraId}", 
+                        result.Segment20Index, cameraId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("DartDetect mark20 failed: {Status}", response.StatusCode);
+                // Fall back to simple angle calculation
+                double centerX = 0.5, centerY = 0.5;
+                double dx = request.X - centerX;
+                double dy = request.Y - centerY;
+                double angle = Math.Atan2(dx, -dy) * (180.0 / Math.PI);
+                if (angle < 0) angle += 360;
+                cal.TwentyAngle = angle;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to call DartDetect mark20, using fallback calculation");
+            // Fall back to simple angle calculation
+            double centerX = 0.5, centerY = 0.5;
+            double dx = request.X - centerX;
+            double dy = request.Y - centerY;
+            double angle = Math.Atan2(dx, -dy) * (180.0 / Math.PI);
+            if (angle < 0) angle += 360;
+            cal.TwentyAngle = angle;
+        }
         
-        // Angle in radians, converted to degrees
-        // Dartboard: 20 is at the top, angles go clockwise
-        double angle = Math.Atan2(dx, -dy) * (180.0 / Math.PI);
-        if (angle < 0) angle += 360;
-        
-        cal.TwentyAngle = angle;
         cal.UpdatedAt = DateTime.UtcNow;
-        
         await _db.SaveChangesAsync();
         
-        _logger.LogInformation("Marked 20 for {CameraId} at angle {Angle}", cameraId, angle);
+        _logger.LogInformation("Marked 20 for {CameraId} at angle {Angle}", cameraId, cal.TwentyAngle);
 
         return ToDto(cal);
+    }
+    
+    private class Mark20Response
+    {
+        public string CameraId { get; set; } = "";
+        public int Segment20Index { get; set; }
+        public double TwentyAngle { get; set; }
     }
 
     /// <summary>
