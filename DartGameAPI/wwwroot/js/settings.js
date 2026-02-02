@@ -3,6 +3,7 @@
  */
 
 const DART_DETECT_URL = 'http://192.168.0.158:8000';
+const DART_SENSOR_URL = 'http://192.168.0.158:8001';  // DartSensor for camera snapshots
 const DART_GAME_URL = window.location.origin;
 
 // Default backgrounds
@@ -286,7 +287,7 @@ async function refreshCurrentCamera() {
     offline.classList.add('hidden');
     
     try {
-        const res = await fetch(`${DART_DETECT_URL}/cameras/${selectedCamera}/snapshot`, {
+        const res = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot`, {
             signal: AbortSignal.timeout(5000)
         });
         
@@ -336,7 +337,7 @@ async function calibrateCurrentCamera() {
     
     try {
         // Get fresh snapshot
-        const snapRes = await fetch(`${DART_DETECT_URL}/cameras/${selectedCamera}/snapshot`);
+        const snapRes = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot`);
         if (!snapRes.ok) throw new Error('Could not get camera snapshot');
         
         const snapData = await snapRes.json();
