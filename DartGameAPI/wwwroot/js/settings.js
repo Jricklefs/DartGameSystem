@@ -21,17 +21,8 @@ let storedCalibrations = {};  // From database
 let selectedCamera = 0;
 let mark20Mode = false;
 
-// Apply rotation to overlay based on twentyAngle
-function applyOverlayRotation(twentyAngle) {
-    const img = document.getElementById('main-camera-img');
-    if (!img) return;
-    
-    // twentyAngle is where the user clicked (where 20 actually is)
-    // We need to rotate the overlay so that position goes to the top (0°)
-    // If they clicked at 45°, we rotate -45° to bring it to top
-    const rotation = twentyAngle ? -twentyAngle : 0;
-    img.style.transform = rotation ? `rotate(${rotation}deg)` : '';
-}
+// twentyAngle is stored in the database and used by DartSensorService
+// to remap segment numbers - no visual rotation needed
 
 // ============================================================================
 // Initialization
@@ -216,10 +207,10 @@ async function selectCamera(camIndex) {
         loading.classList.add('hidden');
         offline.classList.add('hidden');
         
-        // Apply rotation if Mark 20 was used
-        applyOverlayRotation(stored.twentyAngle);
+        // Show 20-angle info if Mark 20 was used
+        const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
         
-        qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}%`;
+        qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}%${angleInfo}`;
         qualityLabel.className = 'cam-quality-label calibrated';
     } else {
         // No stored calibration - show placeholder
@@ -227,9 +218,6 @@ async function selectCamera(camIndex) {
         loading.classList.add('hidden');
         offline.classList.remove('hidden');
         offline.querySelector('span').textContent = '📷 No calibration stored - click Calibrate';
-        
-        // Clear any rotation
-        applyOverlayRotation(null);
         
         qualityLabel.textContent = '❌ Not Calibrated';
         qualityLabel.className = 'cam-quality-label failed';
@@ -402,8 +390,8 @@ async function handleImageClick(e) {
             const result = await res.json();
             storedCalibrations[`cam${selectedCamera}`] = result;
             
-            // Apply the rotation to the overlay image
-            applyOverlayRotation(result.twentyAngle);
+            // Store the result (angle saved in DB, used by DartSensorService)
+            storedCalibrations[`cam${selectedCamera}`] = result;
             
             const qualityLabel = document.getElementById('cam-quality-label');
             qualityLabel.textContent = `✅ 20 marked at ${Math.round(result.twentyAngle)}°`;
