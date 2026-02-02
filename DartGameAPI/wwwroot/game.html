@@ -353,8 +353,59 @@
             
             <!-- Action buttons -->
             <div class="correction-actions">
+                <button id="correction-clear" class="btn btn-warning">Clear</button>
                 <button id="correction-cancel" class="btn btn-secondary">Cancel</button>
                 <button id="correction-confirm" class="btn btn-primary">Enter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Player Type Modal -->
+    <div id="add-player-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content add-player-modal">
+            <div class="modal-header">
+                <h3>Add Player</h3>
+                <button class="modal-close" id="add-player-close">✕</button>
+            </div>
+            
+            <div class="add-player-options">
+                <button class="add-player-option" data-type="basic">
+                    <span class="option-icon">👤</span>
+                    <span class="option-label">Basic Player</span>
+                    <span class="option-desc">Quick unregistered player</span>
+                </button>
+                
+                <button class="add-player-option" data-type="bot">
+                    <span class="option-icon">🤖</span>
+                    <span class="option-label">Bot</span>
+                    <span class="option-desc">AI opponent</span>
+                </button>
+                
+                <button class="add-player-option" data-type="registered">
+                    <span class="option-icon">⭐</span>
+                    <span class="option-label">Registered Player</span>
+                    <span class="option-desc">Choose from saved players</span>
+                </button>
+                
+                <button class="add-player-option accent" data-type="register-new">
+                    <span class="option-icon">➕</span>
+                    <span class="option-label">Register New Player</span>
+                    <span class="option-desc">Create a new account</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Game Confirmation Modal -->
+    <div id="end-game-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content confirm-modal">
+            <h3>End Game?</h3>
+            <p>Are you sure you want to end this game? Progress will be lost.</p>
+            <div class="confirm-actions">
+                <button id="end-game-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="end-game-confirm" class="btn btn-danger">End Game</button>
             </div>
         </div>
     </div>

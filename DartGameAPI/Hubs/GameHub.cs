@@ -1,14 +1,18 @@
 using Microsoft.AspNetCore.SignalR;
 using DartGameAPI.Models;
+using System.Collections.Concurrent;
 
 namespace DartGameAPI.Hubs;
 
 /// <summary>
-/// SignalR hub for real-time game updates
+/// SignalR hub for real-time game updates and sensor communication
 /// </summary>
 public class GameHub : Hub
 {
     private readonly ILogger<GameHub> _logger;
+    
+    // Track connected sensors by board ID
+    private static readonly ConcurrentDictionary<string, string> _sensorConnections = new();
 
     public GameHub(ILogger<GameHub> logger)
     {
@@ -23,12 +27,33 @@ public class GameHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        // Remove sensor registration if this was a sensor
+        var boardId = _sensorConnections.FirstOrDefault(x => x.Value == Context.ConnectionId).Key;
+        if (boardId != null)
+        {
+            _sensorConnections.TryRemove(boardId, out _);
+            _logger.LogInformation("Sensor disconnected for board {BoardId}", boardId);
+        }
+        
         _logger.LogInformation("Client disconnected: {ConnectionId}", Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }
 
     /// <summary>
-    /// Join a board's update channel
+    /// Register a sensor for a board
+    /// </summary>
+    public async Task RegisterBoard(string boardId)
+    {
+        _sensorConnections[boardId] = Context.ConnectionId;
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"sensor:{boardId}");
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"board:{boardId}");
+        
+        _logger.LogInformation("Sensor registered for board {BoardId}: {ConnectionId}", boardId, Context.ConnectionId);
+        await Clients.Caller.SendAsync("Registered", boardId);
+    }
+
+    /// <summary>
+    /// Join a board's update channel (for UI clients)
     /// </summary>
     public async Task JoinBoard(string boardId)
     {
@@ -44,6 +69,22 @@ public class GameHub : Hub
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"board:{boardId}");
         _logger.LogInformation("Client {ConnectionId} left board {BoardId}", Context.ConnectionId, boardId);
     }
+    
+    /// <summary>
+    /// Check if a sensor is connected for a board
+    /// </summary>
+    public static bool IsSensorConnected(string boardId)
+    {
+        return _sensorConnections.ContainsKey(boardId);
+    }
+    
+    /// <summary>
+    /// Get connection ID for a board's sensor
+    /// </summary>
+    public static string? GetSensorConnectionId(string boardId)
+    {
+        return _sensorConnections.TryGetValue(boardId, out var connId) ? connId : null;
+    }
 }
 
 /// <summary>
@@ -51,6 +92,55 @@ public class GameHub : Hub
 /// </summary>
 public static class GameHubExtensions
 {
+    /// <summary>
+    /// Tell a sensor to start detecting (game started)
+    /// </summary>
+    public static async Task SendStartGame(this IHubContext<GameHub> hub, string boardId, string gameId)
+    {
+        var connId = GameHub.GetSensorConnectionId(boardId);
+        if (connId != null)
+        {
+            await hub.Clients.Client(connId).SendAsync("StartGame", gameId);
+        }
+        else
+        {
+            // Fall back to group (in case sensor joined via group)
+            await hub.Clients.Group($"sensor:{boardId}").SendAsync("StartGame", gameId);
+        }
+    }
+    
+    /// <summary>
+    /// Tell a sensor to stop detecting (game ended)
+    /// </summary>
+    public static async Task SendStopGame(this IHubContext<GameHub> hub, string boardId)
+    {
+        var connId = GameHub.GetSensorConnectionId(boardId);
+        if (connId != null)
+        {
+            await hub.Clients.Client(connId).SendAsync("StopGame", boardId);
+        }
+        else
+        {
+            await hub.Clients.Group($"sensor:{boardId}").SendAsync("StopGame", boardId);
+        }
+    }
+    
+    /// <summary>
+    /// Tell a sensor to capture new baseline (darts removed)
+    /// </summary>
+    public static async Task SendRebase(this IHubContext<GameHub> hub, string boardId)
+    {
+        var connId = GameHub.GetSensorConnectionId(boardId);
+        if (connId != null)
+        {
+            await hub.Clients.Client(connId).SendAsync("Rebase", boardId);
+        }
+        else
+        {
+            await hub.Clients.Group($"sensor:{boardId}").SendAsync("Rebase", boardId);
+        }
+    }
+
     /// <summary>
     /// Notify clients that a dart was thrown
     /// </summary>
@@ -103,6 +193,7 @@ public static class GameHubExtensions
     /// </summary>
     public static async Task SendGameStarted(this IHubContext<GameHub> hub, string boardId, Game game)
     {
+        // Notify UI clients
         await hub.Clients.Group($"board:{boardId}").SendAsync("GameStarted", new
         {
             game.Id,
@@ -111,6 +202,9 @@ public static class GameHubExtensions
             game.State,
             Players = game.Players.Select(p => new { p.Id, p.Name, p.Score })
         });
+        
+        // Tell sensor to start detecting
+        await hub.SendStartGame(boardId, game.Id);
     }
 
     /// <summary>
@@ -125,6 +219,9 @@ public static class GameHubExtensions
             WinnerName = game.Players.FirstOrDefault(p => p.Id == game.WinnerId)?.Name,
             Players = game.Players.Select(p => new { p.Id, p.Name, p.Score, p.DartsThrown })
         });
+        
+        // Tell sensor to stop detecting
+        await hub.SendStopGame(boardId);
     }
 
     /// <summary>
@@ -140,5 +237,8 @@ public static class GameHubExtensions
             NextPlayer = game.CurrentPlayer?.Name,
             game.CurrentPlayerIndex
         });
+        
+        // Tell sensor to rebase (darts should be removed)
+        await hub.SendRebase(boardId);
     }
 }

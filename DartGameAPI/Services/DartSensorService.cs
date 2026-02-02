@@ -15,6 +15,11 @@ public class DartSensorService : BackgroundService
     private readonly ILogger<DartSensorService> _logger;
     private readonly string _dartDetectBaseUrl;
     private readonly int _pollIntervalMs;
+    
+    // Baseline tracking per board
+    private readonly Dictionary<string, List<DetectedTip>> _baselineTips = new();
+    private readonly Dictionary<string, DateTime> _baselineCapturedAt = new();
+    private readonly object _baselineLock = new();
 
     public DartSensorService(IServiceScopeFactory scopeFactory, IHubContext<GameHub> hubContext, IConfiguration config, ILogger<DartSensorService> logger)
     {
@@ -41,6 +46,8 @@ public class DartSensorService : BackgroundService
                 
                 if (activeGame != null && activeGame.State == GameState.InProgress)
                 {
+                    // Check if we need to capture baseline (new game or new turn after darts removed)
+                    await EnsureBaselineAsync(activeGame, db, stoppingToken);
                     await CheckForDartsAsync(gameService, db, activeGame, stoppingToken);
                 }
             }
@@ -52,69 +59,150 @@ public class DartSensorService : BackgroundService
         }
     }
 
+    /// <summary>
+    /// Capture baseline when game starts or after darts are removed (new turn).
+    /// Call this from GameService when a new game starts or turn changes.
+    /// </summary>
+    public async Task CaptureBaselineAsync(string boardId, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Capturing baseline for board {BoardId}...", boardId);
+        
+        try
+        {
+            using var httpClient = new HttpClient { BaseAddress = new Uri(_dartDetectBaseUrl) };
+            var tips = await DetectCurrentTipsAsync(httpClient, ct);
+            
+            lock (_baselineLock)
+            {
+                _baselineTips[boardId] = tips;
+                _baselineCapturedAt[boardId] = DateTime.UtcNow;
+            }
+            
+            _logger.LogInformation("Baseline captured for {BoardId}: {Count} existing tips", boardId, tips.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to capture baseline for {BoardId}", boardId);
+        }
+    }
+
+    /// <summary>
+    /// Clear baseline when darts are removed from board.
+    /// </summary>
+    public void ClearBaseline(string boardId)
+    {
+        lock (_baselineLock)
+        {
+            _baselineTips.Remove(boardId);
+            _baselineCapturedAt.Remove(boardId);
+        }
+        _logger.LogInformation("Baseline cleared for board {BoardId}", boardId);
+    }
+
+    private async Task EnsureBaselineAsync(Game game, DartsMobDbContext db, CancellationToken ct)
+    {
+        bool hasBaseline;
+        lock (_baselineLock)
+        {
+            hasBaseline = _baselineTips.ContainsKey(game.BoardId);
+        }
+        
+        if (!hasBaseline)
+        {
+            await CaptureBaselineAsync(game.BoardId, ct);
+        }
+    }
+
     private async Task CheckForDartsAsync(GameService gameService, DartsMobDbContext db, Game game, CancellationToken ct)
     {
         try
         {
             using var httpClient = new HttpClient { BaseAddress = new Uri(_dartDetectBaseUrl) };
+            var currentTips = await DetectCurrentTipsAsync(httpClient, ct);
             
-            var cameras = new List<CameraImage>();
-            for (int i = 0; i < 3; i++)
-            {
-                var snapshot = await GetSnapshotAsync(httpClient, i, ct);
-                if (snapshot != null) cameras.Add(new CameraImage { CameraId = $"cam{i}", Image = snapshot });
-            }
-            if (!cameras.Any()) return;
+            if (!currentTips.Any()) return;
 
-            // Get the rotation offset from calibration (Mark 20 feature)
-            // Use the first camera's calibration for now
-            double rotationOffsetDegrees = 0;
-            var calibration = await db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == "cam0", ct);
-            if (calibration?.TwentyAngle != null)
+            // Get baseline tips
+            List<DetectedTip> baselineTips;
+            lock (_baselineLock)
             {
-                rotationOffsetDegrees = calibration.TwentyAngle.Value;
+                baselineTips = _baselineTips.GetValueOrDefault(game.BoardId) ?? new List<DetectedTip>();
             }
 
-            var detectRequest = new 
-            { 
-                Cameras = cameras,
-                RotationOffsetDegrees = rotationOffsetDegrees
-            };
-
-            var response = await httpClient.PostAsJsonAsync("/v1/detect", detectRequest, ct);
-            if (!response.IsSuccessStatusCode) return;
-            
-            var detectResult = await response.Content.ReadFromJsonAsync<DetectResponse>(cancellationToken: ct);
-            if (detectResult == null) return;
-
-            foreach (var tip in detectResult.Tips.Where(t => t.Confidence > 0.5))
+            // Find NEW tips (not in baseline and not already known)
+            foreach (var tip in currentTips.Where(t => t.Confidence > 0.5))
             {
-                if (IsNewDart(game, tip))
+                if (IsInBaseline(tip, baselineTips)) continue;
+                if (!IsNewDart(game, tip)) continue;
+                
+                _logger.LogInformation("Dart detected: {Zone} {Segment}x{Mult} = {Score}", 
+                    tip.Zone, tip.Segment, tip.Multiplier, tip.Score);
+                
+                var dart = new DartThrow
                 {
-                    _logger.LogInformation("Dart detected: {Zone} = {Score}", tip.Zone, tip.Score);
-                    
-                    var dart = new DartThrow
-                    {
-                        Index = game.CurrentTurn?.Darts.Count ?? 0,
-                        Segment = tip.Segment,
-                        Multiplier = tip.Multiplier,
-                        Zone = tip.Zone,
-                        Score = tip.Score,
-                        XMm = tip.XMm,
-                        YMm = tip.YMm,
-                        Confidence = tip.Confidence
-                    };
-                    
-                    game.KnownDarts.Add(new KnownDart { XMm = tip.XMm, YMm = tip.YMm, Score = tip.Score, DetectedAt = DateTime.UtcNow });
-                    gameService.ApplyManualDart(game, dart);
-                    await _hubContext.SendDartThrown(game.BoardId, dart, game);
-                    
-                    if (game.State == GameState.Finished)
-                        await _hubContext.SendGameEnded(game.BoardId, game);
+                    Index = game.CurrentTurn?.Darts.Count ?? 0,
+                    Segment = tip.Segment,
+                    Multiplier = tip.Multiplier,
+                    Zone = tip.Zone,
+                    Score = tip.Score,
+                    XMm = tip.XMm,
+                    YMm = tip.YMm,
+                    Confidence = tip.Confidence
+                };
+                
+                game.KnownDarts.Add(new KnownDart 
+                { 
+                    XMm = tip.XMm, 
+                    YMm = tip.YMm, 
+                    Score = tip.Score, 
+                    DetectedAt = DateTime.UtcNow 
+                });
+                
+                gameService.ApplyManualDart(game, dart);
+                await _hubContext.SendDartThrown(game.BoardId, dart, game);
+                
+                if (game.State == GameState.Finished)
+                {
+                    await _hubContext.SendGameEnded(game.BoardId, game);
                 }
             }
         }
-        catch (Exception ex) { _logger.LogDebug(ex, "Error checking for darts"); }
+        catch (Exception ex) 
+        { 
+            _logger.LogDebug(ex, "Error checking for darts"); 
+        }
+    }
+
+    private async Task<List<DetectedTip>> DetectCurrentTipsAsync(HttpClient httpClient, CancellationToken ct)
+    {
+        var cameras = new List<CameraImage>();
+        for (int i = 0; i < 3; i++)
+        {
+            var snapshot = await GetSnapshotAsync(httpClient, i, ct);
+            if (snapshot != null) 
+                cameras.Add(new CameraImage { CameraId = $"cam{i}", Image = snapshot });
+        }
+        
+        if (!cameras.Any()) return new List<DetectedTip>();
+
+        var detectRequest = new { Cameras = cameras };
+        var response = await httpClient.PostAsJsonAsync("/v1/detect", detectRequest, ct);
+        
+        if (!response.IsSuccessStatusCode) 
+            return new List<DetectedTip>();
+        
+        var detectResult = await response.Content.ReadFromJsonAsync<DetectResponse>(cancellationToken: ct);
+        return detectResult?.Tips ?? new List<DetectedTip>();
+    }
+
+    private bool IsInBaseline(DetectedTip tip, List<DetectedTip> baseline)
+    {
+        foreach (var b in baseline)
+        {
+            var dist = Math.Sqrt(Math.Pow(tip.XMm - b.XMm, 2) + Math.Pow(tip.YMm - b.YMm, 2));
+            if (dist < 20) return true; // Within 20mm = same dart
+        }
+        return false;
     }
 
     private bool IsNewDart(Game game, DetectedTip tip)

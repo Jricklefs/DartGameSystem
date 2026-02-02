@@ -13,17 +13,139 @@ namespace DartGameAPI.Controllers;
 public class GamesController : ControllerBase
 {
     private readonly GameService _gameService;
+    private readonly DartDetectClient _dartDetectClient;
     private readonly IHubContext<GameHub> _hubContext;
     private readonly DartsMobDbContext _db;
     private readonly ILogger<GamesController> _logger;
 
-    public GamesController(GameService gameService, IHubContext<GameHub> hubContext, DartsMobDbContext db, ILogger<GamesController> logger)
+    public GamesController(
+        GameService gameService, 
+        DartDetectClient dartDetectClient,
+        IHubContext<GameHub> hubContext, 
+        DartsMobDbContext db, 
+        ILogger<GamesController> logger)
     {
         _gameService = gameService;
+        _dartDetectClient = dartDetectClient;
         _hubContext = hubContext;
         _db = db;
         _logger = logger;
     }
+
+    // ===== HUB ENDPOINT - Receives images from DartSensor =====
+
+    /// <summary>
+    /// Hub detect endpoint - receives images from DartSensor, forwards to DartDetect.
+    /// Hub-and-spoke: Sensor → GameAPI → DetectAPI
+    /// </summary>
+    [HttpPost("detect")]
+    public async Task<ActionResult> Detect([FromBody] DetectRequest request)
+    {
+        _logger.LogDebug("Received detect request with {Count} images from board {BoardId}", 
+            request.Images?.Count ?? 0, request.BoardId);
+
+        var game = _gameService.GetGameForBoard(request.BoardId ?? "default");
+        if (game == null)
+        {
+            return Ok(new { message = "No active game", darts = new List<object>() });
+        }
+
+        if (game.State != GameState.InProgress)
+        {
+            return Ok(new { message = "Game not in progress", darts = new List<object>() });
+        }
+
+        // Forward images to DartDetect API
+        var images = request.Images?.Select(i => new CameraImageDto
+        {
+            CameraId = i.CameraId,
+            Image = i.Image
+        }).ToList() ?? new List<CameraImageDto>();
+
+        var detectResult = await _dartDetectClient.DetectAsync(images);
+        
+        if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
+        {
+            return Ok(new { message = "No darts detected", darts = new List<object>() });
+        }
+
+        var processedDarts = new List<object>();
+        
+        foreach (var tip in detectResult.Tips.Where(t => t.Confidence > 0.5))
+        {
+            if (IsKnownDart(game, tip.XMm, tip.YMm)) continue;
+
+            var dart = new DartThrow
+            {
+                Index = game.CurrentTurn?.Darts.Count ?? 0,
+                Segment = tip.Segment,
+                Multiplier = tip.Multiplier,
+                Zone = tip.Zone,
+                Score = tip.Score,
+                XMm = tip.XMm,
+                YMm = tip.YMm,
+                Confidence = tip.Confidence
+            };
+
+            game.KnownDarts.Add(new KnownDart
+            {
+                XMm = tip.XMm,
+                YMm = tip.YMm,
+                Score = tip.Score,
+                DetectedAt = DateTime.UtcNow
+            });
+
+            _gameService.ApplyManualDart(game, dart);
+            await _hubContext.SendDartThrown(game.BoardId, dart, game);
+            processedDarts.Add(new { dart.Zone, dart.Score, dart.Segment, dart.Multiplier });
+            
+            _logger.LogInformation("Dart processed via hub: {Zone} = {Score}", dart.Zone, dart.Score);
+
+            if (game.State == GameState.Finished)
+            {
+                await _hubContext.SendGameEnded(game.BoardId, game);
+            }
+        }
+
+        return Ok(new { message = processedDarts.Any() ? "Darts detected" : "No new darts", darts = processedDarts });
+    }
+
+    /// <summary>
+    /// Health check for DartSensor
+    /// </summary>
+    [HttpGet("health")]
+    public ActionResult Health()
+    {
+        return Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
+    }
+
+    /// <summary>
+    /// Event: Board cleared - triggers rebase
+    /// </summary>
+    [HttpPost("events/clear")]
+    public async Task<ActionResult> EventBoardClear([FromBody] BoardEventRequest request)
+    {
+        var boardId = request.BoardId ?? "default";
+        _gameService.ClearBoard(boardId);
+        
+        // Tell sensor to rebase via SignalR
+        await _hubContext.SendRebase(boardId);
+        await _hubContext.SendBoardCleared(boardId);
+        
+        return Ok(new { message = "Board cleared, rebase triggered via SignalR" });
+    }
+
+    /// <summary>
+    /// Event: Dart detected (tracking)
+    /// </summary>
+    [HttpPost("events/dart")]
+    public ActionResult EventDartDetected([FromBody] DartEventRequest request)
+    {
+        _logger.LogDebug("Dart event: board {BoardId}, index {Index}", request.BoardId, request.DartIndex);
+        return Ok(new { message = "Dart event recorded" });
+    }
+
+    // ===== GAME MANAGEMENT ENDPOINTS =====
 
     /// <summary>
     /// Get recent games with player info
@@ -48,7 +170,6 @@ public class GamesController : ControllerBase
             })
             .ToListAsync();
 
-        // Get player info for each game
         var gameIds = games.Select(g => g.gameId).ToList();
         var gamePlayers = await _db.GamePlayers
             .Where(gp => gameIds.Contains(gp.GameId))
@@ -133,23 +254,164 @@ public class GamesController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new game
+    /// Pre-flight check - validate system is ready for a game
+    /// </summary>
+    [HttpGet("preflight/{boardId}")]
+    public async Task<ActionResult<PreflightResult>> PreflightCheck(string boardId)
+    {
+        var board = await _db.Boards.FirstOrDefaultAsync(b => b.BoardId == boardId && b.IsActive);
+        
+        var cameras = await _db.Cameras
+            .Where(c => c.BoardId == boardId && c.IsActive)
+            .Select(c => new { c.CameraId, c.IsCalibrated, c.CalibrationQuality })
+            .ToListAsync();
+        
+        var sensorConnected = GameHub.IsSensorConnected(boardId);
+        var allCalibrated = cameras.All(c => c.IsCalibrated) && cameras.Count > 0;
+        
+        var issues = new List<PreflightIssue>();
+        
+        if (board == null)
+        {
+            issues.Add(new PreflightIssue { 
+                Code = "BOARD_NOT_FOUND", 
+                Message = "Board not registered",
+                Severity = "error"
+            });
+        }
+        
+        if (cameras.Count == 0)
+        {
+            issues.Add(new PreflightIssue { 
+                Code = "NO_CAMERAS", 
+                Message = "No cameras registered",
+                Severity = "error"
+            });
+        }
+        else
+        {
+            var uncalibrated = cameras.Where(c => !c.IsCalibrated).Select(c => c.CameraId).ToList();
+            if (uncalibrated.Any())
+            {
+                issues.Add(new PreflightIssue { 
+                    Code = "NOT_CALIBRATED", 
+                    Message = $"Cameras not calibrated: {string.Join(", ", uncalibrated)}",
+                    Severity = "error",
+                    Details = uncalibrated
+                });
+            }
+        }
+        
+        if (!sensorConnected)
+        {
+            issues.Add(new PreflightIssue { 
+                Code = "SENSOR_DISCONNECTED", 
+                Message = "Sensor not connected",
+                Severity = "error"
+            });
+        }
+        
+        return Ok(new PreflightResult
+        {
+            BoardId = boardId,
+            CanStart = issues.Count == 0,
+            CameraCount = cameras.Count,
+            CalibratedCount = cameras.Count(c => c.IsCalibrated),
+            SensorConnected = sensorConnected,
+            Issues = issues
+        });
+    }
+
+    /// <summary>
+    /// Create a new game - validates cameras are calibrated and sensor is connected
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<Game>> CreateGame([FromBody] CreateGameRequest request)
     {
         try
         {
-            var game = _gameService.CreateGame(request.BoardId, request.Mode, request.PlayerNames, request.BestOf);
+            var boardId = request.BoardId ?? "default";
             
-            // Notify connected clients
-            await _hubContext.SendGameStarted(request.BoardId, game);
+            // 1. Check board exists
+            var board = await _db.Boards.FirstOrDefaultAsync(b => b.BoardId == boardId && b.IsActive);
+            if (board == null)
+            {
+                // Auto-create default board if it doesn't exist
+                if (boardId == "default")
+                {
+                    board = new BoardEntity
+                    {
+                        BoardId = "default",
+                        Name = "Default Board",
+                        CameraCount = 0,
+                        IsCalibrated = false,
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _db.Boards.Add(board);
+                    await _db.SaveChangesAsync();
+                }
+                else
+                {
+                    return NotFound(new { 
+                        error = "Board not found", 
+                        code = "BOARD_NOT_FOUND",
+                        boardId 
+                    });
+                }
+            }
+            
+            // 2. Check cameras are registered
+            var cameras = await _db.Cameras
+                .Where(c => c.BoardId == boardId && c.IsActive)
+                .ToListAsync();
+            
+            if (cameras.Count == 0)
+            {
+                return BadRequest(new { 
+                    error = "No cameras registered", 
+                    code = "NO_CAMERAS",
+                    message = "Please register cameras in Settings before starting a game",
+                    boardId
+                });
+            }
+            
+            // 3. Check all cameras are calibrated
+            var uncalibrated = cameras.Where(c => !c.IsCalibrated).Select(c => c.CameraId).ToList();
+            if (uncalibrated.Any())
+            {
+                return BadRequest(new { 
+                    error = "Cameras not calibrated", 
+                    code = "NOT_CALIBRATED",
+                    uncalibratedCameras = uncalibrated,
+                    message = $"Please calibrate cameras before starting: {string.Join(", ", uncalibrated)}",
+                    boardId
+                });
+            }
+            
+            // 4. Check sensor is connected
+            if (!GameHub.IsSensorConnected(boardId))
+            {
+                return BadRequest(new { 
+                    error = "Sensor not connected", 
+                    code = "SENSOR_DISCONNECTED",
+                    message = "DartSensor is not connected. Please start the sensor and wait for it to connect.",
+                    boardId
+                });
+            }
+            
+            // 5. All checks passed - create the game
+            var game = _gameService.CreateGame(boardId, request.Mode, request.PlayerNames, request.BestOf);
+            
+            // 6. Notify connected clients AND sensor via SignalR
+            await _hubContext.SendGameStarted(boardId, game);
+            _logger.LogInformation("Game {GameId} created on board {BoardId} - sensor notified", game.Id, boardId);
             
             return Ok(game);
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { error = ex.Message, code = "GAME_ERROR" });
         }
     }
 
@@ -173,36 +435,6 @@ public class GamesController : ControllerBase
         var game = _gameService.GetGameForBoard(boardId);
         if (game == null) return NotFound(new { message = "No active game on this board" });
         return Ok(game);
-    }
-
-    /// <summary>
-    /// Process a dart throw (called by DartSensor when motion detected)
-    /// </summary>
-    [HttpPost("{id}/throw")]
-    public async Task<ActionResult<ThrowResult>> ProcessThrow(string id, [FromBody] ThrowRequest request)
-    {
-        var game = _gameService.GetGame(id);
-        if (game == null) return NotFound();
-        if (game.State != GameState.InProgress)
-            return BadRequest(new { error = "Game is not in progress" });
-
-        var dart = await _gameService.ProcessThrowAsync(game.BoardId, request.Images);
-        
-        if (dart == null)
-        {
-            return Ok(new ThrowResult { NewDart = null, Game = game });
-        }
-
-        // Notify connected clients
-        await _hubContext.SendDartThrown(game.BoardId, dart, game);
-        
-        // Check if game ended
-        if (game.State == GameState.Finished)
-        {
-            await _hubContext.SendGameEnded(game.BoardId, game);
-        }
-
-        return Ok(new ThrowResult { NewDart = dart, Game = game });
     }
 
     /// <summary>
@@ -234,26 +466,31 @@ public class GamesController : ControllerBase
         if (game.State != GameState.InProgress)
             return BadRequest(new { error = "Game is not in progress" });
         
-        // Save current turn info before advancing
         var previousTurn = game.CurrentTurn ?? new Turn();
         
         _gameService.NextTurn(game);
         
-        // Notify connected clients that turn ended
+        // Notify connected clients that turn ended (this also sends Rebase to sensor via SignalR)
         await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+        _logger.LogInformation("Turn ended on board {BoardId}, sensor rebase triggered via SignalR", game.BoardId);
         
         return Ok(new { game = game });
     }
 
     /// <summary>
-    /// Clear the board (darts removed)
+    /// Clear the board (darts removed) - triggers rebase
     /// </summary>
     [HttpPost("board/{boardId}/clear")]
     public async Task<ActionResult> ClearBoard(string boardId)
     {
         _gameService.ClearBoard(boardId);
+        
+        // Tell sensor to rebase via SignalR
+        await _hubContext.SendRebase(boardId);
         await _hubContext.SendBoardCleared(boardId);
-        return Ok(new { message = "Board cleared" });
+        _logger.LogInformation("Board {BoardId} cleared, rebase triggered via SignalR", boardId);
+        
+        return Ok(new { message = "Board cleared, rebase triggered" });
     }
 
     /// <summary>
@@ -267,7 +504,6 @@ public class GamesController : ControllerBase
         if (game.State != GameState.InProgress)
             return BadRequest(new { error = "Game is not in progress" });
 
-        // Create dart throw directly
         var dart = new DartThrow
         {
             Index = game.CurrentTurn?.Darts.Count ?? 0,
@@ -280,13 +516,10 @@ public class GamesController : ControllerBase
             Confidence = 1.0
         };
 
-        // Apply to game
         _gameService.ApplyManualDart(game, dart);
         
-        // Notify connected clients
         await _hubContext.SendDartThrown(game.BoardId, dart, game);
         
-        // Check if game ended
         if (game.State == GameState.Finished)
         {
             await _hubContext.SendGameEnded(game.BoardId, game);
@@ -310,11 +543,9 @@ public class GamesController : ControllerBase
         if (request.DartIndex < 0 || request.DartIndex >= game.CurrentTurn.Darts.Count)
             return BadRequest(new { error = "Invalid dart index" });
 
-        // Get the old dart and calculate score difference
         var oldDart = game.CurrentTurn.Darts[request.DartIndex];
         var oldScore = oldDart.Score;
         
-        // Create corrected dart
         var newDart = new DartThrow
         {
             Index = request.DartIndex,
@@ -324,25 +555,34 @@ public class GamesController : ControllerBase
             Score = request.Segment * request.Multiplier,
             XMm = oldDart.XMm,
             YMm = oldDart.YMm,
-            Confidence = 1.0  // Manual correction = 100% confidence
+            Confidence = 1.0
         };
 
-        // Apply correction
         _gameService.CorrectDart(game, request.DartIndex, newDart);
         
         _logger.LogInformation("Corrected dart {Index}: {OldZone}={OldScore} -> {NewZone}={NewScore}", 
             request.DartIndex, oldDart.Zone, oldScore, newDart.Zone, newDart.Score);
 
-        // Notify connected clients
         await _hubContext.SendDartThrown(game.BoardId, newDart, game);
         
-        // Check if game ended (unlikely from correction but possible)
         if (game.State == GameState.Finished)
         {
             await _hubContext.SendGameEnded(game.BoardId, game);
         }
 
         return Ok(new ThrowResult { NewDart = newDart, Game = game });
+    }
+
+    // === Private helpers ===
+
+    private bool IsKnownDart(Game game, double xMm, double yMm, double thresholdMm = 20.0)
+    {
+        foreach (var known in game.KnownDarts)
+        {
+            var dist = Math.Sqrt(Math.Pow(xMm - known.XMm, 2) + Math.Pow(yMm - known.YMm, 2));
+            if (dist < thresholdMm) return true;
+        }
+        return false;
     }
 
     private static string GetZoneName(int segment, int multiplier)
@@ -358,23 +598,43 @@ public class GamesController : ControllerBase
     }
 }
 
+// === Request/Response DTOs ===
+
+public class DetectRequest
+{
+    public string? BoardId { get; set; }
+    public List<ImagePayload>? Images { get; set; }
+}
+
+public class ImagePayload
+{
+    public string CameraId { get; set; } = string.Empty;
+    public string Image { get; set; } = string.Empty;
+}
+
+public class BoardEventRequest
+{
+    public string? BoardId { get; set; }
+}
+
+public class DartEventRequest
+{
+    public string? BoardId { get; set; }
+    public int DartIndex { get; set; }
+}
+
 public class CreateGameRequest
 {
     public string BoardId { get; set; } = "default";
     public GameMode Mode { get; set; } = GameMode.Practice;
     public List<string> PlayerNames { get; set; } = new();
-    public int BestOf { get; set; } = 5;  // Best of 5 legs (first to 3)
-}
-
-public class ThrowRequest
-{
-    public List<CameraImage> Images { get; set; } = new();
+    public int BestOf { get; set; } = 5;
 }
 
 public class ManualThrowRequest
 {
-    public int Segment { get; set; }  // 1-20, or 25 for bull
-    public int Multiplier { get; set; } = 1;  // 1=single, 2=double, 3=triple
+    public int Segment { get; set; }
+    public int Multiplier { get; set; } = 1;
 }
 
 public class CorrectDartRequest
@@ -404,4 +664,22 @@ public class UpdateCalibrationRequest
 {
     public bool IsCalibrated { get; set; }
     public string? CalibrationData { get; set; }
+}
+
+public class PreflightResult
+{
+    public string BoardId { get; set; } = string.Empty;
+    public bool CanStart { get; set; }
+    public int CameraCount { get; set; }
+    public int CalibratedCount { get; set; }
+    public bool SensorConnected { get; set; }
+    public List<PreflightIssue> Issues { get; set; } = new();
+}
+
+public class PreflightIssue
+{
+    public string Code { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string Severity { get; set; } = "error";
+    public List<string>? Details { get; set; }
 }

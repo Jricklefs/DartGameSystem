@@ -23,6 +23,8 @@ let customBackgrounds = [];
 let storedCalibrations = {};  // From database
 let selectedCamera = 0;
 let mark20Mode = false;
+let calibrationViewMode = 'combined';  // 'overlay' or 'combined'
+let lastCameraSnapshot = null;  // Store the base camera image
 
 // Segment numbers are now drawn by DartDetectionAI in the overlay image
 // No need for canvas overlay - removed to avoid duplicate labels
@@ -137,6 +139,16 @@ async function initCalibration() {
         });
     });
     
+    // Set up view toggle buttons
+    document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            calibrationViewMode = btn.dataset.view;
+            updateCalibrationView();
+        });
+    });
+    
     // Set up image click for Mark 20
     const mainImg = document.getElementById('main-camera-img');
     mainImg.addEventListener('click', handleImageClick);
@@ -146,6 +158,25 @@ async function initCalibration() {
     
     // Show first camera's stored calibration
     selectCamera(0);
+}
+
+// Update the calibration view based on mode
+function updateCalibrationView() {
+    const baseImg = document.getElementById('camera-base-img');
+    const overlayImg = document.getElementById('main-camera-img');
+    
+    if (calibrationViewMode === 'combined' && lastCameraSnapshot) {
+        // Show both: camera feed underneath, overlay on top
+        baseImg.src = lastCameraSnapshot;
+        baseImg.style.display = 'block';
+        overlayImg.style.position = 'absolute';
+        overlayImg.style.zIndex = '2';
+    } else {
+        // Overlay only - hide base image
+        baseImg.style.display = 'none';
+        overlayImg.style.position = 'relative';
+        overlayImg.style.zIndex = '1';
+    }
 }
 
 async function loadStoredCalibrations() {
@@ -197,6 +228,7 @@ async function selectCamera(camIndex) {
     });
     
     const img = document.getElementById('main-camera-img');
+    const baseImg = document.getElementById('camera-base-img');
     const loading = document.getElementById('main-camera-loading');
     const offline = document.getElementById('main-camera-offline');
     const qualityLabel = document.getElementById('cam-quality-label');
@@ -210,6 +242,14 @@ async function selectCamera(camIndex) {
         loading.classList.add('hidden');
         offline.classList.add('hidden');
         
+        // If we have calibration image, use it as base for combined view
+        if (stored.calibrationImagePath) {
+            lastCameraSnapshot = stored.calibrationImagePath;
+        } else {
+            lastCameraSnapshot = null;
+        }
+        updateCalibrationView();
+        
         // Show 20-angle info if Mark 20 was used
         const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
         
@@ -218,6 +258,8 @@ async function selectCamera(camIndex) {
     } else {
         // No stored calibration - show placeholder
         img.classList.remove('loaded');
+        baseImg.style.display = 'none';
+        lastCameraSnapshot = null;
         loading.classList.add('hidden');
         offline.classList.remove('hidden');
         offline.querySelector('span').textContent = '📷 No calibration stored - click Calibrate';
@@ -230,6 +272,7 @@ async function selectCamera(camIndex) {
 async function refreshCurrentCamera() {
     // Get live snapshot from camera (for preview before calibrating)
     const img = document.getElementById('main-camera-img');
+    const baseImg = document.getElementById('camera-base-img');
     const loading = document.getElementById('main-camera-loading');
     const offline = document.getElementById('main-camera-offline');
     const qualityLabel = document.getElementById('cam-quality-label');
@@ -246,9 +289,14 @@ async function refreshCurrentCamera() {
         
         if (res.ok) {
             const data = await res.json();
-            img.src = `data:image/jpeg;base64,${data.image}`;
+            const imgData = `data:image/jpeg;base64,${data.image}`;
+            img.src = imgData;
             img.classList.add('loaded');
             loading.classList.add('hidden');
+            
+            // Store snapshot for combined view
+            lastCameraSnapshot = imgData;
+            updateCalibrationView();
             
             qualityLabel.textContent = '📷 Live Preview';
             qualityLabel.className = 'cam-quality-label';

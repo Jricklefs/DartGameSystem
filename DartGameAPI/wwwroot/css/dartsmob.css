@@ -2484,3 +2484,202 @@ html, body {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
 }
+
+/* ==========================================================================
+   Add Player Modal
+   ========================================================================== */
+
+.add-player-modal {
+    width: 90%;
+    max-width: 400px;
+}
+
+.add-player-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.add-player-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--smoke);
+    border: 2px solid var(--gold-dark);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.add-player-option:hover {
+    border-color: var(--gold);
+    background: rgba(212, 168, 75, 0.1);
+    transform: translateX(4px);
+}
+
+.add-player-option.accent {
+    border-color: var(--teal);
+    background: rgba(78, 205, 196, 0.1);
+}
+
+.add-player-option.accent:hover {
+    background: rgba(78, 205, 196, 0.2);
+    border-color: var(--teal);
+}
+
+.add-player-option .option-icon {
+    font-size: 2rem;
+}
+
+.add-player-option .option-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    color: var(--paper);
+    letter-spacing: 0.05em;
+    display: block;
+}
+
+.add-player-option .option-desc {
+    font-size: 0.8rem;
+    color: var(--paper-dark);
+    display: block;
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   End Game Confirmation Modal
+   ========================================================================== */
+
+.confirm-modal {
+    width: 90%;
+    max-width: 380px;
+    text-align: center;
+    padding: 30px;
+}
+
+.confirm-modal h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: var(--gold);
+    margin-bottom: 16px;
+    letter-spacing: 0.1em;
+}
+
+.confirm-modal p {
+    color: var(--paper-dark);
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.confirm-actions .btn {
+    flex: 1;
+}
+
+.btn-danger {
+    background: var(--crimson);
+    border: none;
+    color: var(--paper);
+}
+
+.btn-danger:hover {
+    background: var(--crimson-dark);
+}
+
+.btn-warning {
+    background: #e67e22;
+    border: none;
+    color: var(--paper);
+}
+
+.btn-warning:hover {
+    background: #d35400;
+}
+
+/* ==========================================================================
+   Correction Modal - Solid Background Fix
+   ========================================================================== */
+
+.correction-modal {
+    background: #1a1510 !important;  /* Solid opaque background */
+}
+
+.correction-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.correction-actions .btn {
+    flex: 1;
+}
+
+/* ==========================================================================
+   Calibration Overlay with Camera Image
+   ========================================================================== */
+
+.calibration-preview-container {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 300px;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.calibration-camera-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    z-index: 1;
+}
+
+.calibration-overlay-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Calibration toggle buttons */
+.calibration-view-toggle {
+    display: flex;
+    gap: 4px;
+    margin-left: 12px;
+}
+
+.view-toggle-btn {
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--gold-dark);
+    color: var(--paper-dark);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-toggle-btn.active {
+    background: rgba(212, 168, 75, 0.2);
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+.view-toggle-btn:hover {
+    background: rgba(212, 168, 75, 0.1);
+}

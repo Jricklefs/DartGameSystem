@@ -45,11 +45,18 @@
                         CAM 2 <span class="cam-indicator" id="cam-ind-2">●</span>
                     </button>
                 </div>
+                
+                <!-- View toggle for calibration overlay -->
+                <div class="calibration-view-toggle">
+                    <button class="view-toggle-btn" data-view="overlay" id="view-overlay-btn">Overlay</button>
+                    <button class="view-toggle-btn active" data-view="combined" id="view-combined-btn">Camera+Overlay</button>
+                </div>
             </div>
 
-            <!-- Large Camera Preview -->
-            <div class="camera-preview-full">
-                <img id="main-camera-img" class="main-cam-img" alt="Camera Preview">
+            <!-- Large Camera Preview with Overlay Support -->
+            <div class="camera-preview-full" id="calibration-preview">
+                <img id="camera-base-img" class="calibration-camera-img" alt="Camera Feed" style="display: none;">
+                <img id="main-camera-img" class="main-cam-img calibration-overlay-img" alt="Calibration Overlay">
                 <div id="main-camera-loading" class="main-cam-loading">
                     <span>📷 Loading camera...</span>
                 </div>

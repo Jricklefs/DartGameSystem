@@ -39,8 +39,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-// DartDetect API client
+// DartDetect API client - forwards images for scoring
 builder.Services.AddHttpClient<DartDetectClient>();
+
+// NOTE: DartSensorClient removed - sensor communication now via SignalR
+// Sensor connects to GameHub and receives StartGame/StopGame/Rebase events
 
 // Game service (singleton - holds all state)
 builder.Services.AddSingleton<GameService>();
@@ -48,8 +51,9 @@ builder.Services.AddSingleton<GameService>();
 // Matchmaking service (singleton - manages online play)
 builder.Services.AddSingleton<MatchmakingService>();
 
-// Dart sensor background service (polls cameras for dart detection)
-builder.Services.AddHostedService<DartSensorService>();
+// NOTE: DartSensorService removed in v2.0
+// DartDetect now runs continuous motion detection and pushes dart detections to us
+// See: POST /api/games/board/{boardId}/dart-detected
 
 var app = builder.Build();
 

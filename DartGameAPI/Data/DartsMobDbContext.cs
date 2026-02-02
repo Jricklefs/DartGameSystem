@@ -14,10 +14,12 @@ public class DartsMobDbContext : DbContext
 
     public DbSet<PlayerEntity> Players => Set<PlayerEntity>();
     public DbSet<BoardEntity> Boards => Set<BoardEntity>();
+    public DbSet<CameraEntity> Cameras => Set<CameraEntity>();  // NEW: Camera tracking
     public DbSet<GameEntity> Games => Set<GameEntity>();
     public DbSet<GamePlayerEntity> GamePlayers => Set<GamePlayerEntity>();
     public DbSet<ThrowEntity> Throws => Set<ThrowEntity>();
     public DbSet<CalibrationEntity> Calibrations => Set<CalibrationEntity>();
+    public DbSet<DartLocation> DartLocations => Set<DartLocation>();  // For heatmap data
     
     // Online play entities
     public DbSet<RegisteredBoard> RegisteredBoards => Set<RegisteredBoard>();
@@ -46,6 +48,19 @@ public class DartsMobDbContext : DbContext
             entity.Property(e => e.BoardId).HasMaxLength(50);
             entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Location).HasMaxLength(255);
+        });
+
+        // Cameras (NEW)
+        modelBuilder.Entity<CameraEntity>(entity =>
+        {
+            entity.ToTable("Cameras");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CameraId).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.BoardId).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.DisplayName).HasMaxLength(100);
+            entity.Property(e => e.CalibrationQuality).HasColumnType("decimal(5,4)");
+            entity.HasIndex(e => new { e.BoardId, e.CameraId }).IsUnique();
+            entity.HasIndex(e => e.BoardId);
         });
 
         // Games
@@ -95,6 +110,22 @@ public class DartsMobDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.CameraId).HasMaxLength(50).IsRequired();
             entity.HasIndex(e => e.CameraId).IsUnique();
+        });
+
+        // DartLocations (for heatmap data)
+        modelBuilder.Entity<DartLocation>(entity =>
+        {
+            entity.ToTable("DartLocations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.GameId).HasMaxLength(50);
+            entity.Property(e => e.PlayerId).HasMaxLength(50);
+            entity.Property(e => e.CameraId).HasMaxLength(50);
+            entity.Property(e => e.XMm).HasColumnType("decimal(8,2)");
+            entity.Property(e => e.YMm).HasColumnType("decimal(8,2)");
+            entity.Property(e => e.Confidence).HasColumnType("decimal(5,4)");
+            entity.HasIndex(e => e.PlayerId);
+            entity.HasIndex(e => e.GameId);
+            entity.HasIndex(e => e.DetectedAt);
         });
 
         // ============================================================================
@@ -189,6 +220,21 @@ public class BoardEntity
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
     public string? CalibrationData { get; set; }  // JSON blob from DartDetect
+}
+
+// NEW: Camera entity for tracking individual cameras per board
+public class CameraEntity
+{
+    public int Id { get; set; }
+    public string CameraId { get; set; } = string.Empty;  // e.g. "cam0", "cam1"
+    public string BoardId { get; set; } = string.Empty;   // FK to Boards
+    public int DeviceIndex { get; set; }                  // USB device index
+    public string? DisplayName { get; set; }              // User-friendly name
+    public bool IsCalibrated { get; set; }
+    public double? CalibrationQuality { get; set; }       // 0-1 quality score
+    public DateTime? LastCalibration { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsActive { get; set; } = true;
 }
 
 public class GameEntity

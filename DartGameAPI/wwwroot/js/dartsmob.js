@@ -286,6 +286,9 @@ async function startGame() {
     const gameMode = getSelectedGameMode();
     const rules = getSelectedRules();
     
+    // Show game screen IMMEDIATELY for instant feedback
+    showScreen('game-screen');
+    
     try {
         const response = await fetch('/api/games', {
             method: 'POST',
@@ -301,18 +304,26 @@ async function startGame() {
         
         if (response.ok) {
             currentGame = await response.json();
-            showScreen('game-screen');
             updateScoreboard();
             updateCurrentTurn();
         } else {
             console.error('Failed to start game:', await response.text());
+            showScreen('setup-screen');  // Go back on error
         }
     } catch (err) {
         console.error('Error starting game:', err);
+        showScreen('setup-screen');  // Go back on error
     }
 }
 
 async function endGame() {
+    // Show confirmation modal instead of ending immediately
+    document.getElementById('end-game-modal')?.classList.remove('hidden');
+}
+
+async function confirmEndGame() {
+    document.getElementById('end-game-modal')?.classList.add('hidden');
+    
     if (!currentGame) {
         showScreen('setup-screen');
         return;
@@ -452,8 +463,17 @@ function initEventListeners() {
     // Start game
     document.getElementById('start-game-btn')?.addEventListener('click', startGame);
     
-    // End game
+    // End game - now shows confirmation
     document.getElementById('end-game-btn')?.addEventListener('click', endGame);
+    
+    // End game confirmation modal handlers
+    document.getElementById('end-game-cancel')?.addEventListener('click', () => {
+        document.getElementById('end-game-modal')?.classList.add('hidden');
+    });
+    document.getElementById('end-game-confirm')?.addEventListener('click', confirmEndGame);
+    document.querySelector('#end-game-modal .modal-backdrop')?.addEventListener('click', () => {
+        document.getElementById('end-game-modal')?.classList.add('hidden');
+    });
     
     // Next turn
     document.getElementById('next-turn-btn')?.addEventListener('click', nextTurn);
@@ -679,6 +699,14 @@ function initDartCorrection() {
     // Cancel button
     document.getElementById('correction-cancel')?.addEventListener('click', closeCorrectionModal);
     
+    // Clear button - resets the input
+    document.getElementById('correction-clear')?.addEventListener('click', () => {
+        correctionInput = '';
+        correctionMultiplier = 1;
+        document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+        updateCorrectionDisplay();
+    });
+    
     // Backdrop click to close
     document.querySelector('#dart-correction-modal .modal-backdrop')?.addEventListener('click', closeCorrectionModal);
     
@@ -812,8 +840,20 @@ async function submitCorrection() {
 let selectedRegisteredPlayers = [];
 
 function initPlayerManagement() {
-    // Add player button - now creates a row with remove button
-    document.getElementById('add-player-btn')?.addEventListener('click', addPlayerRow);
+    // Add player button - shows popup with options
+    document.getElementById('add-player-btn')?.addEventListener('click', openAddPlayerModal);
+    
+    // Add player modal handlers
+    document.getElementById('add-player-close')?.addEventListener('click', closeAddPlayerModal);
+    document.querySelector('#add-player-modal .modal-backdrop')?.addEventListener('click', closeAddPlayerModal);
+    
+    // Add player option buttons
+    document.querySelectorAll('.add-player-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.dataset.type;
+            handleAddPlayerType(type);
+        });
+    });
     
     // Remove player buttons (delegated)
     document.getElementById('players-list')?.addEventListener('click', (e) => {
@@ -862,6 +902,53 @@ function addPlayerRow() {
         <button class="btn-remove-player" title="Remove">✕</button>
     `;
     list.appendChild(row);
+}
+
+function addBotPlayer() {
+    const list = document.getElementById('players-list');
+    const botNames = ['Bot Easy', 'Bot Medium', 'Bot Hard', 'Bot Pro'];
+    const existingBots = Array.from(list.querySelectorAll('.player-input'))
+        .filter(i => i.value.startsWith('Bot')).length;
+    const botName = botNames[Math.min(existingBots, botNames.length - 1)];
+    
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+        <input type="text" class="player-input" value="${botName}" data-is-bot="true">
+        <button class="btn-remove-player" title="Remove">✕</button>
+    `;
+    list.appendChild(row);
+}
+
+function openAddPlayerModal() {
+    document.getElementById('add-player-modal')?.classList.remove('hidden');
+}
+
+function closeAddPlayerModal() {
+    document.getElementById('add-player-modal')?.classList.add('hidden');
+}
+
+function handleAddPlayerType(type) {
+    closeAddPlayerModal();
+    
+    switch (type) {
+        case 'basic':
+            addPlayerRow();
+            break;
+        case 'bot':
+            addBotPlayer();
+            break;
+        case 'registered':
+            openPlayerSelectModal();
+            break;
+        case 'register-new':
+            openPlayerSelectModal();
+            // Switch to register tab
+            setTimeout(() => {
+                document.querySelector('.tab-btn[data-tab="register"]')?.click();
+            }, 100);
+            break;
+    }
 }
 
 function renumberPlayers() {

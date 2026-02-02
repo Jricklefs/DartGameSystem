@@ -9,15 +9,13 @@ public class GameService
 {
     private readonly Dictionary<string, Board> _boards = new();
     private readonly Dictionary<string, Game> _games = new();
-    private readonly DartDetectClient _dartDetect;
     private readonly ILogger<GameService> _logger;
     
     // Distance threshold to consider two tips as same dart (mm)
     private const double POSITION_TOLERANCE_MM = 20.0;
 
-    public GameService(DartDetectClient dartDetect, ILogger<GameService> logger)
+    public GameService(ILogger<GameService> logger)
     {
-        _dartDetect = dartDetect;
         _logger = logger;
     }
 
@@ -115,95 +113,8 @@ public class GameService
     #region Dart Detection & Game Logic
 
     /// <summary>
-    /// Process a dart throw detection
-    /// </summary>
-    public async Task<DartThrow?> ProcessThrowAsync(string boardId, List<CameraImage> images)
-    {
-        var game = GetGameForBoard(boardId);
-        if (game == null || game.State != GameState.InProgress)
-        {
-            _logger.LogWarning("No active game on board {BoardId}", boardId);
-            return null;
-        }
-
-        // Call DartDetect API
-        var detectResult = await _dartDetect.DetectAsync(images);
-        if (detectResult == null || !detectResult.Tips.Any())
-        {
-            _logger.LogDebug("No tips detected");
-            return null;
-        }
-
-        // Find NEW darts (not in known positions)
-        var newTip = FindNewDart(game, detectResult.Tips);
-        if (newTip == null)
-        {
-            _logger.LogDebug("No new darts found (all tips match known positions)");
-            return null;
-        }
-
-        // Create dart throw
-        var dart = new DartThrow
-        {
-            Index = game.CurrentTurn?.Darts.Count ?? 0,
-            Segment = newTip.Segment,
-            Multiplier = newTip.Multiplier,
-            Zone = newTip.Zone,
-            Score = newTip.Score,
-            XMm = newTip.XMm,
-            YMm = newTip.YMm,
-            Confidence = newTip.Confidence
-        };
-
-        // Add to known darts
-        game.KnownDarts.Add(new KnownDart
-        {
-            XMm = newTip.XMm,
-            YMm = newTip.YMm,
-            Score = newTip.Score,
-            DetectedAt = DateTime.UtcNow
-        });
-
-        // Update game state
-        ApplyDartToGame(game, dart);
-
-        _logger.LogInformation("Dart detected: {Zone} {Segment} = {Score} pts", 
-            dart.Zone, dart.Segment, dart.Score);
-
-        return dart;
-    }
-
-    /// <summary>
-    /// Find a dart tip that doesn't match any known position
-    /// </summary>
-    private DetectedTip? FindNewDart(Game game, List<DetectedTip> tips)
-    {
-        foreach (var tip in tips.OrderByDescending(t => t.Confidence))
-        {
-            bool isNew = true;
-            
-            foreach (var known in game.KnownDarts)
-            {
-                var distance = Math.Sqrt(
-                    Math.Pow(tip.XMm - known.XMm, 2) + 
-                    Math.Pow(tip.YMm - known.YMm, 2)
-                );
-                
-                if (distance < POSITION_TOLERANCE_MM)
-                {
-                    isNew = false;
-                    break;
-                }
-            }
-            
-            if (isNew) return tip;
-        }
-        
-        return null;
-    }
-
-    /// <summary>
-    /// Apply dart score to game state
+    /// Apply dart score to game state.
+    /// Called when DartDetect pushes a detection via POST /dart-detected.
     /// </summary>
     private void ApplyDartToGame(Game game, DartThrow dart)
     {
@@ -371,12 +282,13 @@ public class GameService
     }
 
     /// <summary>
-    /// Apply a manually entered dart (for testing without cameras)
+    /// Apply a manually entered dart or a dart from DartDetect push notification.
+    /// This is the main entry point for registering dart throws.
     /// </summary>
     public void ApplyManualDart(Game game, DartThrow dart)
     {
         ApplyDartToGame(game, dart);
-        _logger.LogInformation("Manual dart: {Zone} = {Score} pts", dart.Zone, dart.Score);
+        _logger.LogInformation("Dart applied: {Zone} = {Score} pts", dart.Zone, dart.Score);
     }
 
     /// <summary>
