@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DartGameAPI.Data;
+using DartGameAPI.Models;
 
 namespace DartGameAPI.Controllers;
 

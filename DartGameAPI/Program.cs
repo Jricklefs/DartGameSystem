@@ -48,6 +48,9 @@ builder.Services.AddSingleton<GameService>();
 // Matchmaking service (singleton - manages online play)
 builder.Services.AddSingleton<MatchmakingService>();
 
+// Dart sensor background service (polls cameras for dart detection)
+builder.Services.AddHostedService<DartSensorService>();
+
 var app = builder.Build();
 
 // Verify database connection on startup
