@@ -29,19 +29,19 @@ class BoardState(Enum):
 class DetectorConfig:
     """Configuration for the detector."""
     # Thresholds (scaled 20x for readability - dart shows ~15-25%)
-    base_threshold_pct: float = 10.0      # % diff to consider "changed" from base
-    dart_threshold_pct: float = 8.0       # % diff to detect new dart vs Image1
-    clear_threshold_pct: float = 5.0      # % diff to consider "matches baseline"
+    base_threshold_pct: float = 5.0       # % diff to consider "changed" from base (was 10.0)
+    dart_threshold_pct: float = 4.0       # % diff to detect new dart vs Image1 (was 8.0)
+    clear_threshold_pct: float = 3.0      # % diff to consider "matches baseline" (was 5.0)
     
     # Hand/clearing detection (from DartDetector, scaled)
     hand_threshold_pct: float = 300.0     # % diff = hand blocking camera (very high)
-    clearing_start_pct: float = 150.0     # % diff = might be pulling darts
-    clearing_finish_pct: float = 250.0    # % diff = definitely pulling darts
+    clearing_start_pct: float = 200.0     # % diff = might be pulling darts (was 150.0)
+    clearing_finish_pct: float = 280.0    # % diff = definitely pulling darts (was 250.0)
     
     # Drift compensation
     enable_drift_correction: bool = True
     drift_blend_alpha: float = 0.05       # How much to blend (0.05 = 5% new frame)
-    idle_refresh_seconds: float = 5.0     # Hard refresh baseline after this idle time
+    idle_refresh_seconds: float = 60.0     # Hard refresh baseline after this idle time
     
     # Noise reduction
     blur_kernel_size: int = 5             # Gaussian blur kernel (odd number)
@@ -54,7 +54,7 @@ class DetectorConfig:
     warmup_ms: int = 800                  # Initial warmup before detection (from DartDetector)
     
     # Multi-camera consensus
-    min_cameras_agree: int = 2            # Minimum cameras that must detect change
+    min_cameras_agree: int = 1            # Minimum cameras that must detect change
     
     # ROI (Region of Interest) - set via calibration per camera
     roi_center: Optional[Tuple[int, int]] = None
