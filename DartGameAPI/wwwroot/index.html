@@ -143,6 +143,70 @@
             50% { opacity: 0.5; box-shadow: 0 0 8px #2ecc71; }
         }
 
+        /* Top right settings with calibration status */
+        .top-right-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .settings-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 8px;
+            color: var(--cream);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .settings-link:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--gold);
+        }
+
+        .settings-link .icon {
+            font-size: 1.4rem;
+        }
+
+        .settings-link .text {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .calibration-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 4px;
+        }
+
+        .calibration-dot.calibrated {
+            background: #2ecc71;
+            box-shadow: 0 0 6px #2ecc71;
+        }
+
+        .calibration-dot.not-calibrated {
+            background: #e74c3c;
+            box-shadow: 0 0 6px #e74c3c;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        .calibration-dot.loading {
+            background: #f39c12;
+            box-shadow: 0 0 6px #f39c12;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         /* Responsive */
         @media (max-width: 600px) {
             .landing-menu {
@@ -157,12 +221,25 @@
             .landing-brand h1 {
                 font-size: 3.5rem;
             }
+
+            .settings-link .text {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
     <div id="background-layer" class="background-layer"></div>
     <div id="background-overlay" class="background-overlay"></div>
+
+    <!-- Top right settings with calibration indicator -->
+    <div class="top-right-status">
+        <a href="/settings.html" class="settings-link" title="Board calibration status">
+            <span class="icon">⚙️</span>
+            <span class="text">SETTINGS</span>
+            <span id="calibration-dot" class="calibration-dot loading"></span>
+        </a>
+    </div>
 
     <main class="landing-screen">
         <div class="landing-brand">
@@ -200,11 +277,12 @@
     <footer class="landing-footer">
         <div class="online-indicator">
             <span class="dot"></span>
-            <span><span id="online-count">--</span> players online</span>
+            <span><span id="online-count">0</span> players online</span>
         </div>
-        <span>Board: <strong>Joe's Board</strong></span>
+        <span>Board: <strong id="board-name">Joe's Board</strong></span>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script>
         // Apply theme background
         const theme = JSON.parse(localStorage.getItem('dartsmob-theme') || '{}');
@@ -242,6 +320,55 @@
                 document.getElementById('online-count').textContent = data.onlineCount || 0;
             })
             .catch(() => {});
+
+        // Check calibration status
+        const boardId = 'default';
+        
+        function updateCalibrationDot(canStart, issues) {
+            const dot = document.getElementById('calibration-dot');
+            const link = dot?.closest('.settings-link');
+            if (!dot || !link) return;
+            
+            if (canStart) {
+                dot.className = 'calibration-dot calibrated';
+                link.title = 'Board calibrated ✓';
+            } else {
+                dot.className = 'calibration-dot not-calibrated';
+                const issueText = issues?.map(i => i.message).join(', ') || 'Not calibrated';
+                link.title = issueText;
+            }
+        }
+        
+        function checkCalibrationStatus() {
+            fetch(`/api/games/preflight/${boardId}`)
+                .then(r => r.json())
+                .then(data => updateCalibrationDot(data.canStart, data.issues))
+                .catch(() => updateCalibrationDot(false, [{ message: 'Could not check calibration status' }]));
+        }
+        
+        // Initial check
+        checkCalibrationStatus();
+        
+        // Set up SignalR for real-time sensor status updates
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl('/gamehub')
+            .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.Warning)
+            .build();
+        
+        connection.on('SensorConnected', () => {
+            console.log('Sensor connected');
+            checkCalibrationStatus();
+        });
+        
+        connection.on('SensorDisconnected', () => {
+            console.log('Sensor disconnected');
+            checkCalibrationStatus();
+        });
+        
+        connection.start()
+            .then(() => connection.invoke('JoinBoard', boardId))
+            .catch(err => console.error('SignalR error:', err));
     </script>
 </body>
 </html>

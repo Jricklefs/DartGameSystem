@@ -139,6 +139,70 @@
             visibility: visible;
             transform: translateY(-8px);
         }
+
+        /* Settings link with calibration status */
+        .settings-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 8px;
+            color: var(--cream);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .settings-link:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--gold);
+        }
+
+        .settings-link .icon {
+            font-size: 1.4rem;
+        }
+
+        .settings-link .text {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .calibration-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 4px;
+        }
+
+        .calibration-dot.calibrated {
+            background: #2ecc71;
+            box-shadow: 0 0 6px #2ecc71;
+        }
+
+        .calibration-dot.not-calibrated {
+            background: #e74c3c;
+            box-shadow: 0 0 6px #e74c3c;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        .calibration-dot.loading {
+            background: #f39c12;
+            box-shadow: 0 0 6px #f39c12;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Responsive - hide text on mobile */
+        @media (max-width: 600px) {
+            .settings-link .text {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -156,7 +220,11 @@
                 <h1 id="app-title" class="app-title">DARTS<span class="accent">MOB</span></h1>
                 <p id="app-tagline" class="tagline">— The Family's Game —</p>
             </div>
-            <a href="/settings.html" class="settings-link" title="Settings">⚙️</a>
+            <a href="/settings.html" class="settings-link" title="Board calibration status">
+                <span class="icon">⚙️</span>
+                <span class="text">SETTINGS</span>
+                <span id="calibration-dot" class="calibration-dot loading"></span>
+            </a>
         </header>
 
         <div class="setup-card">
@@ -524,5 +592,53 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script src="/js/dartsmob.js"></script>
+    <script>
+        // Check calibration status for settings indicator
+        // Note: dartsmob.js already sets up SignalR connection, we'll hook into it
+        
+        function updateSettingsCalibrationDot(canStart, issues) {
+            const dot = document.getElementById('calibration-dot');
+            const link = dot?.closest('.settings-link');
+            if (!dot || !link) return;
+            
+            if (canStart) {
+                dot.className = 'calibration-dot calibrated';
+                link.title = 'Board calibrated ✓';
+            } else {
+                dot.className = 'calibration-dot not-calibrated';
+                const issueText = issues?.map(i => i.message).join(', ') || 'Not calibrated';
+                link.title = issueText;
+            }
+        }
+        
+        function checkSettingsCalibrationStatus() {
+            fetch(`/api/games/preflight/${boardId}`)
+                .then(r => r.json())
+                .then(data => updateSettingsCalibrationDot(data.canStart, data.issues))
+                .catch(() => updateSettingsCalibrationDot(false, [{ message: 'Could not check status' }]));
+        }
+        
+        // Initial check
+        checkSettingsCalibrationStatus();
+        
+        // Hook into the existing SignalR connection from dartsmob.js
+        // Wait for it to be initialized, then add our handlers
+        const waitForConnection = setInterval(() => {
+            if (typeof connection !== 'undefined' && connection) {
+                connection.on('SensorConnected', () => {
+                    console.log('Sensor connected - updating calibration dot');
+                    checkSettingsCalibrationStatus();
+                });
+                
+                connection.on('SensorDisconnected', () => {
+                    console.log('Sensor disconnected - updating calibration dot');
+                    checkSettingsCalibrationStatus();
+                });
+                
+                clearInterval(waitForConnection);
+            }
+        }, 100);
+    </script>
 </body>
 </html>
+

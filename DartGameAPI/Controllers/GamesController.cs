@@ -37,6 +37,10 @@ public class GamesController : ControllerBase
     /// <summary>
     /// Hub detect endpoint - receives images from DartSensor, forwards to DartDetect.
     /// Hub-and-spoke: Sensor → GameAPI → DetectAPI
+    /// 
+    /// DartSensor only calls this when motion detected (new dart landed).
+    /// DartDetect now handles differential detection and returns only the NEW dart.
+    /// We just need to score whatever DartDetect returns.
     /// </summary>
     [HttpPost("detect")]
     public async Task<ActionResult> Detect([FromBody] DetectRequest request)
@@ -62,52 +66,61 @@ public class GamesController : ControllerBase
             Image = i.Image
         }).ToList() ?? new List<CameraImageDto>();
 
-        var detectResult = await _dartDetectClient.DetectAsync(images);
+        // Get dart number for differential detection (darts already scored + 1)
+        var dartsThisTurn = game.CurrentTurn?.Darts ?? new List<DartThrow>();
+        var dartNumber = dartsThisTurn.Count + 1;
+        var boardId = request.BoardId ?? "default";
+
+        var detectResult = await _dartDetectClient.DetectAsync(images, boardId, dartNumber);
         
         if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
         {
             return Ok(new { message = "No darts detected", darts = new List<object>() });
         }
 
-        var processedDarts = new List<object>();
-        
-        foreach (var tip in detectResult.Tips.Where(t => t.Confidence > 0.5))
+        _logger.LogDebug("DartDetect returned {TipCount} tip(s), turn has {DartCount} darts scored",
+            detectResult.Tips.Count, dartsThisTurn.Count);
+
+        // DartDetect now handles differential detection - it only returns the NEW dart(s).
+        // DartDetect already filters by YOLO confidence, so we trust what it returns.
+        // Just take the most confident tip.
+        var newTip = detectResult.Tips
+            .OrderByDescending(t => t.Confidence)
+            .FirstOrDefault();
+
+        if (newTip == null)
         {
-            if (IsKnownDart(game, tip.XMm, tip.YMm)) continue;
-
-            var dart = new DartThrow
-            {
-                Index = game.CurrentTurn?.Darts.Count ?? 0,
-                Segment = tip.Segment,
-                Multiplier = tip.Multiplier,
-                Zone = tip.Zone,
-                Score = tip.Score,
-                XMm = tip.XMm,
-                YMm = tip.YMm,
-                Confidence = tip.Confidence
-            };
-
-            game.KnownDarts.Add(new KnownDart
-            {
-                XMm = tip.XMm,
-                YMm = tip.YMm,
-                Score = tip.Score,
-                DetectedAt = DateTime.UtcNow
-            });
-
-            _gameService.ApplyManualDart(game, dart);
-            await _hubContext.SendDartThrown(game.BoardId, dart, game);
-            processedDarts.Add(new { dart.Zone, dart.Score, dart.Segment, dart.Multiplier });
-            
-            _logger.LogInformation("Dart processed via hub: {Zone} = {Score}", dart.Zone, dart.Score);
-
-            if (game.State == GameState.Finished)
-            {
-                await _hubContext.SendGameEnded(game.BoardId, game);
-            }
+            return Ok(new { message = "No new darts", darts = new List<object>() });
         }
 
-        return Ok(new { message = processedDarts.Any() ? "Darts detected" : "No new darts", darts = processedDarts });
+        // Score the new dart
+        var dart = new DartThrow
+        {
+            Index = dartsThisTurn.Count,
+            Segment = newTip.Segment,
+            Multiplier = newTip.Multiplier,
+            Zone = newTip.Zone,
+            Score = newTip.Score,
+            XMm = newTip.XMm,
+            YMm = newTip.YMm,
+            Confidence = newTip.Confidence
+        };
+
+        _gameService.ApplyManualDart(game, dart);
+        await _hubContext.SendDartThrown(game.BoardId, dart, game);
+        
+        _logger.LogInformation("New dart scored: {Zone} {Segment}x{Mult} = {Score}", 
+            dart.Zone, dart.Segment, dart.Multiplier, dart.Score);
+
+        if (game.State == GameState.Finished)
+        {
+            await _hubContext.SendGameEnded(game.BoardId, game);
+        }
+
+        return Ok(new { 
+            message = "Dart detected", 
+            darts = new[] { new { dart.Zone, dart.Score, dart.Segment, dart.Multiplier } }
+        });
     }
 
     /// <summary>
@@ -120,19 +133,33 @@ public class GamesController : ControllerBase
     }
 
     /// <summary>
-    /// Event: Board cleared - triggers rebase
+    /// Event: Board cleared - triggers rebase and advances turn if complete
     /// </summary>
     [HttpPost("events/clear")]
     public async Task<ActionResult> EventBoardClear([FromBody] BoardEventRequest request)
     {
         var boardId = request.BoardId ?? "default";
+        var game = _gameService.GetGameForBoard(boardId);
+        var turnWasComplete = game?.CurrentTurn?.IsComplete == true;
+        var previousTurn = game?.CurrentTurn ?? new Turn();
+        
         _gameService.ClearBoard(boardId);
         
         // Tell sensor to rebase via SignalR
         await _hubContext.SendRebase(boardId);
-        await _hubContext.SendBoardCleared(boardId);
         
-        return Ok(new { message = "Board cleared, rebase triggered via SignalR" });
+        // If turn was complete (3 darts), notify clients that turn ended
+        if (turnWasComplete && game != null)
+        {
+            await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+            _logger.LogInformation("Board cleared via event, turn complete - advancing to next player");
+        }
+        else
+        {
+            await _hubContext.SendBoardCleared(boardId);
+        }
+        
+        return Ok(new { message = "Board cleared", turnAdvanced = turnWasComplete });
     }
 
     /// <summary>
@@ -483,14 +510,28 @@ public class GamesController : ControllerBase
     [HttpPost("board/{boardId}/clear")]
     public async Task<ActionResult> ClearBoard(string boardId)
     {
+        var game = _gameService.GetGameForBoard(boardId);
+        var turnWasComplete = game?.CurrentTurn?.IsComplete == true;
+        var previousTurn = game?.CurrentTurn ?? new Turn();
+        
         _gameService.ClearBoard(boardId);
         
         // Tell sensor to rebase via SignalR
         await _hubContext.SendRebase(boardId);
-        await _hubContext.SendBoardCleared(boardId);
-        _logger.LogInformation("Board {BoardId} cleared, rebase triggered via SignalR", boardId);
         
-        return Ok(new { message = "Board cleared, rebase triggered" });
+        // If turn was complete (3 darts), notify clients that turn ended
+        if (turnWasComplete && game != null)
+        {
+            await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+            _logger.LogInformation("Board {BoardId} cleared, turn complete - advancing to next player", boardId);
+        }
+        else
+        {
+            await _hubContext.SendBoardCleared(boardId);
+            _logger.LogInformation("Board {BoardId} cleared (mid-turn), rebase triggered", boardId);
+        }
+        
+        return Ok(new { message = "Board cleared", turnAdvanced = turnWasComplete });
     }
 
     /// <summary>
@@ -574,16 +615,6 @@ public class GamesController : ControllerBase
     }
 
     // === Private helpers ===
-
-    private bool IsKnownDart(Game game, double xMm, double yMm, double thresholdMm = 20.0)
-    {
-        foreach (var known in game.KnownDarts)
-        {
-            var dist = Math.Sqrt(Math.Pow(xMm - known.XMm, 2) + Math.Pow(yMm - known.YMm, 2));
-            if (dist < thresholdMm) return true;
-        }
-        return false;
-    }
 
     private static string GetZoneName(int segment, int multiplier)
     {

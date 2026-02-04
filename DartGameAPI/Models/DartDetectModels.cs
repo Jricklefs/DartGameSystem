@@ -34,6 +34,8 @@ public class DetectRequest
 {
     public List<CameraImage> Cameras { get; set; } = new();
     public double? RotationOffsetDegrees { get; set; }
+    public string? BoardId { get; set; } = "default";
+    public int? DartNumber { get; set; } = 1;
 }
 
 public class DetectedTip

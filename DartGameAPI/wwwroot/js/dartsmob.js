@@ -11,6 +11,38 @@ const DETECT_API = 'http://192.168.0.158:8000';
 const boardId = 'default';
 
 // ==========================================================================
+// Centralized Logging
+// ==========================================================================
+
+async function logEvent(level, category, message, data = null) {
+    try {
+        await fetch('/api/logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                source: 'UI',
+                level: level,
+                category: category,
+                message: message,
+                data: data,
+                gameId: currentGame?.id || null
+            })
+        });
+    } catch (e) {
+        // Silently fail - don't break the app for logging
+        console.error('Log failed:', e);
+    }
+}
+
+// Convenience wrappers
+const log = {
+    debug: (cat, msg, data) => logEvent('DEBUG', cat, msg, data),
+    info: (cat, msg, data) => logEvent('INFO', cat, msg, data),
+    warn: (cat, msg, data) => logEvent('WARN', cat, msg, data),
+    error: (cat, msg, data) => logEvent('ERROR', cat, msg, data)
+};
+
+// ==========================================================================
 // State
 // ==========================================================================
 
@@ -144,16 +176,159 @@ function updateConnectionStatus(text, className) {
 // Game Event Handlers
 // ==========================================================================
 
+// Audio settings - stored in localStorage
+const audioSettings = {
+    mode: localStorage.getItem('audio-mode') || 'off',  // 'off', 'tts', 'files'
+    volume: parseInt(localStorage.getItem('audio-volume') || '80') / 100,
+    
+    save() {
+        localStorage.setItem('audio-mode', this.mode);
+        localStorage.setItem('audio-volume', Math.round(this.volume * 100));
+    },
+    
+    load() {
+        this.mode = localStorage.getItem('audio-mode') || 'off';
+        this.volume = parseInt(localStorage.getItem('audio-volume') || '80') / 100;
+    }
+};
+
+// Audio for dart scores - uses pre-recorded files
+const dartAudio = {
+    cache: {},
+    
+    // Preload common audio files
+    preload() {
+        if (audioSettings.mode !== 'files') return;
+        
+        const files = [
+            'miss', 'bust', 'bullseye', 'double-bullseye',
+            ...Array.from({length: 20}, (_, i) => `${i + 1}`),
+            ...Array.from({length: 20}, (_, i) => `double-${i + 1}`),
+            ...Array.from({length: 20}, (_, i) => `triple-${i + 1}`)
+        ];
+        files.forEach(name => {
+            const audio = new Audio(`/audio/${name}.mp3`);
+            audio.preload = 'auto';
+            audio.volume = audioSettings.volume;
+            this.cache[name] = audio;
+        });
+        console.log('Audio files preloaded');
+    },
+    
+    play(name) {
+        if (audioSettings.mode === 'off') return;
+        
+        if (audioSettings.mode === 'files') {
+            // Try cached version first
+            if (this.cache[name]) {
+                this.cache[name].currentTime = 0;
+                this.cache[name].volume = audioSettings.volume;
+                this.cache[name].play().catch(() => {});
+                return;
+            }
+            // Fallback to creating new audio
+            const audio = new Audio(`/audio/${name}.mp3`);
+            audio.volume = audioSettings.volume;
+            audio.play().catch(() => {});
+        }
+    },
+    
+    // TTS version
+    speak(text) {
+        if (audioSettings.mode !== 'tts' || !window.speechSynthesis) return;
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.1;
+        utterance.volume = audioSettings.volume;
+        speechSynthesis.speak(utterance);
+    }
+};
+
+// Initialize audio on first user interaction (browser autoplay policy)
+document.addEventListener('click', () => dartAudio.preload(), { once: true });
+
+function speakDartScore(dart) {
+    if (!dart || audioSettings.mode === 'off') return;
+    
+    const zone = dart.zone?.toLowerCase() || '';
+    const segment = dart.segment || 0;
+    let audioFile = '';
+    let ttsText = '';
+    
+    if (zone === 'miss' || segment === 0) {
+        audioFile = 'miss';
+        ttsText = 'Miss';
+    } else if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull') {
+        audioFile = 'double-bullseye';
+        ttsText = 'Double Bullseye';
+    } else if (zone === 'outer_bull' || zone === 'bull') {
+        audioFile = 'bullseye';
+        ttsText = 'Bullseye';
+    } else if (zone === 'double' || zone === 'double_ring') {
+        audioFile = `double-${segment}`;
+        ttsText = `Double ${segment}`;
+    } else if (zone === 'triple' || zone === 'triple_ring') {
+        audioFile = `triple-${segment}`;
+        ttsText = `Triple ${segment}`;
+    } else {
+        // Single - just the number
+        audioFile = `${segment}`;
+        ttsText = `${segment}`;
+    }
+    
+    if (audioSettings.mode === 'files') {
+        dartAudio.play(audioFile);
+    } else if (audioSettings.mode === 'tts') {
+        dartAudio.speak(ttsText);
+    }
+}
+
+function speakBust() {
+    if (audioSettings.mode === 'off') return;
+    
+    if (audioSettings.mode === 'files') {
+        dartAudio.play('bust');
+    } else if (audioSettings.mode === 'tts') {
+        dartAudio.speak('Bust');
+    }
+}
+
 function handleDartThrown(data) {
-    console.log('Dart thrown:', data);
+    const receiveTime = Date.now();
+    
+    // Log to centralized logging
+    const dart = data.dart;
+    log.info('Scoring', `Dart: ${dart?.zone || 'unknown'} ${dart?.segment || 0} = ${dart?.score || 0}`, dart);
+    
+    // Track timing - detectionTime comes from sensor
+    if (data.detectionTime) {
+        const latencyMs = receiveTime - data.detectionTime;
+        log.debug('Timing', `Detection to UI: ${latencyMs}ms`);
+    }
+    
     currentGame = data.game;
     updateScoreboard();
     updateCurrentTurn();
-    showThrowPopup(data.dart);
+    
+    // Check for bust - show bust popup instead of normal dart popup
+    if (data.game?.currentTurn?.busted) {
+        showBustPopup(data.dart);
+        setTimeout(() => speakBust(), 300);
+    } else {
+        showThrowPopup(data.dart);
+        speakDartScore(data.dart);
+    }
+    
+    // Check for winner
+    if (data.game?.isComplete && data.game?.winner) {
+        setTimeout(() => showWinnerModal(data.game.winner), 1000);
+    }
 }
 
 function handleBoardCleared(data) {
-    console.log('Board cleared');
+    console.log('Board cleared - PPD stays visible until Next Player');
+    // Do NOT clear PPD boxes here - player just removed darts
+    // PPD and turn total stay visible until Next Player is pressed
 }
 
 function handleGameStarted(data) {
@@ -166,14 +341,20 @@ function handleGameStarted(data) {
 
 function handleGameEnded(data) {
     console.log('Game ended:', data);
-    document.getElementById('winner-name').textContent = data.winnerName || 'Winner';
-    document.getElementById('winner-stats').textContent = `${data.darts || '?'} darts`;
-    showScreen('gameover-screen');
+    // Show winner modal instead of separate screen
+    showWinnerModal(data.winnerName || data.winner || 'Winner');
 }
 
 function handleTurnEnded(data) {
-    console.log('Turn ended');
+    console.log('Turn ended:', data);
+    // Update game state with new turn info (round may have increased)
+    if (data.game) {
+        currentGame = data.game;
+    }
+    // Clear PPD boxes and turn total for new player's turn
     clearCurrentTurn();
+    // Update scoreboard (shows new current player, round, etc)
+    updateScoreboard();
 }
 
 // ==========================================================================
@@ -222,25 +403,34 @@ function updateScoreboard() {
 }
 
 function updateCurrentTurn() {
+    console.log('[updateCurrentTurn] currentGame:', currentGame);
+    console.log('[updateCurrentTurn] currentTurn:', currentGame?.currentTurn);
+    
     if (!currentGame?.currentTurn) {
         clearCurrentTurn();
         return;
     }
     
     const darts = currentGame.currentTurn.darts || [];
+    console.log('[updateCurrentTurn] darts array:', darts);
+    
     const slots = document.querySelectorAll('.dart-slot');
+    console.log('[updateCurrentTurn] found slots:', slots.length);
     
     slots.forEach((slot, i) => {
         if (darts[i]) {
             slot.classList.add('hit');
             slot.textContent = darts[i].score;
+            console.log(`[updateCurrentTurn] slot ${i} = ${darts[i].score}`);
         } else {
             slot.classList.remove('hit');
             slot.textContent = '—';
         }
     });
     
-    document.getElementById('turn-score').textContent = currentGame.currentTurn.turnScore || 0;
+    const turnScore = currentGame.currentTurn.turnScore || 0;
+    document.getElementById('turn-score').textContent = turnScore;
+    console.log('[updateCurrentTurn] turnScore:', turnScore);
 }
 
 function clearCurrentTurn() {
@@ -255,8 +445,32 @@ function showThrowPopup(dart) {
     const popup = document.getElementById('throw-popup');
     if (!popup) return;
     
-    popup.querySelector('.throw-zone').textContent = dart.zone?.toUpperCase() || '';
-    popup.querySelector('.throw-value').textContent = dart.score;
+    // Build short prefix: S=single, D=double, T=triple
+    let prefix = '';
+    const zone = dart.zone?.toLowerCase() || '';
+    const segment = dart.segment || 0;
+    const score = dart.score || 0;
+    
+    if (zone === 'double' || zone === 'double_ring') {
+        prefix = 'D';
+    } else if (zone === 'triple' || zone === 'triple_ring') {
+        prefix = 'T';
+    } else if (zone === 'inner_bull' || zone === 'bullseye') {
+        prefix = 'BULL';
+    } else if (zone === 'outer_bull') {
+        prefix = 'BULL';
+    } else if (zone === 'miss' || segment === 0) {
+        prefix = 'MISS';
+    } else {
+        prefix = 'S';  // Single
+    }
+    
+    // Top line: "D20", "T19", "S5", "BULL", "MISS"
+    const topText = (prefix === 'BULL' || prefix === 'MISS') ? prefix : `${prefix}${segment}`;
+    
+    // Bottom line: Score (e.g., "40", "57", "25")
+    popup.querySelector('.throw-zone').textContent = topText;
+    popup.querySelector('.throw-value').textContent = score;
     
     popup.classList.remove('hidden', 'show');
     void popup.offsetWidth; // Force reflow
@@ -266,6 +480,87 @@ function showThrowPopup(dart) {
         popup.classList.add('hidden');
         popup.classList.remove('show');
     }, 1500);
+}
+
+function showBustPopup(dart) {
+    const popup = document.getElementById('throw-popup');
+    if (!popup) return;
+    
+    // Build the dart score text for top line
+    let prefix = '';
+    const zone = dart?.zone?.toLowerCase() || '';
+    const segment = dart?.segment || 0;
+    
+    if (zone === 'double' || zone === 'double_ring') {
+        prefix = 'D';
+    } else if (zone === 'triple' || zone === 'triple_ring') {
+        prefix = 'T';
+    } else if (zone === 'inner_bull' || zone === 'bullseye') {
+        prefix = 'BULL';
+    } else if (zone === 'outer_bull') {
+        prefix = 'BULL';
+    } else if (zone === 'miss' || segment === 0) {
+        prefix = 'MISS';
+    } else {
+        prefix = 'S';
+    }
+    
+    const topText = (prefix === 'BULL' || prefix === 'MISS') ? prefix : `${prefix}${segment}`;
+    
+    // Top line: Score, Bottom line: BUST
+    popup.querySelector('.throw-zone').textContent = topText;
+    popup.querySelector('.throw-value').textContent = 'BUST';
+    popup.querySelector('.throw-value').style.color = '#ff4444';
+    
+    popup.classList.remove('hidden', 'show');
+    void popup.offsetWidth;
+    popup.classList.add('show');
+    
+    setTimeout(() => {
+        popup.classList.add('hidden');
+        popup.classList.remove('show');
+        popup.querySelector('.throw-value').style.color = '';  // Reset color
+    }, 4000);  // 4 seconds for bust popup
+}
+
+function showWinnerModal(winner) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('winner-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'winner-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content winner-content">
+                <h2 class="winner-title">🏆 WINNER! 🏆</h2>
+                <div class="winner-name"></div>
+                <div class="winner-buttons">
+                    <button class="btn btn-primary" id="winner-play-again">🎯 Play Again</button>
+                    <button class="btn btn-secondary" id="winner-quit">🚪 Quit</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        document.getElementById('winner-play-again').addEventListener('click', () => {
+            modal.classList.remove('show');
+            // Restart with same players
+            location.reload();  // Simple reload for now
+        });
+        
+        document.getElementById('winner-quit').addEventListener('click', () => {
+            modal.classList.remove('show');
+            showScreen('setup-screen');
+        });
+    }
+    
+    modal.querySelector('.winner-name').textContent = winner.name || winner;
+    modal.classList.add('show');
+    
+    // Announce winner
+    if (audioSettings.mode === 'tts') {
+        dartAudio.speak(`${winner.name || winner} wins!`);
+    }
 }
 
 // ==========================================================================
@@ -664,6 +959,11 @@ function escapeHtml(text) {
 }
 
 function formatMode(mode) {
+    // Ensure mode is a string
+    if (typeof mode !== 'string') {
+        mode = String(mode || '');
+    }
+    
     // Handle X01 games
     const x01Match = mode.match(/^Game(\d+)$/);
     if (x01Match) return x01Match[1];
@@ -849,6 +1149,13 @@ async function submitCorrection() {
         return;
     }
     
+    // Get the original dart for logging
+    const originalDart = currentGame.currentTurn?.darts?.[correctionDartIndex];
+    const originalSegment = originalDart?.segment || 0;
+    const originalMultiplier = originalDart?.multiplier || 1;
+    const originalScore = originalDart?.score || 0;
+    const originalZone = originalDart?.zone || '';
+    
     try {
         const response = await fetch(`/api/games/${currentGame.id}/correct`, {
             method: 'POST',
@@ -868,12 +1175,47 @@ async function submitCorrection() {
         
         const result = await response.json();
         currentGame = result.game;
+        
+        // Log correction for training data analysis
+        const correctionLog = {
+            timestamp: new Date().toISOString(),
+            gameId: currentGame.id,
+            dartIndex: correctionDartIndex,
+            original: {
+                segment: originalSegment,
+                multiplier: originalMultiplier,
+                score: originalScore,
+                zone: originalZone
+            },
+            corrected: {
+                segment: segment,
+                multiplier: correctionMultiplier,
+                score: score,
+                display: display
+            }
+        };
+        
+        // Log to centralized system
+        log.info('Correction', `Corrected dart ${correctionDartIndex}: ${correctionLog.original.zone} ${correctionLog.original.segment} → ${correctionLog.corrected.display}`, correctionLog);
+        
+        // Store corrections in localStorage for later export
+        try {
+            const corrections = JSON.parse(localStorage.getItem('dart-corrections') || '[]');
+            corrections.push(correctionLog);
+            localStorage.setItem('dart-corrections', JSON.stringify(corrections));
+            console.log(`[CORRECTION] Saved! Total corrections: ${corrections.length}`);
+        } catch (e) {
+            console.error('[CORRECTION] Failed to save:', e);
+            log.error('Correction', 'Failed to save to localStorage', { error: e.message });
+        }
+        
         updateScoreboard();
         updateCurrentTurn();
         closeCorrectionModal();
         
     } catch (e) {
         console.error('Correction error:', e);
+        log.error('Correction', 'Correction failed', { error: e.message });
         alert('Failed to correct dart');
     }
 }
@@ -1502,3 +1844,40 @@ async function sendOnlineChat() {
 }
 
 let isOnlineGame = false;
+
+// ==========================================================================
+// Debug/Training Data Export
+// ==========================================================================
+
+function exportCorrections() {
+    const corrections = JSON.parse(localStorage.getItem('dart-corrections') || '[]');
+    if (corrections.length === 0) {
+        console.log('No corrections to export');
+        return null;
+    }
+    
+    const blob = new Blob([JSON.stringify(corrections, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dart-corrections-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    console.log(`Exported ${corrections.length} corrections`);
+    return corrections;
+}
+
+function clearCorrections() {
+    localStorage.removeItem('dart-corrections');
+    console.log('Corrections cleared');
+}
+
+function getCorrections() {
+    return JSON.parse(localStorage.getItem('dart-corrections') || '[]');
+}
+
+// Make available in console
+window.exportCorrections = exportCorrections;
+window.clearCorrections = clearCorrections;
+window.getCorrections = getCorrections;

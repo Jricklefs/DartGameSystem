@@ -33,6 +33,9 @@ public class GameHub : Hub
         {
             _sensorConnections.TryRemove(boardId, out _);
             _logger.LogInformation("Sensor disconnected for board {BoardId}", boardId);
+            
+            // Notify UI clients that sensor disconnected
+            await Clients.Group($"board:{boardId}").SendAsync("SensorDisconnected", new { boardId });
         }
         
         _logger.LogInformation("Client disconnected: {ConnectionId}", Context.ConnectionId);
@@ -50,6 +53,9 @@ public class GameHub : Hub
         
         _logger.LogInformation("Sensor registered for board {BoardId}: {ConnectionId}", boardId, Context.ConnectionId);
         await Clients.Caller.SendAsync("Registered", boardId);
+        
+        // Notify UI clients that sensor connected
+        await Clients.Group($"board:{boardId}").SendAsync("SensorConnected", new { boardId });
     }
 
     /// <summary>
@@ -162,7 +168,7 @@ public static class GameHubExtensions
                     p.Name,
                     p.Score,
                     p.DartsThrown
-                }),
+                }).ToList(),
                 CurrentTurn = game.CurrentTurn == null ? null : new
                 {
                     game.CurrentTurn.TurnNumber,
@@ -174,7 +180,7 @@ public static class GameHubExtensions
                         d.Multiplier,
                         d.Zone,
                         d.Score
-                    })
+                    }).ToList()
                 }
             }
         });
@@ -231,11 +237,40 @@ public static class GameHubExtensions
     {
         await hub.Clients.Group($"board:{boardId}").SendAsync("TurnEnded", new
         {
-            turn.TurnNumber,
-            turn.PlayerId,
-            turn.TurnScore,
-            NextPlayer = game.CurrentPlayer?.Name,
-            game.CurrentPlayerIndex
+            turn = new {
+                turn.TurnNumber,
+                turn.PlayerId,
+                turn.TurnScore
+            },
+            game = new
+            {
+                game.Id,
+                game.Mode,
+                game.State,
+                game.CurrentRound,
+                game.CurrentPlayerIndex,
+                CurrentPlayer = game.CurrentPlayer?.Name,
+                Players = game.Players.Select(p => new
+                {
+                    p.Id,
+                    p.Name,
+                    p.Score,
+                    p.DartsThrown
+                }).ToList(),
+                CurrentTurn = game.CurrentTurn == null ? null : new
+                {
+                    game.CurrentTurn.TurnNumber,
+                    game.CurrentTurn.TurnScore,
+                    Darts = game.CurrentTurn.Darts.Select(d => new
+                    {
+                        d.Index,
+                        d.Segment,
+                        d.Multiplier,
+                        d.Zone,
+                        d.Score
+                    }).ToList()
+                }
+            }
         });
         
         // Tell sensor to rebase (darts should be removed)

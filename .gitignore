@@ -11,3 +11,5 @@ obj/
 # Secrets
 appsettings.*.local.json
 secrets.json
+'DartGameAPI/wwwroot/images/calibrations/'  
+'DartGameAPI/wwwroot/images/calibrations/'  

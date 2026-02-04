@@ -114,6 +114,8 @@ public class Game
 /// </summary>
 public class KnownDart
 {
+    public int Segment { get; set; }
+    public int Multiplier { get; set; }
     public double XMm { get; set; }
     public double YMm { get; set; }
     public int Score { get; set; }

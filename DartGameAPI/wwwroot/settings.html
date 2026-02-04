@@ -22,6 +22,8 @@
         <nav class="settings-nav-inline">
             <button class="nav-tab-sm active" data-tab="calibration">🎯 CALIBRATION</button>
             <button class="nav-tab-sm" data-tab="theme">🎨 THEME</button>
+            <button class="nav-tab-sm" data-tab="audio">🔊 AUDIO</button>
+            <button class="nav-tab-sm" data-tab="logs">📋 LOGS</button>
             <button class="nav-tab-sm" data-tab="system">🖥️ SYSTEM</button>
         </nav>
     </header>
@@ -68,7 +70,9 @@
             <!-- Camera Actions - Bottom bar -->
             <div class="camera-actions-bar">
                 <span id="cam-quality-label" class="cam-quality-label">Not Calibrated</span>
+                <span id="cam-focus-label" class="cam-focus-label" style="display:none; margin-left: 10px;"></span>
                 <div class="cam-buttons">
+                    <button id="focus-btn" class="btn btn-sm">🔍 Focus</button>
                     <button id="refresh-btn" class="btn btn-sm">🔄 Refresh</button>
                     <button id="mark20-btn" class="btn btn-sm">🎯 Mark 20</button>
                     <button id="calibrate-btn" class="btn btn-sm btn-primary">🎯 Calibrate</button>
@@ -136,6 +140,108 @@
             <div class="action-buttons">
                 <button id="reset-theme-btn" class="btn btn-secondary">↩️ Reset</button>
                 <button id="save-theme-btn" class="btn btn-primary">💾 Save Theme</button>
+            </div>
+        </section>
+
+        <!-- Audio Tab -->
+        <section id="tab-audio" class="settings-section">
+            <div class="section-header">
+                <h2>Audio Settings</h2>
+                <p class="section-desc">Configure dart score announcements and sound effects</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Score Announcements</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="audio-mode" value="off" checked>
+                        <span class="radio-label">Off</span>
+                        <span class="radio-desc">No audio announcements</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="audio-mode" value="tts">
+                        <span class="radio-label">Browser TTS</span>
+                        <span class="radio-desc">Uses device's built-in voice (may not work on all devices)</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="audio-mode" value="files">
+                        <span class="radio-label">Pre-recorded Audio</span>
+                        <span class="radio-desc">High quality MP3 files (recommended for Roku/TV)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Volume</label>
+                <input type="range" id="audio-volume" min="0" max="100" value="80" class="slider">
+                <span id="volume-value" class="slider-value">80%</span>
+            </div>
+
+            <div class="form-group">
+                <button id="test-audio-btn" class="btn btn-secondary">🔊 Test Audio</button>
+            </div>
+
+            <div class="audio-files-info" style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                <h3 style="color: var(--gold); margin-bottom: 10px;">Pre-recorded Audio Setup</h3>
+                <p style="color: var(--paper); font-size: 0.9rem; line-height: 1.6;">
+                    Place MP3 files in <code style="background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px;">/wwwroot/audio/</code>
+                </p>
+                <p style="color: var(--paper-muted); font-size: 0.85rem; margin-top: 10px;">
+                    <strong>Required files (64 total):</strong><br>
+                    • miss.mp3, bust.mp3, bullseye.mp3, double-bullseye.mp3<br>
+                    • 1.mp3 through 20.mp3 (singles)<br>
+                    • double-1.mp3 through double-20.mp3<br>
+                    • triple-1.mp3 through triple-20.mp3
+                </p>
+            </div>
+
+            <div class="action-row" style="margin-top: 20px;">
+                <button id="save-audio-btn" class="btn btn-primary">💾 Save Audio Settings</button>
+            </div>
+        </section>
+
+        <!-- Logs Tab -->
+        <section id="tab-logs" class="settings-section">
+            <div class="section-header">
+                <h2>System Logs</h2>
+                <p class="section-desc">View and manage application logs</p>
+            </div>
+
+            <div class="log-controls" style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                <select id="log-source-filter" class="form-select" style="width: auto;">
+                    <option value="">All Sources</option>
+                    <option value="DartDetect">DartDetect</option>
+                    <option value="DartSensor">DartSensor</option>
+                    <option value="DartGame">DartGame</option>
+                    <option value="UI">UI</option>
+                </select>
+                <select id="log-level-filter" class="form-select" style="width: auto;">
+                    <option value="">All Levels</option>
+                    <option value="DEBUG">DEBUG</option>
+                    <option value="INFO">INFO</option>
+                    <option value="WARN">WARN</option>
+                    <option value="ERROR">ERROR</option>
+                </select>
+                <select id="log-limit" class="form-select" style="width: auto;">
+                    <option value="50">Last 50</option>
+                    <option value="100" selected>Last 100</option>
+                    <option value="500">Last 500</option>
+                    <option value="1000">Last 1000</option>
+                </select>
+                <button id="refresh-logs-btn" class="btn btn-secondary">🔄 Refresh</button>
+            </div>
+
+            <div class="log-viewer" style="background: #0a0a0a; border: 1px solid var(--gold-dark); border-radius: 8px; height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; padding: 10px;">
+                <div id="log-content" style="white-space: pre-wrap; color: #ccc;">Loading logs...</div>
+            </div>
+
+            <div class="log-stats" style="margin-top: 10px; color: var(--paper-muted); font-size: 0.85rem;">
+                <span id="log-count">0 entries</span>
+            </div>
+
+            <div class="log-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                <button id="download-logs-btn" class="btn btn-primary">📥 Download Logs</button>
+                <button id="clear-logs-btn" class="btn btn-danger" style="background: #8b0000;">🗑️ Clear All Logs</button>
             </div>
         </section>
 

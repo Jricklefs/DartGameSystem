@@ -1,24 +1,33 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using DartGameAPI.Data;
+using DartGameAPI.Models;
 
 namespace DartGameAPI.Services;
 
 /// <summary>
-/// Client for communicating with DartDetect API (hub-and-spoke model).
+/// Client for communicating with DartDetect API (fully stateless).
 /// 
 /// DartGame API is the HUB. DartSensor sends images here,
-/// we forward to DartDetect for scoring, then process the result.
+/// we include calibration data and forward to DartDetect for scoring.
 /// </summary>
 public class DartDetectClient
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<DartDetectClient> _logger;
+    private readonly IServiceProvider _serviceProvider;
     private readonly string _baseUrl;
 
-    public DartDetectClient(HttpClient httpClient, IConfiguration config, ILogger<DartDetectClient> logger)
+    public DartDetectClient(
+        HttpClient httpClient, 
+        IConfiguration config, 
+        ILogger<DartDetectClient> logger,
+        IServiceProvider serviceProvider)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _serviceProvider = serviceProvider;
         _baseUrl = config["DartDetectApi:BaseUrl"] ?? "http://localhost:8000";
         _httpClient.BaseAddress = new Uri(_baseUrl);
         _httpClient.Timeout = TimeSpan.FromSeconds(10);
@@ -26,47 +35,86 @@ public class DartDetectClient
 
     /// <summary>
     /// Send images to DartDetect for dart tip detection and scoring.
-    /// This is the main detection endpoint - hub forwards sensor images here.
+    /// Includes calibration data with each camera (fully stateless).
     /// </summary>
-    public async Task<DetectResult?> DetectAsync(List<CameraImageDto> images, CancellationToken ct = default)
+    public async Task<DetectResponse?> DetectAsync(List<CameraImageDto> images, string boardId = "default", int dartNumber = 1, CancellationToken ct = default)
     {
         try
         {
-            // DartDetect expects snake_case: { cameras: [{ camera_id, image }] }
+            // Get calibration data for each camera from DB
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<DartsMobDbContext>();
+            
+            var camerasWithCalibration = new List<object>();
+            
+            foreach (var img in images)
+            {
+                // Look up calibration for this camera
+                var calibration = await db.Calibrations
+                    .Where(c => c.CameraId == img.CameraId)
+                    .OrderByDescending(c => c.CreatedAt)
+                    .FirstOrDefaultAsync(ct);
+                
+                object? calibrationData = null;
+                if (calibration?.CalibrationData != null)
+                {
+                    try
+                    {
+                        calibrationData = JsonSerializer.Deserialize<object>(calibration.CalibrationData);
+                        _logger.LogDebug("Loaded calibration for camera {CameraId} (quality: {Quality})", 
+                            img.CameraId, calibration.Quality);
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse calibration data for camera {CameraId}", img.CameraId);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("No calibration found for camera {CameraId}", img.CameraId);
+                }
+                
+                camerasWithCalibration.Add(new
+                {
+                    camera_id = img.CameraId,
+                    image = img.Image,
+                    calibration = calibrationData
+                });
+            }
+            
             var payload = new { 
-                cameras = images.Select(i => new { 
-                    camera_id = i.CameraId, 
-                    image = i.Image 
-                }).ToList() 
+                cameras = camerasWithCalibration,
+                board_id = boardId,
+                dart_number = dartNumber
             };
             
-            _logger.LogDebug("Sending {Count} images to DartDetect for detection", images.Count);
+            _logger.LogInformation("[DETECT] Sending {Count} images with calibration to DartDetect (board={BoardId}, dart={DartNum})", 
+                images.Count, boardId, dartNumber);
             
             var response = await _httpClient.PostAsJsonAsync("/v1/detect", payload, ct);
             
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<DetectResult>(cancellationToken: ct);
-                _logger.LogDebug("DartDetect returned {Count} tips", result?.Tips?.Count ?? 0);
+                var result = await response.Content.ReadFromJsonAsync<DetectResponse>(cancellationToken: ct);
+                _logger.LogInformation("[DETECT] DartDetect returned {Count} tips", result?.Tips?.Count ?? 0);
                 return result;
             }
             else
             {
                 var error = await response.Content.ReadAsStringAsync(ct);
-                _logger.LogWarning("DartDetect detection failed: {Status} - {Error}", response.StatusCode, error);
+                _logger.LogWarning("[DETECT] DartDetect failed: {Status} - {Error}", response.StatusCode, error);
                 return null;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to call DartDetect /v1/detect");
+            _logger.LogError(ex, "[DETECT] Failed to call DartDetect /v1/detect");
             return null;
         }
     }
 
     /// <summary>
-    /// Tell DartDetect to capture new baseline images.
-    /// Fire-and-forget - don't wait for response.
+    /// Tell DartDetect to capture new baseline images (no-op in stateless mode).
     /// </summary>
     public void RebaseFireAndForget()
     {
@@ -75,53 +123,13 @@ public class DartDetectClient
             try
             {
                 _logger.LogDebug("Calling DartDetect /rebase (fire-and-forget)");
-                var response = await _httpClient.PostAsync("/rebase", null);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation("DartDetect rebase completed");
-                }
-                else
-                {
-                    _logger.LogWarning("DartDetect rebase failed: {Status}", response.StatusCode);
-                }
+                await _httpClient.PostAsync("/rebase", null);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to rebase DartDetect");
             }
         });
-    }
-
-    /// <summary>
-    /// Tell DartDetect to capture new baseline images (async version).
-    /// </summary>
-    public async Task<RebaseResult> RebaseAsync(CancellationToken ct = default)
-    {
-        try
-        {
-            _logger.LogDebug("Calling DartDetect /rebase");
-            
-            var response = await _httpClient.PostAsync("/rebase", null, ct);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var result = await response.Content.ReadFromJsonAsync<RebaseResult>(cancellationToken: ct);
-                _logger.LogInformation("DartDetect rebase successful");
-                return result ?? new RebaseResult { Message = "Success" };
-            }
-            else
-            {
-                var error = await response.Content.ReadAsStringAsync(ct);
-                _logger.LogWarning("DartDetect rebase failed: {Status} - {Error}", response.StatusCode, error);
-                throw new DartDetectException($"Rebase failed: {response.StatusCode}");
-            }
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Failed to connect to DartDetect");
-            throw new DartDetectException($"Cannot connect to DartDetect: {ex.Message}", ex);
-        }
     }
 
     /// <summary>
@@ -141,40 +149,20 @@ public class DartDetectClient
     }
 }
 
-// === DTOs ===
-
+// Simple DTO for input - uses existing models for response
 public class CameraImageDto
 {
     public string CameraId { get; set; } = string.Empty;
-    public string Image { get; set; } = string.Empty;  // Base64 encoded
-}
-
-public class DetectResult
-{
-    public List<DetectedTipDto> Tips { get; set; } = new();
-}
-
-public class DetectedTipDto
-{
-    public string CameraId { get; set; } = string.Empty;
-    public int Segment { get; set; }
-    public int Multiplier { get; set; }
-    public int Score { get; set; }
-    public string Zone { get; set; } = string.Empty;
-    public double XMm { get; set; }
-    public double YMm { get; set; }
-    public double Confidence { get; set; }
-}
-
-public class RebaseResult
-{
-    public string Message { get; set; } = string.Empty;
-    public Dictionary<string, bool>? Cameras { get; set; }
-    public int KnownDartsCount { get; set; }
+    public string Image { get; set; } = string.Empty;
 }
 
 public class DartDetectException : Exception
 {
     public DartDetectException(string message) : base(message) { }
     public DartDetectException(string message, Exception inner) : base(message, inner) { }
+}
+
+public class RebaseResult
+{
+    public string? Message { get; set; }
 }

@@ -223,6 +223,14 @@ function updateCameraIndicator(camIndex) {
 async function selectCamera(camIndex) {
     selectedCamera = camIndex;
     
+    // Stop focus stream if active
+    if (focusStreamActive) {
+        stopFocusStream();
+        document.getElementById('focus-btn').textContent = '🔍 Focus';
+        document.getElementById('focus-btn').classList.remove('btn-active');
+        document.getElementById('cam-focus-label').style.display = 'none';
+    }
+    
     // Update button states
     document.querySelectorAll('.cam-btn-sm').forEach(btn => {
         btn.classList.toggle('active', parseInt(btn.dataset.cam) === camIndex);
@@ -322,6 +330,144 @@ async function refreshCurrentCamera() {
     }
 }
 
+// ============================================================================
+// Focus Measurement (Live Streaming Mode)
+// ============================================================================
+
+let focusStreamActive = false;
+let focusStreamInterval = null;
+let focusCenterX = null;  // Custom center point (null = auto-detect/image center)
+let focusCenterY = null;
+
+async function toggleFocusMode() {
+    const btn = document.getElementById('focus-btn');
+    const focusLabel = document.getElementById('cam-focus-label');
+    const img = document.getElementById('main-camera-img');
+    
+    if (focusStreamActive) {
+        // Stop streaming
+        stopFocusStream();
+        btn.textContent = '🔍 Focus';
+        btn.classList.remove('btn-active');
+        focusLabel.style.display = 'none';
+        img.style.cursor = 'default';
+        // Remove click listener
+        img.removeEventListener('click', handleFocusCenterClick);
+    } else {
+        // Start streaming
+        focusStreamActive = true;
+        focusCenterX = null;  // Reset center
+        focusCenterY = null;
+        btn.textContent = '⏹ Stop Focus';
+        btn.classList.add('btn-active');
+        focusLabel.style.display = 'inline';
+        focusLabel.textContent = 'Click image to set center, or wait...';
+        img.style.cursor = 'crosshair';
+        // Add click listener for center selection
+        img.addEventListener('click', handleFocusCenterClick);
+        
+        // Start live focus loop
+        await runFocusStream();
+    }
+}
+
+function handleFocusCenterClick(e) {
+    const img = e.target;
+    const rect = img.getBoundingClientRect();
+    
+    // Calculate click position relative to image
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    // Scale to actual image dimensions
+    const scaleX = img.naturalWidth / rect.width;
+    const scaleY = img.naturalHeight / rect.height;
+    
+    focusCenterX = Math.round(clickX * scaleX);
+    focusCenterY = Math.round(clickY * scaleY);
+    
+    const focusLabel = document.getElementById('cam-focus-label');
+    focusLabel.textContent = `📍 Center: (${focusCenterX}, ${focusCenterY}) - Measuring...`;
+    
+    console.log(`Focus center set to: (${focusCenterX}, ${focusCenterY})`);
+}
+
+function stopFocusStream() {
+    focusStreamActive = false;
+    if (focusStreamInterval) {
+        clearTimeout(focusStreamInterval);
+        focusStreamInterval = null;
+    }
+}
+
+async function runFocusStream() {
+    const focusLabel = document.getElementById('cam-focus-label');
+    const img = document.getElementById('main-camera-img');
+    
+    while (focusStreamActive) {
+        try {
+            // Get fresh snapshot (returns JSON with base64 image)
+            const snapRes = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot`);
+            if (!snapRes.ok) throw new Error('Camera offline');
+            
+            const snapData = await snapRes.json();
+            const base64Image = snapData.image;
+            
+            // Update preview image
+            img.src = `data:image/jpeg;base64,${base64Image}`;
+            
+            // Build focus request with optional center
+            const focusRequest = {
+                camera_id: `cam${selectedCamera}`,
+                image: base64Image
+            };
+            
+            // Add custom center if set by user click
+            if (focusCenterX !== null && focusCenterY !== null) {
+                focusRequest.center_x = focusCenterX;
+                focusRequest.center_y = focusCenterY;
+            }
+            
+            // Send to focus endpoint
+            const focusRes = await fetch(`${DART_DETECT_URL}/v1/focus`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(focusRequest)
+            });
+            
+            if (!focusRes.ok) throw new Error('Focus API error');
+            
+            const data = await focusRes.json();
+            
+            // Update label with score and quality
+            const emoji = data.quality === 'excellent' ? '🟢' : 
+                          data.quality === 'good' ? '🟡' :
+                          data.quality === 'fair' ? '🟠' : '🔴';
+            
+            focusLabel.textContent = `${emoji} Focus: ${data.score}/100 (${data.quality})`;
+            focusLabel.className = `cam-focus-label focus-${data.quality}`;
+            
+        } catch (err) {
+            console.error('Focus stream error:', err);
+            focusLabel.textContent = `❌ ${err.message}`;
+            focusLabel.className = 'cam-focus-label focus-poor';
+        }
+        
+        // Wait before next frame (aim for ~2-3 fps)
+        await new Promise(r => setTimeout(r, 400));
+    }
+}
+
+// Helper: Convert blob to base64
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
 async function calibrateCurrentCamera() {
     const btn = document.getElementById('calibrate-btn');
     const qualityLabel = document.getElementById('cam-quality-label');
@@ -369,7 +515,7 @@ async function calibrateCurrentCamera() {
                     calibrationImage: snapData.image,
                     overlayImage: camResult.overlay_image,
                     quality: camResult.quality,
-                    calibrationData: JSON.stringify(camResult)
+                    calibrationData: JSON.stringify(camResult.calibration_data)
                 })
             });
             
@@ -517,6 +663,9 @@ function initEventListeners() {
     // Refresh button
     document.getElementById('refresh-btn')?.addEventListener('click', refreshCurrentCamera);
     
+    // Focus button
+    document.getElementById('focus-btn')?.addEventListener('click', toggleFocusMode);
+    
     // Calibrate button
     document.getElementById('calibrate-btn')?.addEventListener('click', calibrateCurrentCamera);
     
@@ -576,3 +725,192 @@ function handleBackgroundUpload(e) {
     };
     reader.readAsDataURL(file);
 }
+
+// ==========================================================================
+// Audio Settings
+// ==========================================================================
+
+function initAudioSettings() {
+    // Load saved settings
+    const savedMode = localStorage.getItem('audio-mode') || 'off';
+    const savedVolume = localStorage.getItem('audio-volume') || '80';
+    
+    // Set radio button
+    const radioBtn = document.querySelector(`input[name="audio-mode"][value="${savedMode}"]`);
+    if (radioBtn) radioBtn.checked = true;
+    
+    // Set volume slider
+    const volumeSlider = document.getElementById('audio-volume');
+    const volumeValue = document.getElementById('volume-value');
+    if (volumeSlider) {
+        volumeSlider.value = savedVolume;
+        if (volumeValue) volumeValue.textContent = `${savedVolume}%`;
+        
+        volumeSlider.addEventListener('input', () => {
+            if (volumeValue) volumeValue.textContent = `${volumeSlider.value}%`;
+        });
+    }
+    
+    // Save button
+    document.getElementById('save-audio-btn')?.addEventListener('click', saveAudioSettings);
+    
+    // Test button
+    document.getElementById('test-audio-btn')?.addEventListener('click', testAudio);
+}
+
+function saveAudioSettings() {
+    const mode = document.querySelector('input[name="audio-mode"]:checked')?.value || 'off';
+    const volume = document.getElementById('audio-volume')?.value || '80';
+    
+    localStorage.setItem('audio-mode', mode);
+    localStorage.setItem('audio-volume', volume);
+    
+    alert('✅ Audio settings saved! Refresh the game page to apply.');
+}
+
+function testAudio() {
+    const mode = document.querySelector('input[name="audio-mode"]:checked')?.value || 'off';
+    const volume = parseInt(document.getElementById('audio-volume')?.value || '80') / 100;
+    
+    if (mode === 'off') {
+        alert('Audio is turned off. Select a mode first.');
+        return;
+    }
+    
+    if (mode === 'tts') {
+        if (!window.speechSynthesis) {
+            alert('Browser TTS not supported on this device.');
+            return;
+        }
+        const utterance = new SpeechSynthesisUtterance('Triple 20');
+        utterance.volume = volume;
+        speechSynthesis.speak(utterance);
+    } else if (mode === 'files') {
+        const audio = new Audio('/audio/triple-20.mp3');
+        audio.volume = volume;
+        audio.play().catch(err => {
+            alert('Could not play audio file. Make sure /audio/triple-20.mp3 exists.');
+        });
+    }
+}
+
+// Add to init
+const originalInit = window.onload;
+window.onload = function() {
+    if (originalInit) originalInit();
+    initAudioSettings();
+};
+
+// ==========================================================================
+// Logs Management
+// ==========================================================================
+
+async function loadLogs() {
+    const source = document.getElementById('log-source-filter')?.value || '';
+    const level = document.getElementById('log-level-filter')?.value || '';
+    const limit = document.getElementById('log-limit')?.value || '100';
+    
+    const logContent = document.getElementById('log-content');
+    const logCount = document.getElementById('log-count');
+    
+    try {
+        let url = `/api/logs?limit=${limit}`;
+        if (source) url += `&source=${source}`;
+        if (level) url += `&level=${level}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to load logs');
+        
+        const logs = await response.json();
+        
+        if (logs.length === 0) {
+            logContent.innerHTML = '<span style="color: #666;">No logs found</span>';
+            logCount.textContent = '0 entries';
+            return;
+        }
+        
+        // Format logs with colors
+        const formatted = logs.map(log => {
+            const ts = new Date(log.timestamp).toLocaleString();
+            const levelColor = {
+                'DEBUG': '#888',
+                'INFO': '#4a9eff',
+                'WARN': '#ffa500',
+                'ERROR': '#ff4444'
+            }[log.level] || '#ccc';
+            
+            const sourceColor = {
+                'DartDetect': '#9b59b6',
+                'DartSensor': '#3498db',
+                'DartGame': '#2ecc71',
+                'UI': '#e67e22'
+            }[log.source] || '#ccc';
+            
+            let line = `<span style="color:#666">[${ts}]</span> `;
+            line += `<span style="color:${sourceColor}">[${log.source}]</span> `;
+            line += `<span style="color:${levelColor}">[${log.level}]</span> `;
+            if (log.category) line += `<span style="color:#888">[${log.category}]</span> `;
+            line += `<span style="color:#eee">${escapeHtml(log.message)}</span>`;
+            if (log.data) line += `\n  <span style="color:#666">Data: ${escapeHtml(log.data)}</span>`;
+            
+            return line;
+        }).join('\n');
+        
+        logContent.innerHTML = formatted;
+        logCount.textContent = `${logs.length} entries`;
+        
+    } catch (err) {
+        logContent.innerHTML = `<span style="color:#ff4444">Error loading logs: ${err.message}</span>`;
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function downloadLogs() {
+    const limit = document.getElementById('log-limit')?.value || '1000';
+    window.location.href = `/api/logs/download?limit=${limit}`;
+}
+
+async function clearLogs() {
+    if (!confirm('Are you sure you want to delete ALL logs? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/logs', { method: 'DELETE' });
+        if (!response.ok) throw new Error('Failed to clear logs');
+        
+        const result = await response.json();
+        alert(`Cleared ${result.deleted} log entries`);
+        loadLogs();
+    } catch (err) {
+        alert(`Error: ${err.message}`);
+    }
+}
+
+function initLogs() {
+    document.getElementById('refresh-logs-btn')?.addEventListener('click', loadLogs);
+    document.getElementById('download-logs-btn')?.addEventListener('click', downloadLogs);
+    document.getElementById('clear-logs-btn')?.addEventListener('click', clearLogs);
+    
+    // Filter change handlers
+    document.getElementById('log-source-filter')?.addEventListener('change', loadLogs);
+    document.getElementById('log-level-filter')?.addEventListener('change', loadLogs);
+    document.getElementById('log-limit')?.addEventListener('change', loadLogs);
+    
+    // Load initial logs when tab is opened
+    document.querySelector('[data-tab="logs"]')?.addEventListener('click', () => {
+        setTimeout(loadLogs, 100);
+    });
+}
+
+// Add to init chain
+const originalInit2 = window.onload;
+window.onload = function() {
+    if (originalInit2) originalInit2();
+    initLogs();
+};

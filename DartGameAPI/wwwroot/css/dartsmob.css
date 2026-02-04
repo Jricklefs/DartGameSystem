@@ -393,16 +393,18 @@ html, body {
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.3);
     border: 2px solid var(--gold-dark);
     border-radius: 8px;
     transition: all 0.3s;
+    opacity: 0.7;
 }
 
 .player-card.active {
     border-color: var(--gold);
-    background: rgba(212, 168, 75, 0.1);
-    box-shadow: 0 0 20px rgba(212, 168, 75, 0.2);
+    background: rgba(212, 168, 75, 0.25);
+    box-shadow: 0 0 20px rgba(212, 168, 75, 0.3);
+    opacity: 1;
 }
 
 .player-info {
@@ -1356,6 +1358,36 @@ html, body {
     color: var(--red);
 }
 
+/* Focus label styles */
+.cam-focus-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--paper-dark);
+}
+
+.cam-focus-label.focus-excellent {
+    background: rgba(46, 204, 113, 0.2);
+    color: var(--green);
+}
+
+.cam-focus-label.focus-good {
+    background: rgba(241, 196, 15, 0.2);
+    color: var(--gold);
+}
+
+.cam-focus-label.focus-fair {
+    background: rgba(230, 126, 34, 0.2);
+    color: #e67e22;
+}
+
+.cam-focus-label.focus-poor {
+    background: rgba(231, 76, 60, 0.2);
+    color: var(--red);
+}
+
 .cam-buttons {
     display: flex;
     gap: 8px;
@@ -1364,6 +1396,11 @@ html, body {
 .btn-sm {
     padding: 8px 14px;
     font-size: 0.9rem;
+}
+
+.btn-sm.btn-active {
+    background: var(--gold);
+    color: var(--dark);
 }
 
 /* Camera indicator colors */
@@ -2682,4 +2719,63 @@ html, body {
 
 .view-toggle-btn:hover {
     background: rgba(212, 168, 75, 0.1);
+}
+
+/* Winner Modal */
+#winner-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+#winner-modal.show {
+    display: flex;
+}
+
+.winner-content {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 3px solid var(--gold);
+    border-radius: 16px;
+    padding: 40px 60px;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(212, 168, 75, 0.4);
+    animation: winnerPop 0.5s ease-out;
+}
+
+@keyframes winnerPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.winner-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    color: var(--gold);
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(212, 168, 75, 0.6);
+}
+
+.winner-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    color: var(--paper);
+    margin-bottom: 30px;
+}
+
+.winner-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.winner-buttons .btn {
+    padding: 15px 30px;
+    font-size: 1.2rem;
 }

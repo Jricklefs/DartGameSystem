@@ -25,7 +25,11 @@ builder.Services.AddDbContext<DartsMobDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DartsMobDB")));
 
 // SignalR for real-time updates
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
 
 // CORS - allow all for now (need credentials for SignalR)
 builder.Services.AddCors(options =>

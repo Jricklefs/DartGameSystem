@@ -180,11 +180,9 @@ public class GameService
                 break;
         }
 
-        // Check if turn complete
-        if (game.CurrentTurn.IsComplete && game.State == GameState.InProgress)
-        {
-            EndTurn(game);
-        }
+        // Turn is complete when 3 darts thrown, but DON'T auto-advance
+        // Wait for DartSensor to signal "board cleared" before moving to next player
+        // The UI will show the completed turn until player removes darts
     }
 
     /// <summary>
@@ -270,6 +268,7 @@ public class GameService
 
     /// <summary>
     /// Clear known darts (player pulled darts from board)
+    /// If turn is complete (3 darts), also advance to next player
     /// </summary>
     public void ClearBoard(string boardId)
     {
@@ -277,6 +276,14 @@ public class GameService
         if (game != null)
         {
             game.KnownDarts.Clear();
+            
+            // If turn is complete (3 darts thrown), advance to next player
+            if (game.CurrentTurn?.IsComplete == true && game.State == GameState.InProgress)
+            {
+                _logger.LogInformation("Turn complete, advancing to next player on board clear");
+                EndTurn(game);
+            }
+            
             _logger.LogInformation("Board {BoardId} cleared", boardId);
         }
     }
