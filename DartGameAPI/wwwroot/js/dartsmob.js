@@ -149,6 +149,7 @@ async function initConnection() {
 
     // Game events
     connection.on('DartThrown', handleDartThrown);
+    connection.on('DartRemoved', handleDartRemoved);
     connection.on('BoardCleared', handleBoardCleared);
     connection.on('GameStarted', handleGameStarted);
     connection.on('GameEnded', handleGameEnded);
@@ -329,6 +330,15 @@ function handleBoardCleared(data) {
     console.log('Board cleared - PPD stays visible until Next Player');
     // Do NOT clear PPD boxes here - player just removed darts
     // PPD and turn total stay visible until Next Player is pressed
+}
+
+function handleDartRemoved(data) {
+    console.log('Dart removed (false detection):', data);
+    if (data.game) {
+        currentGame = data.game;
+        updateScoreboard();
+        updateCurrentTurn();
+    }
 }
 
 function handleGameStarted(data) {
@@ -1043,6 +1053,9 @@ function initDartCorrection() {
     // Cancel button
     document.getElementById('correction-cancel')?.addEventListener('click', closeCorrectionModal);
     
+    // False button - remove this dart entirely (phantom detection)
+    document.getElementById('correction-false')?.addEventListener('click', removeFalseDart);
+    
     // Clear button - resets the input
     document.getElementById('correction-clear')?.addEventListener('click', () => {
         correctionInput = '';
@@ -1219,6 +1232,75 @@ async function submitCorrection() {
         alert('Failed to correct dart');
     }
 }
+
+async function removeFalseDart() {
+    if (correctionDartIndex === null || !currentGame) {
+        return;
+    }
+    
+    // Get the dart info for logging
+    const removedDart = currentGame.currentTurn?.darts?.[correctionDartIndex];
+    if (!removedDart) {
+        closeCorrectionModal();
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/games/${currentGame.id}/remove-dart`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                dartIndex: correctionDartIndex
+            })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            alert(err.error || 'Failed to remove dart');
+            return;
+        }
+        
+        const result = await response.json();
+        currentGame = result.game;
+        
+        // Log the removal
+        const removalLog = {
+            timestamp: new Date().toISOString(),
+            gameId: currentGame.id,
+            dartIndex: correctionDartIndex,
+            removed: {
+                segment: removedDart.segment,
+                multiplier: removedDart.multiplier,
+                score: removedDart.score,
+                zone: removedDart.zone
+            },
+            reason: 'false_detection'
+        };
+        
+        log.info('FalseDart', `Removed false dart ${correctionDartIndex}: ${removedDart.zone} = ${removedDart.score}`, removalLog);
+        
+        // Store in localStorage
+        try {
+            const falseDarts = JSON.parse(localStorage.getItem('false-darts') || '[]');
+            falseDarts.push(removalLog);
+            localStorage.setItem('false-darts', JSON.stringify(falseDarts));
+            console.log(`[FALSE DART] Saved! Total false darts: ${falseDarts.length}`);
+        } catch (e) {
+            console.error('[FALSE DART] Failed to save:', e);
+            log.error('FalseDart', 'Failed to save to localStorage', { error: e.message });
+        }
+        
+        updateScoreboard();
+        updateCurrentTurn();
+        closeCorrectionModal();
+        
+    } catch (e) {
+        console.error('Remove dart error:', e);
+        log.error('FalseDart', 'Remove failed', { error: e.message });
+        alert('Failed to remove dart');
+    }
+}
+
 // ==========================================================================
 // Player Management
 // ==========================================================================

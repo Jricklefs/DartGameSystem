@@ -195,6 +195,52 @@ public static class GameHubExtensions
     }
 
     /// <summary>
+    /// Notify clients that a dart was removed (false detection)
+    /// </summary>
+    public static async Task SendDartRemoved(this IHubContext<GameHub> hub, string boardId, DartThrow removedDart, Game game)
+    {
+        await hub.Clients.Group($"board:{boardId}").SendAsync("DartRemoved", new
+        {
+            removedDart = new
+            {
+                removedDart.Index,
+                removedDart.Segment,
+                removedDart.Multiplier,
+                removedDart.Zone,
+                removedDart.Score
+            },
+            game = new
+            {
+                game.Id,
+                game.Mode,
+                game.State,
+                game.CurrentPlayerIndex,
+                CurrentPlayer = game.CurrentPlayer?.Name,
+                Players = game.Players.Select(p => new
+                {
+                    p.Id,
+                    p.Name,
+                    p.Score,
+                    p.DartsThrown
+                }).ToList(),
+                CurrentTurn = game.CurrentTurn == null ? null : new
+                {
+                    game.CurrentTurn.TurnNumber,
+                    game.CurrentTurn.TurnScore,
+                    Darts = game.CurrentTurn.Darts.Select(d => new
+                    {
+                        d.Index,
+                        d.Segment,
+                        d.Multiplier,
+                        d.Zone,
+                        d.Score
+                    }).ToList()
+                }
+            }
+        });
+    }
+
+    /// <summary>
     /// Notify clients that a game started
     /// </summary>
     public static async Task SendGameStarted(this IHubContext<GameHub> hub, string boardId, Game game)

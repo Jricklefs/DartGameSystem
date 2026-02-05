@@ -10,6 +10,10 @@ namespace DartGameAPI.Controllers;
 public class LogsController : ControllerBase
 {
     private readonly string _connectionString;
+    
+    // Static flag to enable/disable logging
+    private static bool _loggingEnabled = true;
+    public static bool LoggingEnabled => _loggingEnabled;
 
     public LogsController(IConfiguration configuration)
     {
@@ -42,11 +46,41 @@ public class LogsController : ControllerBase
     }
 
     /// <summary>
+    /// Get logging status
+    /// </summary>
+    [HttpGet("status")]
+    public IActionResult GetStatus()
+    {
+        return Ok(new { enabled = _loggingEnabled });
+    }
+
+    /// <summary>
+    /// Enable or disable logging
+    /// </summary>
+    [HttpPost("status")]
+    public IActionResult SetStatus([FromBody] LogStatusRequest request)
+    {
+        _loggingEnabled = request.Enabled;
+        return Ok(new { enabled = _loggingEnabled, message = _loggingEnabled ? "Logging enabled" : "Logging disabled" });
+    }
+
+    public class LogStatusRequest
+    {
+        public bool Enabled { get; set; }
+    }
+
+    /// <summary>
     /// Add a log entry
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> AddLog([FromBody] LogEntry entry)
     {
+        // Skip if logging is disabled
+        if (!_loggingEnabled)
+        {
+            return Ok(new { id = 0, skipped = true });
+        }
+        
         try
         {
             using var conn = new SqlConnection(_connectionString);

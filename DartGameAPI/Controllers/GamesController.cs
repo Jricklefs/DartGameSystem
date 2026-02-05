@@ -71,6 +71,10 @@ public class GamesController : ControllerBase
         var dartNumber = dartsThisTurn.Count + 1;
         var boardId = request.BoardId ?? "default";
 
+        // Update benchmark context for DartDetect (fire and forget)
+        var player = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
+        _ = UpdateBenchmarkContext(boardId, game.Id, game.CurrentRound, player?.Name);
+
         var detectResult = await _dartDetectClient.DetectAsync(images, boardId, dartNumber);
         
         if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
@@ -604,6 +608,9 @@ public class GamesController : ControllerBase
         _logger.LogInformation("Corrected dart {Index}: {OldZone}={OldScore} -> {NewZone}={NewScore}", 
             request.DartIndex, oldDart.Zone, oldScore, newDart.Zone, newDart.Score);
 
+        // Record correction for benchmark analysis (fire and forget)
+        _ = RecordBenchmarkCorrection(game, request.DartIndex, oldDart, newDart);
+
         await _hubContext.SendDartThrown(game.BoardId, newDart, game);
         
         if (game.State == GameState.Finished)
@@ -612,6 +619,105 @@ public class GamesController : ControllerBase
         }
 
         return Ok(new ThrowResult { NewDart = newDart, Game = game });
+    }
+
+    /// <summary>
+    /// Record dart correction to DartDetect benchmark system
+    /// </summary>
+    private async Task RecordBenchmarkCorrection(Game game, int dartIndex, DartThrow oldDart, DartThrow newDart)
+    {
+        try
+        {
+            var dartNumber = dartIndex + 1;
+            _logger.LogInformation("Recording benchmark correction for dart {DartNumber}: {OldSeg}x{OldMult} -> {NewSeg}x{NewMult}", 
+                dartNumber, oldDart.Segment, oldDart.Multiplier, newDart.Segment, newDart.Multiplier);
+            
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(2);
+            
+            var payload = new
+            {
+                dart_number = dartNumber,
+                game_id = game.Id,
+                original_segment = oldDart.Segment,
+                original_multiplier = oldDart.Multiplier,
+                corrected_segment = newDart.Segment,
+                corrected_multiplier = newDart.Multiplier
+            };
+            
+            var content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(payload),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+            
+            var response = await client.PostAsync("http://127.0.0.1:8000/v1/benchmark/correction", content);
+            _logger.LogInformation("Benchmark correction response: {StatusCode}", response.StatusCode);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to record benchmark correction: {Error}", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Update benchmark context in DartDetect for proper file organization
+    /// </summary>
+    private async Task UpdateBenchmarkContext(string boardId, string gameId, int round, string? playerName)
+    {
+        try
+        {
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(1);
+            
+            var payload = new
+            {
+                board_id = boardId,
+                game_id = gameId,
+                round_num = round,
+                player_name = playerName ?? "player"
+            };
+            
+            var content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(payload),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+            
+            await client.PostAsync("http://localhost:8000/v1/benchmark/context", content);
+        }
+        catch
+        {
+            // Silently ignore - benchmark context is optional
+        }
+    }
+
+    /// <summary>
+    /// Remove a false dart from the current turn (phantom detection)
+    /// </summary>
+    [HttpPost("{id}/remove-dart")]
+    public async Task<ActionResult<RemoveDartResult>> RemoveDart(string id, [FromBody] RemoveDartRequest request)
+    {
+        var game = _gameService.GetGame(id);
+        if (game == null) return NotFound();
+        if (game.State != GameState.InProgress)
+            return BadRequest(new { error = "Game is not in progress" });
+        if (game.CurrentTurn == null)
+            return BadRequest(new { error = "No current turn" });
+        if (request.DartIndex < 0 || request.DartIndex >= game.CurrentTurn.Darts.Count)
+            return BadRequest(new { error = "Invalid dart index" });
+
+        var removedDart = _gameService.RemoveDart(game, request.DartIndex);
+        if (removedDart == null)
+            return BadRequest(new { error = "Failed to remove dart" });
+        
+        _logger.LogInformation("Removed false dart {Index}: {Zone}={Score}", 
+            request.DartIndex, removedDart.Zone, removedDart.Score);
+
+        // Notify clients about the update
+        await _hubContext.SendDartRemoved(game.BoardId, removedDart, game);
+
+        return Ok(new RemoveDartResult { RemovedDart = removedDart, Game = game });
     }
 
     // === Private helpers ===
@@ -678,6 +784,17 @@ public class CorrectDartRequest
 public class ThrowResult
 {
     public DartThrow? NewDart { get; set; }
+    public Game Game { get; set; } = null!;
+}
+
+public class RemoveDartRequest
+{
+    public int DartIndex { get; set; }
+}
+
+public class RemoveDartResult
+{
+    public DartThrow? RemovedDart { get; set; }
     public Game Game { get; set; } = null!;
 }
 

@@ -141,9 +141,13 @@ public class GameService
             case GameMode.Game301:
                 var newScore = player.Score - dart.Score;
                 
-                // Bust check
-                if (newScore < 0 || (newScore == 0 && dart.Multiplier != 2))
+                _logger.LogInformation("X01 scoring: player={Name}, current={Current}, dart={Dart}, newScore={New}, multiplier={Mult}",
+                    player.Name, player.Score, dart.Score, newScore, dart.Multiplier);
+                
+                // Bust check: negative, exactly 1 (can't checkout), or 0 without double
+                if (newScore < 0 || newScore == 1 || (newScore == 0 && dart.Multiplier != 2))
                 {
+                    _logger.LogInformation("BUST detected: newScore={New}, multiplier={Mult}", newScore, dart.Multiplier);
                     // Bust - revert turn
                     player.Score += game.CurrentTurn.Darts.Take(game.CurrentTurn.Darts.Count - 1).Sum(d => d.Score);
                     game.CurrentTurn.Darts.Clear();
@@ -157,6 +161,7 @@ public class GameService
                     if (newScore == 0)
                     {
                         // Leg won!
+                        _logger.LogInformation("CHECKOUT! Player {Name} checked out with double {Seg}!", player.Name, dart.Segment);
                         player.LegsWon++;
                         game.LegWinnerId = player.Id;
                         
@@ -166,6 +171,7 @@ public class GameService
                         if (player.LegsWon >= game.LegsToWin)
                         {
                             // Match won!
+                            _logger.LogInformation("GAME WON by {Name}!", player.Name);
                             game.State = GameState.Finished;
                             game.WinnerId = player.Id;
                             game.EndedAt = DateTime.UtcNow;
@@ -361,6 +367,45 @@ public class GameService
 
         _logger.LogInformation("Corrected dart {Index}: {OldScore} -> {NewScore}, player score now {PlayerScore}", 
             dartIndex, oldDart.Score, newDart.Score, player.Score);
+    }
+
+    public DartThrow? RemoveDart(Game game, int dartIndex)
+    {
+        if (game.CurrentTurn == null || dartIndex < 0 || dartIndex >= game.CurrentTurn.Darts.Count)
+            return null;
+
+        var player = game.CurrentPlayer;
+        if (player == null) return null;
+
+        var removedDart = game.CurrentTurn.Darts[dartIndex];
+
+        // Revert the score
+        switch (game.Mode)
+        {
+            case GameMode.Practice:
+                player.Score -= removedDart.Score;
+                break;
+
+            case GameMode.Game501:
+            case GameMode.Game301:
+                // X01: scores were subtracted, so add it back
+                player.Score += removedDart.Score;
+                break;
+        }
+
+        // Remove the dart from the turn
+        game.CurrentTurn.Darts.RemoveAt(dartIndex);
+
+        // Re-index remaining darts
+        for (int i = dartIndex; i < game.CurrentTurn.Darts.Count; i++)
+        {
+            game.CurrentTurn.Darts[i].Index = i;
+        }
+
+        _logger.LogInformation("Removed false dart {Index}: {Zone}={Score}, player score now {PlayerScore}", 
+            dartIndex, removedDart.Zone, removedDart.Score, player.Score);
+
+        return removedDart;
     }
 
     #endregion

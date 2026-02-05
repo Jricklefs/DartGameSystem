@@ -897,6 +897,50 @@ function initLogs() {
     document.getElementById('download-logs-btn')?.addEventListener('click', downloadLogs);
     document.getElementById('clear-logs-btn')?.addEventListener('click', clearLogs);
     
+    // Logging toggle handler
+    const loggingToggle = document.getElementById('logging-enabled');
+    if (loggingToggle) {
+        // Load initial state
+        fetch('/api/logs/status')
+            .then(r => r.json())
+            .then(data => {
+                loggingToggle.checked = data.enabled;
+                // Also sync benchmark toggle if on same page
+                const benchmarkToggle = document.getElementById('benchmark-enabled');
+                if (benchmarkToggle) {
+                    benchmarkToggle.checked = data.enabled;
+                }
+            })
+            .catch(() => {});
+        
+        // Handle toggle change
+        loggingToggle.addEventListener('change', async () => {
+            try {
+                const response = await fetch('/api/logs/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: loggingToggle.checked })
+                });
+                const data = await response.json();
+                console.log(`Logging ${data.enabled ? 'enabled' : 'disabled'}`);
+                
+                // Also toggle benchmark when logging is toggled
+                const benchmarkEndpoint = loggingToggle.checked 
+                    ? `${DART_DETECT_URL}/v1/benchmark/enable`
+                    : `${DART_DETECT_URL}/v1/benchmark/disable`;
+                fetch(benchmarkEndpoint, { method: 'POST' }).catch(() => {});
+                
+                // Sync benchmark toggle if visible
+                const benchmarkToggle = document.getElementById('benchmark-enabled');
+                if (benchmarkToggle) {
+                    benchmarkToggle.checked = loggingToggle.checked;
+                }
+            } catch (e) {
+                console.error('Failed to toggle logging:', e);
+            }
+        });
+    }
+    
     // Filter change handlers
     document.getElementById('log-source-filter')?.addEventListener('change', loadLogs);
     document.getElementById('log-level-filter')?.addEventListener('change', loadLogs);
@@ -913,4 +957,216 @@ const originalInit2 = window.onload;
 window.onload = function() {
     if (originalInit2) originalInit2();
     initLogs();
+    initAccuracy();
 };
+
+
+// ========== ACCURACY TAB ==========
+
+async function loadBenchmarkStatus() {
+    try {
+        const response = await fetch(`${DART_DETECT_URL}/v1/benchmark/status`);
+        const data = await response.json();
+        
+        const toggle = document.getElementById('benchmark-enabled');
+        if (toggle) {
+            toggle.checked = data.enabled;
+        }
+        
+        return data;
+    } catch (e) {
+        console.error('Failed to load benchmark status:', e);
+        return null;
+    }
+}
+
+async function loadBenchmarkGames() {
+    const gamesList = document.getElementById('games-list');
+    if (!gamesList) return;
+    
+    try {
+        const response = await fetch(`${DART_DETECT_URL}/v1/benchmark/games`);
+        const data = await response.json();
+        
+        if (!data.games || data.games.length === 0) {
+            gamesList.innerHTML = `
+                <div class="game-item" style="background: #0a0a0a; border: 1px solid #333; border-radius: 6px; padding: 10px; color: var(--paper-muted);">
+                    No benchmark data yet. Enable logging and play a game.
+                </div>
+            `;
+            document.getElementById('overall-accuracy').textContent = '--';
+            document.getElementById('total-darts-logged').textContent = '0';
+            document.getElementById('total-corrections').textContent = '0';
+            return;
+        }
+        
+        // Calculate overall stats
+        let totalDarts = 0;
+        let totalCorrections = 0;
+        for (const game of data.games) {
+            totalDarts += game.total_darts;
+            totalCorrections += game.corrections;
+        }
+        const overallAccuracy = totalDarts > 0 
+            ? (((totalDarts - totalCorrections) / totalDarts) * 100).toFixed(1) + '%'
+            : '--';
+        
+        document.getElementById('overall-accuracy').textContent = overallAccuracy;
+        document.getElementById('total-darts-logged').textContent = totalDarts;
+        document.getElementById('total-corrections').textContent = totalCorrections;
+        
+        // Render games list
+        gamesList.innerHTML = data.games.map(game => `
+            <div class="game-item" style="background: #0a0a0a; border: 1px solid #333; border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: pointer;"
+                 onclick="showGameDetails('${game.board_id}', '${game.game_id}')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="color: var(--gold); font-weight: bold;">${game.game_id}</span>
+                        <span style="color: var(--paper-muted); margin-left: 10px;">Board: ${game.board_id}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="color: ${game.accuracy >= 90 ? '#4caf50' : game.accuracy >= 70 ? '#ff9800' : '#f44336'}; font-size: 1.2rem; font-weight: bold;">
+                            ${game.accuracy}%
+                        </span>
+                        <span style="color: var(--paper-muted); display: block; font-size: 0.85rem;">
+                            ${game.total_darts} darts, ${game.corrections} corrections
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (e) {
+        console.error('Failed to load benchmark games:', e);
+        gamesList.innerHTML = `
+            <div class="game-item" style="background: #0a0a0a; border: 1px solid #333; border-radius: 6px; padding: 10px; color: #ff6b6b;">
+                Error loading games: ${e.message}
+            </div>
+        `;
+    }
+}
+
+async function showGameDetails(boardId, gameId) {
+    const modal = document.getElementById('game-details-modal');
+    const content = document.getElementById('game-details-content');
+    
+    if (!modal || !content) return;
+    
+    modal.style.display = 'flex';
+    content.innerHTML = '<p>Loading...</p>';
+    
+    try {
+        const response = await fetch(`${DART_DETECT_URL}/v1/benchmark/games/${boardId}/${gameId}/darts`);
+        const data = await response.json();
+        
+        if (!data.darts || data.darts.length === 0) {
+            content.innerHTML = '<p>No darts found for this game.</p>';
+            return;
+        }
+        
+        // Group by round
+        const byRound = {};
+        for (const dart of data.darts) {
+            if (!byRound[dart.round]) byRound[dart.round] = [];
+            byRound[dart.round].push(dart);
+        }
+        
+        let html = `<h3 style="color: var(--gold);">Game: ${gameId}</h3>`;
+        
+        for (const [round, darts] of Object.entries(byRound)) {
+            html += `<h4 style="color: var(--paper); margin-top: 15px;">${round}</h4>`;
+            html += `<div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
+            
+            for (const dart of darts) {
+                const meta = dart.metadata || {};
+                const final = meta.final_result || {};
+                const correction = dart.correction;
+                
+                const detected = final.segment ? `${final.multiplier > 1 ? (final.multiplier === 2 ? 'D' : 'T') : ''}${final.segment}` : '?';
+                const corrected = correction ? `${correction.corrected.multiplier > 1 ? (correction.corrected.multiplier === 2 ? 'D' : 'T') : ''}${correction.corrected.segment}` : null;
+                
+                const isCorrect = !correction;
+                const borderColor = isCorrect ? '#4caf50' : '#f44336';
+                
+                // Find cam0 debug image
+                const debugImg = dart.images?.find(i => i.includes('cam0_debug')) || dart.images?.[0];
+                const imgUrl = debugImg ? `${DART_DETECT_URL}/v1/benchmark/image/${boardId}/${gameId}/${dart.round}/${dart.dart}/${debugImg}` : '';
+                
+                html += `
+                    <div style="background: #1a1a1a; border: 2px solid ${borderColor}; border-radius: 8px; padding: 10px; width: 180px;">
+                        ${imgUrl ? `<img src="${imgUrl}" style="width: 100%; border-radius: 4px; margin-bottom: 8px;">` : ''}
+                        <div style="text-align: center;">
+                            <span style="font-size: 1.5rem; color: var(--paper);">${dart.dart}</span>
+                            <div style="margin-top: 5px;">
+                                <span style="color: ${isCorrect ? '#4caf50' : '#ff9800'};">${detected}</span>
+                                ${corrected ? `<span style="color: #f44336;"> → ${corrected}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            html += `</div>`;
+        }
+        
+        content.innerHTML = html;
+        
+    } catch (e) {
+        console.error('Failed to load game details:', e);
+        content.innerHTML = `<p style="color: #ff6b6b;">Error: ${e.message}</p>`;
+    }
+}
+
+function initAccuracy() {
+    // Benchmark toggle handler
+    const benchmarkToggle = document.getElementById('benchmark-enabled');
+    if (benchmarkToggle) {
+        // Load initial state
+        loadBenchmarkStatus();
+        
+        // Handle toggle change
+        benchmarkToggle.addEventListener('change', async () => {
+            try {
+                const endpoint = benchmarkToggle.checked 
+                    ? `${DART_DETECT_URL}/v1/benchmark/enable`
+                    : `${DART_DETECT_URL}/v1/benchmark/disable`;
+                    
+                const response = await fetch(endpoint, { method: 'POST' });
+                const data = await response.json();
+                console.log(`Benchmark logging ${data.enabled ? 'enabled' : 'disabled'}`);
+            } catch (e) {
+                console.error('Failed to toggle benchmark:', e);
+            }
+        });
+    }
+    
+    // Refresh button
+    document.getElementById('refresh-accuracy-btn')?.addEventListener('click', loadBenchmarkGames);
+    
+    // Clear benchmark data button
+    document.getElementById('clear-benchmark-btn')?.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to delete ALL benchmark data? This cannot be undone.')) {
+            return;
+        }
+        try {
+            const response = await fetch(`${DART_DETECT_URL}/v1/benchmark/clear`, { method: 'POST' });
+            const data = await response.json();
+            if (data.cleared) {
+                alert('Benchmark data cleared!');
+                loadBenchmarkGames(); // Refresh the list
+            } else {
+                alert('Failed to clear: ' + (data.error || 'Unknown error'));
+            }
+        } catch (e) {
+            console.error('Failed to clear benchmark:', e);
+            alert('Error clearing benchmark data: ' + e.message);
+        }
+    });
+    
+    // Load data when tab is opened
+    document.querySelector('[data-tab="accuracy"]')?.addEventListener('click', () => {
+        setTimeout(() => {
+            loadBenchmarkStatus();
+            loadBenchmarkGames();
+        }, 100);
+    });
+}

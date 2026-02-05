@@ -24,6 +24,7 @@
             <button class="nav-tab-sm" data-tab="theme">🎨 THEME</button>
             <button class="nav-tab-sm" data-tab="audio">🔊 AUDIO</button>
             <button class="nav-tab-sm" data-tab="logs">📋 LOGS</button>
+            <button class="nav-tab-sm" data-tab="accuracy">📊 ACCURACY</button>
             <button class="nav-tab-sm" data-tab="system">🖥️ SYSTEM</button>
         </nav>
     </header>
@@ -207,7 +208,11 @@
                 <p class="section-desc">View and manage application logs</p>
             </div>
 
-            <div class="log-controls" style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+            <div class="log-controls" style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                <label style="display: flex; align-items: center; gap: 8px; color: var(--paper);">
+                    <input type="checkbox" id="logging-enabled" checked style="width: 18px; height: 18px;">
+                    <span>Enable Logging</span>
+                </label>
                 <select id="log-source-filter" class="form-select" style="width: auto;">
                     <option value="">All Sources</option>
                     <option value="DartDetect">DartDetect</option>
@@ -242,6 +247,56 @@
             <div class="log-actions" style="margin-top: 15px; display: flex; gap: 10px;">
                 <button id="download-logs-btn" class="btn btn-primary">📥 Download Logs</button>
                 <button id="clear-logs-btn" class="btn btn-danger" style="background: #8b0000;">🗑️ Clear All Logs</button>
+            </div>
+        </section>
+
+        <!-- Accuracy Tab -->
+        <section id="tab-accuracy" class="settings-section">
+            <div class="section-header">
+                <h2>Detection Accuracy</h2>
+                <p class="section-desc">Analyze dart detection performance and corrections</p>
+            </div>
+
+            <div class="accuracy-controls" style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                <label style="display: flex; align-items: center; gap: 8px; color: var(--paper);">
+                    <input type="checkbox" id="benchmark-enabled" style="width: 18px; height: 18px;">
+                    <span>Enable Benchmark Logging</span>
+                </label>
+                <button id="refresh-accuracy-btn" class="btn btn-secondary">🔄 Refresh</button>
+                <button id="clear-benchmark-btn" class="btn btn-danger" style="background: #8b0000; margin-left: auto;">🗑️ Clear All Benchmark Data</button>
+            </div>
+
+            <div class="accuracy-summary" style="background: #1a1a1a; border: 1px solid var(--gold-dark); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+                    <div class="stat-item">
+                        <span style="color: var(--gold); font-size: 2rem; font-weight: bold;" id="overall-accuracy">--</span>
+                        <span style="color: var(--paper-muted); display: block;">Overall Accuracy</span>
+                    </div>
+                    <div class="stat-item">
+                        <span style="color: var(--paper); font-size: 2rem; font-weight: bold;" id="total-darts-logged">--</span>
+                        <span style="color: var(--paper-muted); display: block;">Darts Logged</span>
+                    </div>
+                    <div class="stat-item">
+                        <span style="color: #ff6b6b; font-size: 2rem; font-weight: bold;" id="total-corrections">--</span>
+                        <span style="color: var(--paper-muted); display: block;">Corrections</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="color: var(--gold); margin-bottom: 10px;">Logged Games</h3>
+            <div id="games-list" style="max-height: 400px; overflow-y: auto;">
+                <div class="game-item" style="background: #0a0a0a; border: 1px solid #333; border-radius: 6px; padding: 10px; margin-bottom: 8px; color: var(--paper-muted);">
+                    No benchmark data yet. Enable logging and play a game.
+                </div>
+            </div>
+
+            <!-- Game Details Modal -->
+            <div id="game-details-modal" class="modal hidden" style="display: none;">
+                <div class="modal-content" style="max-width: 900px; max-height: 80vh; overflow-y: auto;">
+                    <h2 style="color: var(--gold);">Game Details</h2>
+                    <div id="game-details-content">Loading...</div>
+                    <button class="btn btn-secondary" onclick="document.getElementById('game-details-modal').style.display='none'">Close</button>
+                </div>
             </div>
         </section>
 
