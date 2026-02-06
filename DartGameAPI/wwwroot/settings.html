@@ -300,6 +300,20 @@
                 <div id="model-description" style="color: var(--paper-muted); margin-top: 10px; font-size: 0.85rem; font-style: italic;">
                     Balanced speed/accuracy, INT8 optimized
                 </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;">
+                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        <label style="color: var(--paper); min-width: 150px;">Confidence Threshold:</label>
+                        <input type="range" id="confidence-threshold-slider" 
+                               min="0.1" max="0.9" step="0.05" value="0.5"
+                               style="flex: 1; min-width: 150px; max-width: 300px;">
+                        <span id="confidence-threshold-value" style="color: var(--gold); font-weight: bold; min-width: 50px;">0.50</span>
+                        <button id="apply-threshold-btn" class="btn btn-secondary" style="padding: 6px 15px;">Apply</button>
+                    </div>
+                    <p style="color: var(--paper-muted); font-size: 0.8rem; margin-top: 8px;">
+                        Lower = more detections (may include false positives) | Higher = fewer but more reliable detections
+                    </p>
+                </div>
+
             </div>
 
 <h3 style="color: var(--gold); margin-bottom: 10px;">Logged Games</h3>

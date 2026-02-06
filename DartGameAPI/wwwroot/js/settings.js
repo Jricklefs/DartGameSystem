@@ -1688,3 +1688,90 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+
+// ==================== CONFIDENCE THRESHOLD ====================
+
+async function loadConfidenceThreshold() {
+    try {
+        const resp = await fetch(`${DARTDETECT_URL}/v1/settings/threshold`);
+        if (resp.ok) {
+            const data = await resp.json();
+            const slider = document.getElementById('confidence-threshold-slider');
+            const valueSpan = document.getElementById('confidence-threshold-value');
+            
+            if (slider) {
+                slider.value = data.threshold;
+            }
+            if (valueSpan) {
+                valueSpan.textContent = data.threshold.toFixed(2);
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load confidence threshold:', err);
+    }
+}
+
+async function applyConfidenceThreshold() {
+    const slider = document.getElementById('confidence-threshold-slider');
+    const btn = document.getElementById('apply-threshold-btn');
+    
+    if (!slider) return;
+    
+    const threshold = parseFloat(slider.value);
+    
+    if (btn) btn.disabled = true;
+    
+    try {
+        const resp = await fetch(`${DARTDETECT_URL}/v1/settings/threshold`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ threshold: threshold })
+        });
+        
+        const data = await resp.json();
+        
+        if (resp.ok && data.success) {
+            console.log(`Threshold set to ${data.current}`);
+            // Brief visual feedback
+            if (btn) {
+                btn.textContent = 'Applied!';
+                setTimeout(() => { btn.textContent = 'Apply'; }, 1500);
+            }
+        }
+    } catch (err) {
+        console.error('Failed to apply threshold:', err);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function onThresholdSliderChange() {
+    const slider = document.getElementById('confidence-threshold-slider');
+    const valueSpan = document.getElementById('confidence-threshold-value');
+    if (slider && valueSpan) {
+        valueSpan.textContent = parseFloat(slider.value).toFixed(2);
+    }
+}
+
+// Wire up threshold events
+document.addEventListener('DOMContentLoaded', () => {
+    const thresholdSlider = document.getElementById('confidence-threshold-slider');
+    const applyThresholdBtn = document.getElementById('apply-threshold-btn');
+    
+    if (thresholdSlider) {
+        thresholdSlider.addEventListener('input', onThresholdSliderChange);
+    }
+    if (applyThresholdBtn) {
+        applyThresholdBtn.addEventListener('click', applyConfidenceThreshold);
+    }
+    
+    // Also load threshold when accuracy tab is shown
+    const accuracyTab = document.querySelector('[data-tab="accuracy"]');
+    if (accuracyTab) {
+        const originalClick = accuracyTab.onclick;
+        accuracyTab.addEventListener('click', () => {
+            setTimeout(loadConfidenceThreshold, 100);
+        });
+    }
+});
