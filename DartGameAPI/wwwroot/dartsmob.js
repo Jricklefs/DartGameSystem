@@ -1264,6 +1264,25 @@ async function submitCorrection() {
         // Log to centralized system
         log.info('Correction', `Corrected dart ${correctionDartIndex}: ${correctionLog.original.zone} ${correctionLog.original.segment} → ${correctionLog.corrected.display}`, correctionLog);
         
+        // Send correction to DartDetect benchmark system
+        try {
+            await fetch(`${DETECT_API}/v1/benchmark/correction`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    game_id: currentGame.id,
+                    dart_number: correctionDartIndex + 1,  // 1-indexed for API
+                    original_segment: originalSegment,
+                    original_multiplier: originalMultiplier,
+                    corrected_segment: segment,
+                    corrected_multiplier: correctionMultiplier
+                })
+            });
+            console.log(`[BENCHMARK] Correction sent to DartDetect`);
+        } catch (e) {
+            console.warn('[BENCHMARK] Failed to send correction to DartDetect:', e);
+        }
+        
         // Store corrections in localStorage for later export
         try {
             const corrections = JSON.parse(localStorage.getItem('dart-corrections') || '[]');

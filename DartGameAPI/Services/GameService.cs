@@ -127,13 +127,13 @@ public class GameService
             TurnNumber = player.Turns.Count + 1,
             PlayerId = player.Id
         };
-        game.CurrentTurn.Darts.Add(dart);
         player.DartsThrown++;
 
         // Apply score based on game mode
         switch (game.Mode)
         {
             case GameMode.Practice:
+                game.CurrentTurn.Darts.Add(dart);
                 player.Score += dart.Score;
                 break;
 
@@ -149,13 +149,15 @@ public class GameService
                 {
                     _logger.LogInformation("BUST detected: newScore={New}, multiplier={Mult}", newScore, dart.Multiplier);
                     
-                    // Store score before bust for potential correction
-                    game.CurrentTurn.ScoreBeforeBust = player.Score;
+                    // Store the score at the START of this turn (before any darts this turn)
+                    // This is what we revert to on bust
+                    var scoreAtTurnStart = player.Score + game.CurrentTurn.Darts.Sum(d => d.Score);
+                    game.CurrentTurn.ScoreBeforeBust = scoreAtTurnStart;
                     
-                    // Revert score to start of turn
-                    player.Score += game.CurrentTurn.Darts.Take(game.CurrentTurn.Darts.Count - 1).Sum(d => d.Score);
+                    // Revert player score to start of turn
+                    player.Score = scoreAtTurnStart;
                     
-                    // Keep the bust dart in the turn record
+                    // Add the bust dart to the record
                     game.CurrentTurn.Darts.Add(dart);
                     
                     // Mark as busted - UI will show "BUSTED" screen and allow corrections
@@ -163,10 +165,11 @@ public class GameService
                     game.CurrentTurn.IsBusted = true;
                     
                     // DON'T call EndTurn here - wait for UI confirmation
-                    _logger.LogInformation("Bust state set - waiting for UI confirmation or correction");
+                    _logger.LogInformation("Bust state set - score reverted to {Score}, waiting for UI confirmation", player.Score);
                 }
                 else
                 {
+                    game.CurrentTurn.Darts.Add(dart);
                     player.Score = newScore;
                     
                     if (newScore == 0)

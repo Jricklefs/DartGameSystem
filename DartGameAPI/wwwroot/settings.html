@@ -48,18 +48,12 @@
                         CAM 2 <span class="cam-indicator" id="cam-ind-2">●</span>
                     </button>
                 </div>
-                
-                <!-- View toggle for calibration overlay -->
-                <div class="calibration-view-toggle">
-                    <button class="view-toggle-btn" data-view="overlay" id="view-overlay-btn">Overlay</button>
-                    <button class="view-toggle-btn active" data-view="combined" id="view-combined-btn">Camera+Overlay</button>
-                </div>
             </div>
 
-            <!-- Large Camera Preview with Overlay Support -->
+            <!-- Large Camera Preview with Canvas Overlay -->
             <div class="camera-preview-full" id="calibration-preview">
-                <img id="camera-base-img" class="calibration-camera-img" alt="Camera Feed" style="display: none;">
-                <img id="main-camera-img" class="main-cam-img calibration-overlay-img" alt="Calibration Overlay">
+                <img id="camera-base-img" class="calibration-camera-img" alt="Camera Feed">
+                <canvas id="calibration-canvas" class="calibration-canvas"></canvas>
                 <div id="main-camera-loading" class="main-cam-loading">
                     <span>📷 Loading camera...</span>
                 </div>
@@ -73,8 +67,8 @@
                 <span id="cam-quality-label" class="cam-quality-label">Not Calibrated</span>
                 <span id="cam-focus-label" class="cam-focus-label" style="display:none; margin-left: 10px;"></span>
                 <div class="cam-buttons">
+                    <button id="live-btn" class="btn btn-sm">📹 Live</button>
                     <button id="focus-btn" class="btn btn-sm">🔍 Focus</button>
-                    <button id="refresh-btn" class="btn btn-sm">🔄 Refresh</button>
                     <button id="mark20-btn" class="btn btn-sm">🎯 Mark 20</button>
                     <button id="calibrate-btn" class="btn btn-sm btn-primary">🎯 Calibrate</button>
                 </div>
@@ -263,6 +257,7 @@
                     <span>Enable Benchmark Logging</span>
                 </label>
                 <button id="refresh-accuracy-btn" class="btn btn-secondary">🔄 Refresh</button>
+                <button id="rerun-benchmark-btn" class="btn btn-secondary" style="background: #2a5298;">🔄 Re-run Benchmark</button>
                 <button id="clear-benchmark-btn" class="btn btn-danger" style="background: #8b0000; margin-left: auto;">🗑️ Clear All Benchmark Data</button>
             </div>
 
@@ -287,6 +282,70 @@
             <div id="games-list" style="max-height: 400px; overflow-y: auto;">
                 <div class="game-item" style="background: #0a0a0a; border: 1px solid #333; border-radius: 6px; padding: 10px; margin-bottom: 8px; color: var(--paper-muted);">
                     No benchmark data yet. Enable logging and play a game.
+                </div>
+            </div>
+
+            <!-- Stereo Calibration Section -->
+            <div class="stereo-calibration-section" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+                <h3 style="color: var(--gold); margin-bottom: 15px;">
+                    🔺 Advanced: 3D Triangulation
+                    <span style="font-size: 0.8rem; color: var(--paper-muted); font-weight: normal; margin-left: 10px;">(Optional)</span>
+                </h3>
+                <p style="color: var(--paper-muted); margin-bottom: 15px;">
+                    For higher accuracy, calibrate cameras with a checkerboard pattern to enable true 3D triangulation.
+                    This is optional - the default ellipse-based detection works for most cases.
+                </p>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 15px;">
+                    <span style="color: var(--paper);">Triangulation Mode:</span>
+                    <select id="triangulation-mode" style="padding: 8px 15px; background: #1a1a1a; border: 1px solid var(--gold-dark); color: var(--paper); border-radius: 4px;">
+                        <option value="ellipse">Ellipse (Default)</option>
+                        <option value="stereo">3D Stereo (Requires Calibration)</option>
+                    </select>
+                    <span id="stereo-status" style="color: var(--paper-muted); margin-left: 10px;">Loading...</span>
+                </div>
+
+                <div id="stereo-calibration-panel" style="background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 15px; display: none;">
+                    <h4 style="color: var(--paper); margin-bottom: 10px;">Stereo Calibration Steps</h4>
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <button id="get-checkerboard-btn" class="btn btn-secondary">📋 Get Checkerboard Pattern</button>
+                        <button id="capture-stereo-btn" class="btn btn-secondary">📷 Capture Calibration Image</button>
+                        <span id="capture-count" style="color: var(--paper-muted); align-self: center;">0 images captured</span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <button id="run-stereo-calibration-btn" class="btn btn-primary" disabled>🎯 Run Calibration</button>
+                        <button id="clear-stereo-captures-btn" class="btn btn-danger" style="background: #8b0000;">🗑️ Clear Captures</button>
+                    </div>
+                    
+                    <div id="stereo-preview" style="display: none; margin-top: 15px;">
+                        <h4 style="color: var(--paper); margin-bottom: 10px;">Preview</h4>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <img id="stereo-preview-cam0" style="max-width: 200px; border: 1px solid #333; border-radius: 4px;">
+                            <img id="stereo-preview-cam1" style="max-width: 200px; border: 1px solid #333; border-radius: 4px;">
+                            <img id="stereo-preview-cam2" style="max-width: 200px; border: 1px solid #333; border-radius: 4px;">
+                        </div>
+                    </div>
+                    
+                    <div id="checkerboard-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000;">
+                        <div style="max-width: 800px; margin: 50px auto; background: #1a1a1a; border: 1px solid var(--gold); border-radius: 8px; padding: 20px;">
+                            <h3 style="color: var(--gold); margin-bottom: 15px;">Checkerboard Pattern</h3>
+                            <div style="color: var(--paper-muted); margin-bottom: 15px;">
+                                <ol style="padding-left: 20px;">
+                                    <li>Print this pattern at 100% scale (no fit-to-page)</li>
+                                    <li>Mount on rigid cardboard or foam board</li>
+                                    <li>Attach flat to dartboard face</li>
+                                    <li>Capture 10+ calibration images at different angles</li>
+                                </ol>
+                            </div>
+                            <img id="checkerboard-image" style="max-width: 100%; border: 1px solid #333;">
+                            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                                <a id="checkerboard-download" href="#" download="checkerboard.png" class="btn btn-primary">⬇️ Download PNG</a>
+                                <button onclick="document.getElementById('checkerboard-modal').style.display='none'" class="btn btn-secondary">Close</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -331,6 +390,18 @@
                 <a href="/swagger" class="btn btn-secondary" target="_blank">📚 API Docs</a>
             </div>
         </section>
+    
+        <!-- Benchmark Results Modal -->
+        <div id="benchmark-results-modal" class="modal hidden" style="display: none;">
+            <div class="modal-content" style="max-width: 900px; max-height: 85vh; overflow-y: auto; background: #1a1a1a;">
+                <h2 style="color: var(--gold); margin-bottom: 15px;">📊 Benchmark Replay Results</h2>
+                <div id="benchmark-results-content">Running...</div>
+                <div style="margin-top: 15px; text-align: right;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('benchmark-results-modal').style.display='none'">Close</button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script src="/js/settings.js"></script>

@@ -151,7 +151,7 @@ async function initCalibration() {
     });
     
     // Set up image click for Mark 20
-    const mainImg = document.getElementById('main-camera-img');
+    const mainImg = document.getElementById('camera-base-img');
     mainImg.addEventListener('click', handleImageClick);
     
     // Load stored calibrations from database (not live cameras)
@@ -164,7 +164,7 @@ async function initCalibration() {
 // Update the calibration view based on mode
 function updateCalibrationView() {
     const baseImg = document.getElementById('camera-base-img');
-    const overlayImg = document.getElementById('main-camera-img');
+    const overlayImg = document.getElementById('camera-base-img');
     
     if (calibrationViewMode === 'combined' && lastCameraSnapshot) {
         // Show both: camera feed underneath, overlay on top
@@ -236,7 +236,7 @@ async function selectCamera(camIndex) {
         btn.classList.toggle('active', parseInt(btn.dataset.cam) === camIndex);
     });
     
-    const img = document.getElementById('main-camera-img');
+    const img = document.getElementById('camera-base-img');
     const baseImg = document.getElementById('camera-base-img');
     const loading = document.getElementById('main-camera-loading');
     const offline = document.getElementById('main-camera-offline');
@@ -280,7 +280,7 @@ async function selectCamera(camIndex) {
 
 async function refreshCurrentCamera() {
     // Get live snapshot from camera (for preview before calibrating)
-    const img = document.getElementById('main-camera-img');
+    const img = document.getElementById('camera-base-img');
     const baseImg = document.getElementById('camera-base-img');
     const loading = document.getElementById('main-camera-loading');
     const offline = document.getElementById('main-camera-offline');
@@ -342,7 +342,7 @@ let focusCenterY = null;
 async function toggleFocusMode() {
     const btn = document.getElementById('focus-btn');
     const focusLabel = document.getElementById('cam-focus-label');
-    const img = document.getElementById('main-camera-img');
+    const img = document.getElementById('camera-base-img');
     
     if (focusStreamActive) {
         // Stop streaming
@@ -402,7 +402,7 @@ function stopFocusStream() {
 
 async function runFocusStream() {
     const focusLabel = document.getElementById('cam-focus-label');
-    const img = document.getElementById('main-camera-img');
+    const img = document.getElementById('camera-base-img');
     
     while (focusStreamActive) {
         try {
@@ -471,7 +471,7 @@ function blobToBase64(blob) {
 async function calibrateCurrentCamera() {
     const btn = document.getElementById('calibrate-btn');
     const qualityLabel = document.getElementById('cam-quality-label');
-    const img = document.getElementById('main-camera-img');
+    const img = document.getElementById('camera-base-img');
     const loading = document.getElementById('main-camera-loading');
     
     btn.disabled = true;
@@ -558,7 +558,7 @@ async function calibrateCurrentCamera() {
 function toggleMark20Mode() {
     mark20Mode = !mark20Mode;
     const btn = document.getElementById('mark20-btn');
-    const img = document.getElementById('main-camera-img');
+    const img = document.getElementById('camera-base-img');
     const preview = document.querySelector('.camera-preview-full');
     
     if (mark20Mode) {
@@ -659,7 +659,113 @@ function setStatus(id, online, text) {
 // Event Listeners
 // ============================================================================
 
+
+// ============================================================================
+// Live Overlay Mode - Show calibration overlay on live camera feed
+// ============================================================================
+
+let liveOverlayActive = false;
+let liveOverlayInterval = null;
+
+async function toggleLiveOverlay() {
+    const btn = document.getElementById('live-btn');
+    const img = document.getElementById('camera-base-img');
+    const canvas = document.getElementById('calibration-canvas');
+    const loading = document.getElementById('main-camera-loading');
+    
+    if (liveOverlayActive) {
+        // Stop live overlay
+        stopLiveOverlay();
+        btn.classList.remove('active');
+        btn.textContent = '📡 Live';
+        return;
+    }
+    
+    // Start live overlay
+    liveOverlayActive = true;
+    btn.classList.add('active');
+    btn.textContent = '⏹ Stop';
+    
+    // Get stored calibration overlay for current camera
+    const calData = storedCalibrations[`cam${selectedCamera}`];
+    if (!calData || !calData.overlayImagePath) {
+        alert('No calibration stored for this camera. Calibrate first.');
+        stopLiveOverlay();
+        btn.classList.remove('active');
+        btn.textContent = '📡 Live';
+        return;
+    }
+    
+    // Set up canvas to show overlay on top of live feed
+    const ctx = canvas.getContext('2d');
+    canvas.style.display = 'block';
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.opacity = '0.7';
+    
+    // Load calibration overlay image
+    const overlayImg = new Image();
+    overlayImg.src = calData.overlayImagePath;
+    
+    await new Promise(resolve => {
+        overlayImg.onload = resolve;
+    });
+    
+    // Start streaming live camera underneath
+    async function updateLiveFrame() {
+        if (!liveOverlayActive) return;
+        
+        try {
+            const res = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot`, {
+                signal: AbortSignal.timeout(3000)
+            });
+            
+            if (res.ok && liveOverlayActive) {
+                const data = await res.json();
+                img.src = `data:image/jpeg;base64,${data.image}`;
+                img.classList.add('loaded');
+                loading.classList.add('hidden');
+                
+                // Resize canvas to match image
+                canvas.width = img.naturalWidth || img.width;
+                canvas.height = img.naturalHeight || img.height;
+                canvas.style.width = img.clientWidth + 'px';
+                canvas.style.height = img.clientHeight + 'px';
+                
+                // Draw overlay
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(overlayImg, 0, 0, canvas.width, canvas.height);
+            }
+        } catch (e) {
+            console.error('Live overlay error:', e);
+        }
+        
+        if (liveOverlayActive) {
+            liveOverlayInterval = setTimeout(updateLiveFrame, 200);  // 5 FPS
+        }
+    }
+    
+    loading.classList.remove('hidden');
+    loading.querySelector('span').textContent = '📡 Live + Overlay...';
+    updateLiveFrame();
+}
+
+function stopLiveOverlay() {
+    liveOverlayActive = false;
+    if (liveOverlayInterval) {
+        clearTimeout(liveOverlayInterval);
+        liveOverlayInterval = null;
+    }
+    const canvas = document.getElementById('calibration-canvas');
+    canvas.style.display = 'none';
+}
+
 function initEventListeners() {
+    // Live button - show live camera feed with calibration overlay
+    document.getElementById('live-btn')?.addEventListener('click', toggleLiveOverlay);
+    
     // Refresh button
     document.getElementById('refresh-btn')?.addEventListener('click', refreshCurrentCamera);
     
@@ -1116,7 +1222,217 @@ async function showGameDetails(boardId, gameId) {
     }
 }
 
+
+
+// === Stereo Calibration ===
+
+async function initStereoCalibration() {
+    // Check current status
+    try {
+        const response = await fetch(`${DART_DETECT_URL}/v1/stereo/status`);
+        const data = await response.json();
+        
+        const modeSelect = document.getElementById('triangulation-mode');
+        const statusSpan = document.getElementById('stereo-status');
+        const panel = document.getElementById('stereo-calibration-panel');
+        
+        if (modeSelect) {
+            modeSelect.value = data.mode;
+        }
+        
+        if (statusSpan) {
+            if (data.stereo_available) {
+                statusSpan.textContent = `✅ Stereo calibrated (${data.cameras_calibrated.length} cameras)`;
+                statusSpan.style.color = '#4ade80';
+            } else {
+                statusSpan.textContent = '⚠️ Stereo not calibrated';
+                statusSpan.style.color = '#fbbf24';
+            }
+        }
+        
+        // Show/hide panel based on mode
+        if (panel) {
+            panel.style.display = modeSelect?.value === 'stereo' ? 'block' : 'none';
+        }
+    } catch (e) {
+        console.error('Failed to load stereo status:', e);
+    }
+    
+    // Mode change handler
+    document.getElementById('triangulation-mode')?.addEventListener('change', async (e) => {
+        const mode = e.target.value;
+        const panel = document.getElementById('stereo-calibration-panel');
+        
+        if (mode === 'stereo') {
+            // Check if calibration exists
+            const response = await fetch(`${DART_DETECT_URL}/v1/stereo/status`);
+            const data = await response.json();
+            
+            if (!data.stereo_available) {
+                panel.style.display = 'block';
+                alert('Stereo calibration required. Follow the steps below to calibrate.');
+                e.target.value = 'ellipse'; // Revert until calibrated
+                return;
+            }
+        }
+        
+        // Set mode
+        try {
+            await fetch(`${DART_DETECT_URL}/v1/stereo/set-mode`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode })
+            });
+            
+            panel.style.display = mode === 'stereo' ? 'block' : 'none';
+        } catch (e) {
+            alert('Failed to set mode: ' + e.message);
+        }
+    });
+    
+    // Get checkerboard pattern
+    document.getElementById('get-checkerboard-btn')?.addEventListener('click', async () => {
+        try {
+            const response = await fetch(`${DART_DETECT_URL}/v1/stereo/checkerboard?cols=9&rows=6&square_mm=25`);
+            const data = await response.json();
+            
+            const modal = document.getElementById('checkerboard-modal');
+            const img = document.getElementById('checkerboard-image');
+            const download = document.getElementById('checkerboard-download');
+            
+            img.src = data.image;
+            download.href = data.image;
+            modal.style.display = 'block';
+        } catch (e) {
+            alert('Failed to get checkerboard: ' + e.message);
+        }
+    });
+    
+    // Capture calibration image
+    document.getElementById('capture-stereo-btn')?.addEventListener('click', async () => {
+        try {
+            // Get current camera images from calibrations
+            const calibrations = await fetch(`${DART_GAME_URL}/api/settings/calibrations`).then(r => r.json());
+            
+            // Capture from each camera
+            const cameras = [];
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const snapResp = await fetch(`${DART_SENSOR_URL}/cameras/${i}/snapshot`);
+                    const snapData = await snapResp.json();
+                    if (snapData.image) {
+                        cameras.push({
+                            camera_id: `cam${i}`,
+                            image: snapData.image
+                        });
+                    }
+                } catch (e) {
+                    console.warn(`Camera ${i} not available`);
+                }
+            }
+            
+            if (cameras.length === 0) {
+                alert('No cameras available. Make sure DartSensor is running.');
+                return;
+            }
+            
+            // Send to stereo capture endpoint
+            const response = await fetch(`${DART_DETECT_URL}/v1/stereo/capture`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cameras, board_id: 'default' })
+            });
+            const data = await response.json();
+            
+            // Update count
+            document.getElementById('capture-count').textContent = `${data.total_captures} images captured`;
+            
+            // Enable calibration button if enough captures
+            const calibBtn = document.getElementById('run-stereo-calibration-btn');
+            if (calibBtn) {
+                calibBtn.disabled = !data.ready_to_calibrate;
+            }
+            
+            // Show previews
+            const preview = document.getElementById('stereo-preview');
+            preview.style.display = 'block';
+            
+            for (const result of data.results) {
+                if (result.success && result.preview) {
+                    const img = document.getElementById(`stereo-preview-${result.camera_id}`);
+                    if (img) {
+                        img.src = `data:image/jpeg;base64,${result.preview}`;
+                    }
+                }
+            }
+            
+            // Show status
+            const failed = data.results.filter(r => !r.success);
+            if (failed.length > 0) {
+                alert(`Checkerboard not detected in: ${failed.map(r => r.camera_id).join(', ')}`);
+            }
+        } catch (e) {
+            alert('Capture failed: ' + e.message);
+        }
+    });
+    
+    // Run calibration
+    document.getElementById('run-stereo-calibration-btn')?.addEventListener('click', async () => {
+        if (!confirm('Run stereo calibration? This will process all captured images.')) return;
+        
+        try {
+            const response = await fetch(`${DART_DETECT_URL}/v1/stereo/calibrate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ board_id: 'default' })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                alert(`Calibration complete!\n\nCameras: ${data.cameras_calibrated.join(', ')}\nReprojection error: ${data.reprojection_error?.toFixed(3) || 'N/A'} px`);
+                
+                // Refresh status
+                initStereoCalibration();
+                
+                // Enable stereo mode
+                document.getElementById('triangulation-mode').value = 'stereo';
+                await fetch(`${DART_DETECT_URL}/v1/stereo/set-mode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'stereo' })
+                });
+            } else {
+                alert('Calibration failed: ' + (data.error || 'Unknown error'));
+            }
+        } catch (e) {
+            alert('Calibration failed: ' + e.message);
+        }
+    });
+    
+    // Clear captures
+    document.getElementById('clear-stereo-captures-btn')?.addEventListener('click', async () => {
+        if (!confirm('Clear all captured calibration images?')) return;
+        
+        try {
+            await fetch(`${DART_DETECT_URL}/v1/stereo/clear-captures`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ board_id: 'default' })
+            });
+            
+            document.getElementById('capture-count').textContent = '0 images captured';
+            document.getElementById('run-stereo-calibration-btn').disabled = true;
+            document.getElementById('stereo-preview').style.display = 'none';
+        } catch (e) {
+            alert('Failed to clear: ' + e.message);
+        }
+    });
+}
+
+
+
 function initAccuracy() {
+    initStereoCalibration();  // Initialize stereo calibration UI
     // Benchmark toggle handler
     const benchmarkToggle = document.getElementById('benchmark-enabled');
     if (benchmarkToggle) {
@@ -1141,6 +1457,92 @@ function initAccuracy() {
     
     // Refresh button
     document.getElementById('refresh-accuracy-btn')?.addEventListener('click', loadBenchmarkGames);
+    
+    // Re-run Benchmark button - replays all stored darts through current detection
+    document.getElementById('rerun-benchmark-btn')?.addEventListener('click', async () => {
+        const modal = document.getElementById('benchmark-results-modal');
+        const resultsDiv = document.getElementById('benchmark-results-content');
+        
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+        resultsDiv.innerHTML = '<div style="text-align: center; padding: 30px;"><span style="font-size: 2rem;">⏳</span><p style="color: var(--paper); margin-top: 10px;">Running benchmark replay...</p><p style="color: var(--paper-muted);">This may take a minute.</p></div>';
+        
+        try {
+            const response = await fetch(`${DART_DETECT_URL}/v1/benchmark/replay-all-darts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ board_id: 'default', limit: 200 })
+            });
+            const data = await response.json();
+            
+            if (data.error) {
+                resultsDiv.innerHTML = `<div style="color: #ff6b6b; padding: 20px;">Error: ${data.error}</div>`;
+                return;
+            }
+            
+            // Build results display
+            let html = `
+                <div style="display: flex; gap: 30px; flex-wrap: wrap; margin-bottom: 20px; padding: 15px; background: #0a0a0a; border-radius: 8px;">
+                    <div>
+                        <span style="color: var(--gold); font-size: 2rem; font-weight: bold;">${data.total_darts}</span>
+                        <span style="color: var(--paper-muted); display: block;">Total Darts</span>
+                    </div>
+                    <div>
+                        <span style="color: #4ecdc4; font-size: 2rem; font-weight: bold;">${data.consistency}</span>
+                        <span style="color: var(--paper-muted); display: block;">Consistency</span>
+                    </div>
+                    <div>
+                        <span style="color: var(--paper); font-size: 2rem; font-weight: bold;">${data.matches_original}/${data.total_darts}</span>
+                        <span style="color: var(--paper-muted); display: block;">Match Original</span>
+                    </div>
+                    <div>
+                        <span style="color: #ff6b6b; font-size: 2rem; font-weight: bold;">${data.had_corrections}</span>
+                        <span style="color: var(--paper-muted); display: block;">Had Corrections</span>
+                    </div>
+                    <div>
+                        <span style="color: #51cf66; font-size: 2rem; font-weight: bold;">${data.correction_fix_rate}</span>
+                        <span style="color: var(--paper-muted); display: block;">Corrections Fixed</span>
+                    </div>
+                </div>
+            `;
+            
+            // Show mismatches
+            const mismatches = data.results.filter(r => !r.matches_original || r.had_correction);
+            if (mismatches.length > 0) {
+                html += '<h3 style="color: var(--gold); margin: 15px 0 10px;">Differences & Corrections</h3>';
+                html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">';
+                html += '<tr style="background: #333;"><th style="padding: 8px; text-align: left;">Round</th><th>Dart</th><th>Original</th><th>Replay</th><th>Correction</th><th>Status</th></tr>';
+                
+                for (const r of mismatches) {
+                    const orig = r.original ? `${r.original.multiplier > 1 ? (r.original.multiplier === 3 ? 'T' : 'D') : 'S'}${r.original.segment}` : '-';
+                    const replay = r.new_result ? `${r.new_result.multiplier > 1 ? (r.new_result.multiplier === 3 ? 'T' : 'D') : 'S'}${r.new_result.segment}` : '-';
+                    const corr = r.corrected_to ? `${r.corrected_to.multiplier > 1 ? (r.corrected_to.multiplier === 3 ? 'T' : 'D') : 'S'}${r.corrected_to.segment}` : '-';
+                    const status = r.now_correct === true ? '✅' : (r.now_correct === false ? '❌' : (r.matches_original ? '=' : '≠'));
+                    const rowColor = r.now_correct === true ? 'rgba(81, 207, 102, 0.2)' : (r.now_correct === false ? 'rgba(255, 107, 107, 0.2)' : 'transparent');
+                    
+                    html += `<tr style="background: ${rowColor}; border-bottom: 1px solid #333;">
+                        <td style="padding: 6px 8px; color: var(--paper-muted);">${r.round}</td>
+                        <td style="padding: 6px 8px; color: var(--paper);">${r.dart}</td>
+                        <td style="padding: 6px 8px; color: var(--paper);">${orig}</td>
+                        <td style="padding: 6px 8px; color: ${r.matches_original ? 'var(--paper)' : '#ffd93d'};">${replay}</td>
+                        <td style="padding: 6px 8px; color: #ff6b6b;">${corr}</td>
+                        <td style="padding: 6px 8px; text-align: center;">${status}</td>
+                    </tr>`;
+                }
+                html += '</table>';
+            } else {
+                html += '<p style="color: #51cf66; padding: 15px;">All darts matched! No differences found.</p>';
+            }
+            
+            resultsDiv.innerHTML = html;
+            
+        } catch (e) {
+            console.error('Benchmark replay failed:', e);
+            resultsDiv.innerHTML = `<div style="color: #ff6b6b; padding: 20px;">Error: ${e.message}</div>`;
+        }
+    });
     
     // Clear benchmark data button
     document.getElementById('clear-benchmark-btn')?.addEventListener('click', async () => {
