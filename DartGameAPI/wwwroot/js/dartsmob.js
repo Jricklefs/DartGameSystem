@@ -320,9 +320,11 @@ function handleDartThrown(data) {
         speakDartScore(data.dart);
     }
     
-    // Check for winner
-    if (data.game?.isComplete && data.game?.winner) {
-        setTimeout(() => showWinnerModal(data.game.winner), 1000);
+    // Check for winner - game state Finished = 2
+    if (data.game?.state === 2 || data.game?.state === 'Finished') {
+        const winner = data.game.players?.find(p => p.id === data.game.winnerId);
+        console.log('🏆 Game finished via dart! Winner:', winner?.name);
+        setTimeout(() => showWinnerModal(winner?.name || 'Winner'), 1000);
     }
 }
 
@@ -350,9 +352,25 @@ function handleGameStarted(data) {
 }
 
 function handleGameEnded(data) {
-    console.log('Game ended:', data);
-    // Show winner modal instead of separate screen
-    showWinnerModal(data.winnerName || data.winner || 'Winner');
+    console.log('🏆 Game ended! Full data:', JSON.stringify(data));
+    
+    // Update game state
+    if (data.game) {
+        currentGame = data.game;
+        updateScoreboard();
+    }
+    
+    // Find winner name from various possible properties
+    const winnerName = data.winnerName || data.WinnerName || data.winner || 
+                       (data.players?.find(p => p.id === data.winnerId)?.name) ||
+                       'Winner';
+    
+    console.log('🏆 Showing winner modal for:', winnerName);
+    
+    // Small delay to let any dart animations finish
+    setTimeout(() => {
+        showWinnerModal(winnerName);
+    }, 500);
 }
 
 function handleTurnEnded(data) {
