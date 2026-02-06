@@ -44,7 +44,98 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# === Centralized Logging ===
+def log_to_api(level: str, category: str, message: str, data: dict = None, game_id: str = None):
+    """Send log entry to centralized DartGame API logging endpoint."""
+    try:
+        payload = {
+            "source": "DartSensor",
+            "level": level,
+            "category": category,
+            "message": message,
+            "data": json.dumps(data) if data else None,
+            "gameId": game_id
+        }
+        requests.post(f"{DARTGAME_API_URL}/api/logs", json=payload, timeout=0.5)
+    except Exception as e:
+        # Don't let logging failures break detection
+        pass
+
+
+# === Debug Image Logging ===
+DEBUG_IMAGE_DIR = Path(r"C:\Users\clawd\DartImages")
+
+def save_debug_images(event_name: str, frames: dict, dart_num: int = None, extra_info: str = None):
+    """Save camera frames for later analysis.
+    
+    Creates timestamped folders with images from each camera.
+    Example: C:/Users/clawd/DartImages/2026-02-04_20-18-43_dart1_single18/
+    """
+    try:
+        DEBUG_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+        folder_name = f"{timestamp}_{event_name}"
+        if dart_num is not None:
+            folder_name = f"{timestamp}_dart{dart_num}_{event_name}"
+        if extra_info:
+            folder_name += f"_{extra_info}"
+        
+        folder_path = DEBUG_IMAGE_DIR / folder_name
+        folder_path.mkdir(parents=True, exist_ok=True)
+        
+        for cam_id, frame in frames.items():
+            if frame is not None:
+                img_path = folder_path / f"{cam_id}.jpg"
+                cv2.imwrite(str(img_path), frame)
+        
+        logger.info(f"Saved debug images to {folder_path}")
+    except Exception as e:
+        logger.warning(f"Failed to save debug images: {e}")
+
+
 # === SignalR Hub Connection ===
+def capture_averaged_frames(cameras, num_frames: int = 3, delay_ms: int = 50) -> dict:
+    """
+    Capture multiple frames from each camera and average them.
+    
+    This reduces noise and helps YOLO get more consistent tip positions.
+    
+    Args:
+        cameras: List of Camera objects
+        num_frames: Number of frames to capture (default 3)
+        delay_ms: Delay between frames in ms (default 50ms)
+    
+    Returns:
+        Dict of camera_id -> averaged frame
+    """
+    import time
+    import numpy as np
+    
+    # Collect frames
+    frame_lists = {f"cam{cam.index}": [] for cam in cameras}
+    
+    for _ in range(num_frames):
+        for cam in cameras:
+            if cam.last_frame is not None:
+                frame_lists[f"cam{cam.index}"].append(cam.last_frame.copy())
+        time.sleep(delay_ms / 1000.0)
+    
+    # Average the frames
+    averaged_frames = {}
+    for cam_id, frames in frame_lists.items():
+        if len(frames) >= 2:
+            # Stack and average
+            stacked = np.stack(frames, axis=0).astype(np.float32)
+            avg = np.mean(stacked, axis=0).astype(np.uint8)
+            averaged_frames[cam_id] = avg
+        elif len(frames) == 1:
+            averaged_frames[cam_id] = frames[0]
+        # else: no frames for this camera
+    
+    return averaged_frames
+
+
 class HubConnection:
     """SignalR connection to DartGame API hub."""
     
@@ -173,6 +264,9 @@ class DartGameClient:
         frames: dict of {camera_id: numpy_frame}
         dart_number: which dart this is (1, 2, or 3)
         """
+        import time
+        pipeline_start = time.time()
+        
         try:
             images = []
             for cam_id, frame in frames.items():
@@ -182,23 +276,32 @@ class DartGameClient:
                         "image": self.encode_image(frame)
                     })
             
+            encode_time = (time.time() - pipeline_start) * 1000
+            
             payload = {
                 "boardId": self.board_id,
                 "dartNumber": dart_number,
                 "images": images
             }
             
-            print(f"[DART] Sending {len(images)} images to {self.base_url}/api/games/detect (dart {dart_number})")
+            print(f"[DART] Sending {len(images)} images to {self.base_url}/api/games/detect (dart {dart_number}) [encode: {encode_time:.0f}ms]")
             
+            api_start = time.time()
             resp = self.session.post(
                 f"{self.base_url}/api/games/detect",
                 json=payload,
                 timeout=5
             )
+            api_time = (time.time() - api_start) * 1000
+            total_time = (time.time() - pipeline_start) * 1000
             
             if resp.ok:
                 result = resp.json()
                 print(f"[DART] Response: {result}")
+                print(f"[TIMING] Dart {dart_number}: encode={encode_time:.0f}ms, API={api_time:.0f}ms, TOTAL={total_time:.0f}ms")
+                log_to_api("INFO", "Timing", f"Dart {dart_number} pipeline complete",
+                          {"dart_num": dart_number, "encode_ms": round(encode_time), 
+                           "api_ms": round(api_time), "total_ms": round(total_time)})
                 return result
             else:
                 print(f"[DART] Error: {resp.status_code} - {resp.text}")
@@ -251,6 +354,9 @@ class DartSensorUI:
         print(f"[INIT] DartSensor for board '{BOARD_ID}'")
         print(f"[INIT] API URL: {DARTGAME_API_URL}")
         
+        # Pre-warm the HTTP connection to avoid first-dart lag
+        self._prewarm_connections()
+        
         # SignalR connection for game events
         self.hub = HubConnection(
             DARTGAME_API_URL, 
@@ -287,6 +393,35 @@ class DartSensorUI:
             'cooldown_ms': 300,
         }
     
+    def _prewarm_connections(self):
+        """Pre-warm HTTP connections and APIs to avoid first-dart lag."""
+        import time
+        print("[PREWARM] Warming up connections...")
+        
+        # 1. Ping DartGame API (establishes HTTP keep-alive)
+        try:
+            start = time.time()
+            if self.api_client.health_check():
+                print(f"[PREWARM] DartGame API: OK ({(time.time()-start)*1000:.0f}ms)")
+            else:
+                print("[PREWARM] DartGame API: NOT RESPONDING")
+        except Exception as e:
+            print(f"[PREWARM] DartGame API error: {e}")
+        
+        # 2. Warmup DartDetect via DartGame
+        try:
+            import requests
+            start = time.time()
+            resp = requests.post(f"{DARTGAME_API_URL}/api/games/warmup", timeout=10)
+            if resp.ok:
+                print(f"[PREWARM] DartDetect warmup: OK ({(time.time()-start)*1000:.0f}ms)")
+            else:
+                print(f"[PREWARM] DartDetect warmup: {resp.status_code}")
+        except Exception as e:
+            print(f"[PREWARM] DartDetect warmup error: {e}")
+        
+        print("[PREWARM] Done")
+    
     def log(self, message: str):
         """Add message to log."""
         timestamp = time.strftime("%H:%M:%S")
@@ -303,16 +438,16 @@ class DartSensorUI:
         self.game_started = True
         self.detector.dart_count = 0
         
-        # Warmup the detection model immediately
+        # Warmup the detection model immediately (one-time)
         threading.Thread(
             target=self._warmup_detect_model,
             daemon=True
         ).start()
         
-        # Start periodic warmup to keep model hot
-        self._start_warmup_timer()
+        # Note: DartDetect now has its own continuous warmup (every 1.5s)
+        # No need for periodic warmup from DartSensor
         
-        # Capture baseline for all cameras
+        # Capture baseline for all cameras immediately
         for cam in self.cameras:
             if cam.last_frame is not None:
                 cam_id = f"cam{cam.index}"
@@ -715,6 +850,8 @@ class DartSensorUI:
                             settling_start = None
                             if self.detector.dart_count > 0 and not in_clearing_mode:
                                 self.log("Hand detected - entering clearing mode")
+                                log_to_api("INFO", "Clearing", "Hand detected - entering clearing mode", 
+                                          {"dart_count": self.detector.dart_count, "state": "HAND_IN_FRAME"})
                                 self._clearing_mode = True
                                 self._clearing_start = time.time()
                         
@@ -723,6 +860,8 @@ class DartSensorUI:
                             settling_start = None
                             if self.detector.dart_count > 0 and not in_clearing_mode:
                                 self.log("Clearing detected - entering clearing mode")
+                                log_to_api("INFO", "Clearing", "Clearing detected - entering clearing mode",
+                                          {"dart_count": self.detector.dart_count, "state": "CLEARING"})
                                 self._clearing_mode = True
                                 self._clearing_start = time.time()
                         
@@ -732,12 +871,16 @@ class DartSensorUI:
                             if in_clearing_mode:
                                 if not hasattr(self, '_clear_confirm_start'):
                                     self.log("Board appears clear - waiting 1s to confirm...")
+                                    log_to_api("INFO", "Clearing", "Board appears clear - waiting 1s to confirm")
                                     self._clear_confirm_start = time.time()
                                 else:
                                     elapsed = time.time() - self._clear_confirm_start
                                     if elapsed >= 1.0:
                                         # Confirmed cleared after 1 second
+                                        clearing_duration = time.time() - self._clearing_start if hasattr(self, '_clearing_start') else 0
                                         self.log("Board cleared confirmed!")
+                                        log_to_api("INFO", "Clearing", "Board cleared confirmed!", 
+                                                  {"clearing_duration_sec": round(clearing_duration, 2)})
                                         print("[CLEAR] ========== BOARD CLEARED (CONFIRMED) ==========")
                                         self.detector.dart_count = 0  # Reset dart count for next turn
                                         self.detector.clear_all_image1()
@@ -759,11 +902,21 @@ class DartSensorUI:
                             settling_start = None
                             if hasattr(self, '_clear_confirm_start'):
                                 self.log("Clear confirmation cancelled - darts detected")
+                                log_to_api("WARN", "Clearing", "Clear confirmation cancelled - darts still detected")
                                 del self._clear_confirm_start
                         
                         # New dart detection - ONLY if not in clearing mode
+                        # Also: if we already have 3 darts, ANY motion should trigger clearing mode
                         elif result.state == BoardState.NEW_DART and not in_clearing_mode:
-                            if settling_start is None:
+                            # After 3 darts, treat new motion as clearing (hand reaching in to pull)
+                            if self.detector.dart_count >= 3:
+                                self.log(f"Motion after 3 darts - entering clearing mode (blocking false Dart 4)")
+                                log_to_api("INFO", "Clearing", "Motion after 3 darts - auto-entering clearing mode",
+                                          {"dart_count": self.detector.dart_count})
+                                self._clearing_mode = True
+                                self._clearing_start = time.time()
+                                settling_start = None
+                            elif settling_start is None:
                                 settling_start = time.time()
                                 self.log(f"Motion detected, settling...")
                             elif (time.time() - settling_start) * 1000 >= self.detector.config.settling_ms:
@@ -774,10 +927,15 @@ class DartSensorUI:
                                 dart_num = self.detector.dart_count
                                 self.log(f"DART {dart_num} captured!")
                                 print(f"[DART] ========== DART {dart_num} DETECTED ==========")
+                                log_to_api("INFO", "Detection", f"Dart {dart_num} detected by DartSensor",
+                                          {"dart_num": dart_num, "settling_ms": self.detector.config.settling_ms})
+                                
+                                # Save debug images for later analysis
+                                # save_debug_images("detected", all_frames, dart_num)  # Disabled for now
                                 
                                 # Send to DartGame API with dart number for differential detection
-                                frames_to_send = {f"cam{cam.index}": cam.last_frame 
-                                                  for cam in self.cameras if cam.last_frame is not None}
+                                # Capture 3 frames over 100ms and average for more stable detection
+                                frames_to_send = capture_averaged_frames(self.cameras, num_frames=3, delay_ms=35)
                                 threading.Thread(
                                     target=self.api_client.send_dart_images,
                                     args=(frames_to_send, dart_num),
@@ -792,6 +950,8 @@ class DartSensorUI:
                             # If we've been clearing for more than 10 seconds, something's wrong - reset
                             if hasattr(self, '_clearing_start') and (time.time() - self._clearing_start) > 10.0:
                                 self.log("Clearing timeout - resetting")
+                                log_to_api("WARN", "Clearing", "Clearing timeout after 10s - force resetting",
+                                          {"clearing_duration_sec": 10.0})
                                 self.detector.dart_count = 0
                                 self.detector.clear_all_image1()
                                 del self._clearing_mode
