@@ -493,44 +493,115 @@ function showThrowPopup(dart) {
 }
 
 function showBustPopup(dart) {
-    const popup = document.getElementById('throw-popup');
-    if (!popup) return;
+    // Show the bust modal instead of just a popup
+    showBustModal();
+}
+
+function showBustModal() {
+    // Remove existing modal if any
+    document.getElementById('bust-modal')?.remove();
     
-    // Build the dart score text for top line
-    let prefix = '';
+    const turn = currentGame?.currentTurn;
+    const darts = turn?.darts || [];
+    const player = currentGame?.players?.[currentGame.currentPlayerIndex];
+    
+    // Build darts list HTML
+    let dartsHtml = '';
+    darts.forEach((d, i) => {
+        const dartText = formatDartShort(d);
+        dartsHtml += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #222; border-radius: 8px; margin-bottom: 8px;">
+                <span style="font-size: 1.3rem; color: var(--paper);">Dart ${i + 1}: <strong>${dartText}</strong> (${d.score})</span>
+                <button onclick="openCorrectionForDart(${i})" style="background: #d4af37; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">✏️ Correct</button>
+            </div>
+        `;
+    });
+    
+    const modal = document.createElement('div');
+    modal.id = 'bust-modal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.95); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+    `;
+    modal.innerHTML = `
+        <div style="background: linear-gradient(180deg, #2a1a1a 0%, #1a0a0a 100%); border: 3px solid #ff4444; border-radius: 16px; padding: 30px; max-width: 500px; width: 100%; text-align: center;">
+            <h1 style="color: #ff4444; font-size: 3rem; margin: 0 0 10px 0; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em; text-shadow: 0 0 20px rgba(255,68,68,0.5);">💥 BUSTED! 💥</h1>
+            <p style="color: var(--paper-muted); margin: 0 0 20px 0;">${player?.name || 'Player'} - Score reverted to ${turn?.scoreBeforeBust || player?.score}</p>
+            
+            <div style="margin-bottom: 20px; text-align: left;">
+                ${dartsHtml || '<p style="color: var(--paper-muted);">No darts recorded</p>'}
+            </div>
+            
+            <p style="color: #ffaa00; margin-bottom: 20px; font-size: 0.95rem;">
+                🎯 Remove your darts from the board.<br>
+                You can correct any dart before confirming.
+            </p>
+            
+            <button id="confirm-bust-btn" onclick="confirmBust()" style="background: linear-gradient(180deg, #ff5555 0%, #cc3333 100%); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-size: 1.3rem; font-weight: bold; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em;">
+                ✓ CONFIRM BUST
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function formatDartShort(dart) {
     const zone = dart?.zone?.toLowerCase() || '';
     const segment = dart?.segment || 0;
     
-    if (zone === 'double' || zone === 'double_ring') {
-        prefix = 'D';
-    } else if (zone === 'triple' || zone === 'triple_ring') {
-        prefix = 'T';
-    } else if (zone === 'inner_bull' || zone === 'bullseye') {
-        prefix = 'BULL';
-    } else if (zone === 'outer_bull') {
-        prefix = 'BULL';
-    } else if (zone === 'miss' || segment === 0) {
-        prefix = 'MISS';
-    } else {
-        prefix = 'S';
+    if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull') return 'BULL';
+    if (zone === 'outer_bull') return 'S-BULL';
+    if (zone === 'miss' || segment === 0) return 'MISS';
+    if (zone === 'double' || zone === 'double_ring') return `D${segment}`;
+    if (zone === 'triple' || zone === 'triple_ring') return `T${segment}`;
+    return `S${segment}`;
+}
+
+async function confirmBust() {
+    const btn = document.getElementById('confirm-bust-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Confirming...';
     }
     
-    const topText = (prefix === 'BULL' || prefix === 'MISS') ? prefix : `${prefix}${segment}`;
+    try {
+        // Call API to confirm the bust and end turn
+        const resp = await fetch(`/api/games/${currentGame.id}/confirm-bust`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (resp.ok) {
+            const data = await resp.json();
+            currentGame = data.game || data;
+            updateScoreboard();
+            updateCurrentTurn();
+        }
+    } catch (err) {
+        console.error('Error confirming bust:', err);
+    }
     
-    // Top line: Score, Bottom line: BUST
-    popup.querySelector('.throw-zone').textContent = topText;
-    popup.querySelector('.throw-value').textContent = 'BUST';
-    popup.querySelector('.throw-value').style.color = '#ff4444';
+    // Close modal
+    document.getElementById('bust-modal')?.remove();
+}
+
+function openCorrectionForDart(dartIndex) {
+    // Close bust modal temporarily
+    document.getElementById('bust-modal')?.remove();
     
-    popup.classList.remove('hidden', 'show');
-    void popup.offsetWidth;
-    popup.classList.add('show');
+    // Open the correction modal for this dart
+    correctionDartIndex = dartIndex;
+    correctionSegment = 20;
+    correctionMultiplier = 1;
     
-    setTimeout(() => {
-        popup.classList.add('hidden');
-        popup.classList.remove('show');
-        popup.querySelector('.throw-value').style.color = '';  // Reset color
-    }, 4000);  // 4 seconds for bust popup
+    const correctionModal = document.getElementById('correction-modal');
+    if (correctionModal) {
+        correctionModal.classList.remove('hidden');
+        updateCorrectionPreview();
+    }
 }
 
 function showWinnerModal(winner) {
