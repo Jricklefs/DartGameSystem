@@ -39,6 +39,17 @@ public class Turn
     public List<DartThrow> Darts { get; set; } = new();
     public int TurnScore => Darts.Sum(d => d.Score);
     public bool IsComplete => Darts.Count >= 3;
+    
+    /// <summary>
+    /// True if this turn resulted in a bust (score went negative, to 1, or 0 without double)
+    /// When true, UI should show "BUSTED" and allow correction before proceeding
+    /// </summary>
+    public bool IsBusted { get; set; } = false;
+    
+    /// <summary>
+    /// Score before bust (so we can revert if bust is corrected)
+    /// </summary>
+    public int ScoreBeforeBust { get; set; }
 }
 
 /// <summary>

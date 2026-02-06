@@ -148,11 +148,22 @@ public class GameService
                 if (newScore < 0 || newScore == 1 || (newScore == 0 && dart.Multiplier != 2))
                 {
                     _logger.LogInformation("BUST detected: newScore={New}, multiplier={Mult}", newScore, dart.Multiplier);
-                    // Bust - revert turn
+                    
+                    // Store score before bust for potential correction
+                    game.CurrentTurn.ScoreBeforeBust = player.Score;
+                    
+                    // Revert score to start of turn
                     player.Score += game.CurrentTurn.Darts.Take(game.CurrentTurn.Darts.Count - 1).Sum(d => d.Score);
-                    game.CurrentTurn.Darts.Clear();
-                    game.CurrentTurn.Darts.Add(dart); // Keep bust dart for record
-                    EndTurn(game);
+                    
+                    // Keep the bust dart in the turn record
+                    game.CurrentTurn.Darts.Add(dart);
+                    
+                    // Mark as busted - UI will show "BUSTED" screen and allow corrections
+                    // Turn will end when UI calls ConfirmBust or after correction
+                    game.CurrentTurn.IsBusted = true;
+                    
+                    // DON'T call EndTurn here - wait for UI confirmation
+                    _logger.LogInformation("Bust state set - waiting for UI confirmation or correction");
                 }
                 else
                 {
@@ -207,10 +218,16 @@ public class GameService
         game.CurrentPlayerIndex = (game.CurrentPlayerIndex + 1) % game.Players.Count;
         
         // Track rounds - a round completes when we wrap back to player 0
-        if (game.CurrentPlayerIndex == 0 && prevIndex != 0)
+        // For single player: prevIndex == 0, so we just check if we wrapped
+        if (game.CurrentPlayerIndex == 0)
         {
-            game.CurrentRound++;
-            _logger.LogInformation("Round {Round} starting", game.CurrentRound);
+            // Only increment if this isn't the very first turn (prevIndex would be 0 at game start)
+            // For multiplayer: wrap means everyone played. For single player: every turn is a round.
+            if (game.Players.Count == 1 || prevIndex != 0)
+            {
+                game.CurrentRound++;
+                _logger.LogInformation("Round {Round} starting", game.CurrentRound);
+            }
         }
         
         game.CurrentTurn = new Turn
@@ -235,6 +252,28 @@ public class GameService
         
         _logger.LogInformation("Manual next turn - now player {Index}: {Name}", 
             game.CurrentPlayerIndex, game.CurrentPlayer?.Name);
+    }
+
+    /// <summary>
+    /// Confirm bust and end turn (called from UI after player acknowledges bust)
+    /// </summary>
+    public void ConfirmBust(Game game)
+    {
+        if (game == null || game.CurrentTurn == null) return;
+        
+        if (!game.CurrentTurn.IsBusted)
+        {
+            _logger.LogWarning("ConfirmBust called but turn is not busted");
+            return;
+        }
+        
+        _logger.LogInformation("Bust confirmed by UI - ending turn");
+        
+        // Clear known darts (player pulled their darts)
+        game.KnownDarts.Clear();
+        
+        // Now end the turn
+        EndTurn(game);
     }
 
     /// <summary>
@@ -361,6 +400,13 @@ public class GameService
                     {
                         StartNextLeg(game);
                     }
+                }
+                
+                // Check if correction clears a bust state
+                if (game.CurrentTurn.IsBusted && player.Score > 1)
+                {
+                    game.CurrentTurn.IsBusted = false;
+                    _logger.LogInformation("Correction cleared bust state, score now {Score}", player.Score);
                 }
                 break;
         }

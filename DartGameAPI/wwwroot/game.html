@@ -197,6 +197,38 @@
             50% { opacity: 0.5; }
         }
 
+        /* Bust popup buttons */
+        .bust-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        .bust-actions.hidden {
+            display: none;
+        }
+        .bust-btn {
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            min-width: 120px;
+        }
+        .bust-correct {
+            background: #ffc107;
+            color: #000;
+        }
+        .bust-confirm {
+            background: #28a745;
+            color: #fff;
+        }
+        .bust-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
         /* Responsive - hide text on mobile */
         @media (max-width: 600px) {
             .settings-link .text {

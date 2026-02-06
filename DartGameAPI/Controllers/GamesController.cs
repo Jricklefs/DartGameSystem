@@ -501,9 +501,42 @@ public class GamesController : ControllerBase
         
         _gameService.NextTurn(game);
         
+        // Update benchmark context with new round/player
+        var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
+        _ = UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
+        
         // Notify connected clients that turn ended (this also sends Rebase to sensor via SignalR)
         await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
         _logger.LogInformation("Turn ended on board {BoardId}, sensor rebase triggered via SignalR", game.BoardId);
+        
+        return Ok(new { game = game });
+    }
+
+    /// <summary>
+    /// Confirm bust and end turn (called after player acknowledges bust)
+    /// </summary>
+    [HttpPost("{id}/confirm-bust")]
+    public async Task<ActionResult> ConfirmBust(string id)
+    {
+        var game = _gameService.GetGame(id);
+        if (game == null) return NotFound();
+        if (game.State != GameState.InProgress)
+            return BadRequest(new { error = "Game is not in progress" });
+        
+        if (game.CurrentTurn == null || !game.CurrentTurn.IsBusted)
+            return BadRequest(new { error = "Current turn is not busted" });
+        
+        var previousTurn = game.CurrentTurn;
+        
+        _gameService.ConfirmBust(game);
+        
+        // Update benchmark context with new round/player
+        var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
+        _ = UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
+        
+        // Notify connected clients that turn ended
+        await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+        _logger.LogInformation("Bust confirmed on board {BoardId}, turn ended", game.BoardId);
         
         return Ok(new { game = game });
     }
@@ -520,10 +553,18 @@ public class GamesController : ControllerBase
         
         _gameService.ClearBoard(boardId);
         
-        // Tell sensor to rebase via SignalR
+        // If turn was complete (3 darts), update context BEFORE signaling rebase
+        if (turnWasComplete && game != null)
+        {
+            // Update benchmark context with new round/player - MUST complete before rebase
+            var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
+            await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
+        }
+        
+        // Tell sensor to rebase via SignalR (AFTER context is updated)
         await _hubContext.SendRebase(boardId);
         
-        // If turn was complete (3 darts), notify clients that turn ended
+        // Notify clients
         if (turnWasComplete && game != null)
         {
             await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
@@ -668,7 +709,7 @@ public class GamesController : ControllerBase
         try
         {
             using var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(1);
+            client.Timeout = TimeSpan.FromSeconds(2);
             
             var payload = new
             {
@@ -678,17 +719,21 @@ public class GamesController : ControllerBase
                 player_name = playerName ?? "player"
             };
             
+            _logger.LogInformation("Setting benchmark context: board={BoardId}, game={GameId}, round={Round}, player={Player}", 
+                boardId, gameId, round, playerName ?? "player");
+            
             var content = new StringContent(
                 System.Text.Json.JsonSerializer.Serialize(payload),
                 System.Text.Encoding.UTF8,
                 "application/json"
             );
             
-            await client.PostAsync("http://localhost:8000/v1/benchmark/context", content);
+            var response = await client.PostAsync("http://127.0.0.1:8000/v1/benchmark/context", content);
+            _logger.LogInformation("Benchmark context response: {StatusCode}", response.StatusCode);
         }
-        catch
+        catch (Exception ex)
         {
-            // Silently ignore - benchmark context is optional
+            _logger.LogWarning("Failed to update benchmark context: {Error}", ex.Message);
         }
     }
 
