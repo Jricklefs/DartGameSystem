@@ -39,7 +39,7 @@ public class GameService
 
     #region Games
 
-    public Game CreateGame(string boardId, GameMode mode, List<string> playerNames, int bestOf = 5)
+    public Game CreateGame(string boardId, GameMode mode, List<string> playerNames, int bestOf = 5, bool requireDoubleOut = true)
     {
         var board = GetBoard(boardId);
         if (board == null)
@@ -54,6 +54,7 @@ public class GameService
             Mode = mode,
             State = GameState.InProgress,
             LegsToWin = legsToWin,
+            RequireDoubleOut = requireDoubleOut,
             CurrentLeg = 1,
             Players = playerNames.Select(name => new Player
             {
@@ -144,8 +145,10 @@ public class GameService
                 _logger.LogInformation("X01 scoring: player={Name}, current={Current}, dart={Dart}, newScore={New}, multiplier={Mult}",
                     player.Name, player.Score, dart.Score, newScore, dart.Multiplier);
                 
-                // Bust check: negative, exactly 1 (can't checkout), or 0 without double
-                if (newScore < 0 || newScore == 1 || (newScore == 0 && dart.Multiplier != 2))
+                // Bust check: negative, exactly 1 (can't checkout), or 0 without double (if RequireDoubleOut)
+                bool isBust = newScore < 0 || newScore == 1 || 
+                              (newScore == 0 && game.RequireDoubleOut && dart.Multiplier != 2);
+                if (isBust)
                 {
                     _logger.LogInformation("BUST detected: newScore={New}, multiplier={Mult}", newScore, dart.Multiplier);
                     

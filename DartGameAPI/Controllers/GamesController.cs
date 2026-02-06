@@ -432,7 +432,7 @@ public class GamesController : ControllerBase
             }
             
             // 5. All checks passed - create the game
-            var game = _gameService.CreateGame(boardId, request.Mode, request.PlayerNames, request.BestOf);
+            var game = _gameService.CreateGame(boardId, request.Mode, request.PlayerNames, request.BestOf, request.RequireDoubleOut);
             
             // 6. Notify connected clients AND sensor via SignalR
             await _hubContext.SendGameStarted(boardId, game);
@@ -811,6 +811,7 @@ public class CreateGameRequest
     public GameMode Mode { get; set; } = GameMode.Practice;
     public List<string> PlayerNames { get; set; } = new();
     public int BestOf { get; set; } = 5;
+    public bool RequireDoubleOut { get; set; } = true;
 }
 
 public class ManualThrowRequest

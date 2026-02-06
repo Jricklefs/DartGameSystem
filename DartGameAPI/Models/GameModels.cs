@@ -104,6 +104,9 @@ public class Game
     
     // Legs (best of N)
     public int LegsToWin { get; set; } = 3;  // Best of 5 = first to 3
+    
+    // Checkout rules
+    public bool RequireDoubleOut { get; set; } = true;  // Must finish on a double
     public int CurrentLeg { get; set; } = 1;
     public string? LegWinnerId { get; set; }  // Who won the current/last leg
     
