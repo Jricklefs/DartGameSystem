@@ -247,6 +247,7 @@ async function selectCamera(camIndex) {
     // Show stored calibration if available (use overlayImagePath now)
     if (stored && stored.overlayImagePath) {
         img.src = stored.overlayImagePath;
+        img.style.display = 'block';
         img.classList.add('loaded');
         loading.classList.add('hidden');
         offline.classList.add('hidden');
@@ -267,7 +268,7 @@ async function selectCamera(camIndex) {
     } else {
         // No stored calibration - show placeholder
         img.classList.remove('loaded');
-        baseImg.style.display = 'none';
+        img.style.display = 'none';
         lastCameraSnapshot = null;
         loading.classList.add('hidden');
         offline.classList.remove('hidden');

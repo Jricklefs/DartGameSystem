@@ -1298,6 +1298,7 @@ html, body {
     height: 100%;
     object-fit: contain;
     z-index: 1;
+    display: block;
 }
 
 .camera-preview-full .calibration-canvas {
@@ -1339,6 +1340,8 @@ html, body {
     justify-content: center;
     font-size: 1.2rem;
     color: #888;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.8);
 }
 
 .main-cam-loading.hidden,
