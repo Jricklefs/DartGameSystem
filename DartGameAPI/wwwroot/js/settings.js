@@ -1875,14 +1875,60 @@ async function runAutoTune() {
     const btn = document.getElementById('auto-tune-btn');
     if (btn) {
         btn.disabled = true;
-        btn.textContent = '⏳ Tuning...';
+        btn.textContent = '⏳ Starting...';
     }
+    
+    // Create progress modal
+    const progressModal = document.createElement('div');
+    progressModal.id = 'autotune-progress-modal';
+    progressModal.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.9); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+    `;
+    progressModal.innerHTML = `
+        <div style="background: #1a1a1a; border: 2px solid var(--gold); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%;">
+            <h2 style="color: var(--gold); margin: 0 0 20px 0;">🔧 Auto-Tune Running</h2>
+            <div style="margin-bottom: 15px;">
+                <div style="color: var(--paper-muted); margin-bottom: 5px;" id="autotune-status">Initializing...</div>
+                <div style="background: #333; border-radius: 8px; height: 24px; overflow: hidden;">
+                    <div id="autotune-progress-bar" style="background: linear-gradient(90deg, #d4af37, #f4cf67); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <div style="color: var(--paper-muted); margin-top: 5px; font-size: 0.9em;" id="autotune-detail">Loading benchmark data...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(progressModal);
+    
+    // Start polling for progress
+    let pollInterval = setInterval(async () => {
+        try {
+            const progResp = await fetch(`${DART_DETECT_URL}/v1/benchmark/auto-tune/progress`);
+            const prog = await progResp.json();
+            
+            if (prog.running) {
+                const dartPct = prog.total_darts > 0 ? (prog.current_dart / prog.total_darts * 100) : 0;
+                const configPct = prog.total_configs > 0 ? ((prog.current_config - 1) / prog.total_configs * 100) : 0;
+                const totalPct = configPct + (dartPct / prog.total_configs);
+                
+                document.getElementById('autotune-progress-bar').style.width = totalPct + '%';
+                document.getElementById('autotune-status').textContent = prog.status || 'Processing...';
+                document.getElementById('autotune-detail').textContent = 
+                    `Config ${prog.current_config}/${prog.total_configs} • Dart ${prog.current_dart}/${prog.total_darts}`;
+            }
+        } catch (e) {
+            // Ignore polling errors
+        }
+    }, 500);
     
     try {
         const resp = await fetch(`${DART_DETECT_URL}/v1/benchmark/auto-tune`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
+        
+        clearInterval(pollInterval);
+        progressModal.remove();
         
         const data = await resp.json();
         
@@ -1895,6 +1941,8 @@ async function runAutoTune() {
         showAutoTuneResults(data);
         
     } catch (err) {
+        clearInterval(pollInterval);
+        progressModal.remove();
         console.error('Auto-tune failed:', err);
         alert('Auto-tune failed: ' + err.message);
     } finally {
