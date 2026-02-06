@@ -785,7 +785,7 @@ async function refreshCameraWithOverlay() {
     
     try {
         // Get fresh frame from camera
-        const snapResp = await fetch(`${DARTDETECT_URL}/v1/cameras/cam${camIndex}/snapshot`);
+        const snapResp = await fetch(`${DART_DETECT_URL}/v1/cameras/cam${camIndex}/snapshot`);
         if (!snapResp.ok) throw new Error('Failed to get camera snapshot');
         
         const snapData = await snapResp.json();
@@ -1677,7 +1677,7 @@ const MODEL_DESCRIPTIONS = {
 
 async function loadCurrentModel() {
     try {
-        const resp = await fetch(`${DARTDETECT_URL}/v1/models`);
+        const resp = await fetch(`${DART_DETECT_URL}/v1/models`);
         if (resp.ok) {
             const data = await resp.json();
             const select = document.getElementById('detection-model-select');
@@ -1716,7 +1716,7 @@ async function applyDetectionModel() {
     }
     
     try {
-        const resp = await fetch(`${DARTDETECT_URL}/v1/models/select`, {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/models/select`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ model: modelKey })
@@ -1786,7 +1786,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadConfidenceThreshold() {
     try {
-        const resp = await fetch(`${DARTDETECT_URL}/v1/settings/threshold`);
+        const resp = await fetch(`${DART_DETECT_URL}/v1/settings/threshold`);
         if (resp.ok) {
             const data = await resp.json();
             const slider = document.getElementById('confidence-threshold-slider');
@@ -1815,7 +1815,7 @@ async function applyConfidenceThreshold() {
     if (btn) btn.disabled = true;
     
     try {
-        const resp = await fetch(`${DARTDETECT_URL}/v1/settings/threshold`, {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/settings/threshold`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ threshold: threshold })
@@ -1879,7 +1879,7 @@ async function runAutoTune() {
     }
     
     try {
-        const resp = await fetch(`${DARTDETECT_URL}/v1/benchmark/auto-tune`, {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/benchmark/auto-tune`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -2007,7 +2007,7 @@ function showAutoTuneResults(data) {
 
 async function applyAutoTuneConfig(config) {
     try {
-        const resp = await fetch(`${DARTDETECT_URL}/v1/benchmark/apply-config`, {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/benchmark/apply-config`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(config)
