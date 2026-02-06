@@ -39,6 +39,7 @@ public class DartDetectClient
     /// </summary>
     public async Task<DetectResponse?> DetectAsync(List<CameraImageDto> images, string boardId = "default", int dartNumber = 1, CancellationToken ct = default)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             // Get calibration data for each camera from DB
@@ -82,6 +83,9 @@ public class DartDetectClient
                 });
             }
             
+            _logger.LogInformation("[TIMING] DB calibration fetch: {ElapsedMs}ms", sw.ElapsedMilliseconds);
+            var httpStart = sw.ElapsedMilliseconds;
+            
             var payload = new { 
                 cameras = camerasWithCalibration,
                 board_id = boardId,
@@ -96,6 +100,8 @@ public class DartDetectClient
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<DetectResponse>(cancellationToken: ct);
+                var httpTime = sw.ElapsedMilliseconds - httpStart;
+                _logger.LogInformation("[TIMING] HTTP call to DartDetect: {HttpMs}ms, TOTAL: {TotalMs}ms", httpTime, sw.ElapsedMilliseconds);
                 _logger.LogInformation("[DETECT] DartDetect returned {Count} tips", result?.Tips?.Count ?? 0);
                 return result;
             }
