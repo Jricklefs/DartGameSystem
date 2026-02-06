@@ -45,6 +45,10 @@ public class GamesController : ControllerBase
     [HttpPost("detect")]
     public async Task<ActionResult> Detect([FromBody] DetectRequest request)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var timingLog = new System.Text.StringBuilder();
+        timingLog.AppendLine($"[{DateTime.Now:HH:mm:ss.fff}] Detect started");
+        
         _logger.LogDebug("Received detect request with {Count} images from board {BoardId}", 
             request.Images?.Count ?? 0, request.BoardId);
 
@@ -75,7 +79,9 @@ public class GamesController : ControllerBase
         var player = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
         _ = UpdateBenchmarkContext(boardId, game.Id, game.CurrentRound, player?.Name);
 
+        timingLog.AppendLine($"[{sw.ElapsedMilliseconds}ms] Before DartDetect call");
         var detectResult = await _dartDetectClient.DetectAsync(images, boardId, dartNumber);
+        timingLog.AppendLine($"[{sw.ElapsedMilliseconds}ms] After DartDetect call");
         
         if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
         {
@@ -121,6 +127,9 @@ public class GamesController : ControllerBase
             await _hubContext.SendGameEnded(game.BoardId, game);
         }
 
+        timingLog.AppendLine($"[{sw.ElapsedMilliseconds}ms] Returning response");
+        System.IO.File.AppendAllText(@"C:\Users\clawd\detect_timing.log", timingLog.ToString() + "\n");
+        
         return Ok(new { 
             message = "Dart detected", 
             darts = new[] { new { dart.Zone, dart.Score, dart.Segment, dart.Multiplier } }

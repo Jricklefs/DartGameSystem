@@ -31,6 +31,28 @@ public class DartDetectClient
         _baseUrl = config["DartDetectApi:BaseUrl"] ?? "http://localhost:8000";
         _httpClient.BaseAddress = new Uri(_baseUrl);
         _httpClient.Timeout = TimeSpan.FromSeconds(10);
+        
+        // Start background keep-alive to prevent connection pool timeout
+        StartKeepAlive();
+    }
+    
+    private System.Threading.Timer? _keepAliveTimer;
+    
+    private void StartKeepAlive()
+    {
+        _keepAliveTimer = new System.Threading.Timer(async _ =>
+        {
+            try
+            {
+                // Ping DartDetect health endpoint every 30 seconds
+                var resp = await _httpClient.GetAsync("/health");
+                _logger.LogDebug("[KEEPALIVE] DartDetect ping: {Status}", resp.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("[KEEPALIVE] DartDetect ping failed: {Error}", ex.Message);
+            }
+        }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30));
     }
 
     /// <summary>
