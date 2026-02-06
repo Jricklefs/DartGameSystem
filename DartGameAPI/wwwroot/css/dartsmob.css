@@ -619,7 +619,7 @@ html, body {
 .modal-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.97);
 }
 
 .modal-content {

@@ -1938,7 +1938,15 @@ function showAutoTuneResults(data) {
     }
     
     modal.innerHTML = `
-        <div style="background: #1a1a1a; border: 2px solid var(--gold); border-radius: 12px; 
+        <div style="display: flex; flex-direction: column; max-height: 90vh; max-width: 900px; width: 100%;">
+            <!-- Fixed header with close button -->
+            <div style="background: #1a1a1a; border: 2px solid var(--gold); border-bottom: none; border-radius: 12px 12px 0 0; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="color: var(--gold); margin: 0;">Game Details</h2>
+                <button onclick="this.closest('.benchmark-modal').remove()" 
+                        style="background: #333; border: 1px solid #555; color: var(--paper); font-size: 1.2rem; cursor: pointer; padding: 5px 12px; border-radius: 4px;">✕ Close</button>
+            </div>
+            <!-- Scrollable content -->
+            <div style="background: #1a1a1a; border: 2px solid var(--gold); border-radius: 12px; 
                     max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="color: var(--gold); margin: 0;">🔧 Auto-Tune Results</h2>
