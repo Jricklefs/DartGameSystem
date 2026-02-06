@@ -1572,3 +1572,119 @@ function initAccuracy() {
         }, 100);
     });
 }
+
+
+// ==================== MODEL SELECTION ====================
+
+const MODEL_DESCRIPTIONS = {
+    "default": "Balanced speed/accuracy, INT8 optimized",
+    "best": "Newer architecture, potentially better accuracy",
+    "rect": "Non-square input, higher precision",
+    "square": "Square input variant"
+};
+
+async function loadCurrentModel() {
+    try {
+        const resp = await fetch(`${DARTDETECT_URL}/v1/models`);
+        if (resp.ok) {
+            const data = await resp.json();
+            const select = document.getElementById('detection-model-select');
+            const status = document.getElementById('model-status');
+            const desc = document.getElementById('model-description');
+            
+            if (select) {
+                select.value = data.active || 'default';
+            }
+            if (status) {
+                status.textContent = `Currently active: ${data.active || 'default'}`;
+                status.style.color = 'var(--gold)';
+            }
+            if (desc) {
+                desc.textContent = MODEL_DESCRIPTIONS[data.active] || '';
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load current model:', err);
+    }
+}
+
+async function applyDetectionModel() {
+    const select = document.getElementById('detection-model-select');
+    const status = document.getElementById('model-status');
+    const btn = document.getElementById('apply-model-btn');
+    
+    if (!select) return;
+    
+    const modelKey = select.value;
+    
+    if (btn) btn.disabled = true;
+    if (status) {
+        status.textContent = 'Switching model...';
+        status.style.color = 'var(--paper-muted)';
+    }
+    
+    try {
+        const resp = await fetch(`${DARTDETECT_URL}/v1/models/select`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: modelKey })
+        });
+        
+        const data = await resp.json();
+        
+        if (resp.ok && data.success) {
+            if (status) {
+                status.textContent = `✓ Switched to ${modelKey}`;
+                status.style.color = '#4ade80';
+            }
+            // Update description
+            const desc = document.getElementById('model-description');
+            if (desc) {
+                desc.textContent = MODEL_DESCRIPTIONS[modelKey] || '';
+            }
+        } else {
+            if (status) {
+                status.textContent = `✗ ${data.error || 'Failed to switch model'}`;
+                status.style.color = '#ff6b6b';
+            }
+        }
+    } catch (err) {
+        console.error('Failed to apply model:', err);
+        if (status) {
+            status.textContent = '✗ Connection error';
+            status.style.color = '#ff6b6b';
+        }
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+// Update description when selection changes
+function onModelSelectChange() {
+    const select = document.getElementById('detection-model-select');
+    const desc = document.getElementById('model-description');
+    if (select && desc) {
+        desc.textContent = MODEL_DESCRIPTIONS[select.value] || '';
+    }
+}
+
+// Wire up model selection events
+document.addEventListener('DOMContentLoaded', () => {
+    const applyBtn = document.getElementById('apply-model-btn');
+    const modelSelect = document.getElementById('detection-model-select');
+    
+    if (applyBtn) {
+        applyBtn.addEventListener('click', applyDetectionModel);
+    }
+    if (modelSelect) {
+        modelSelect.addEventListener('change', onModelSelectChange);
+    }
+    
+    // Load current model when accuracy tab is shown
+    const accuracyTab = document.querySelector('[data-tab="accuracy"]');
+    if (accuracyTab) {
+        accuracyTab.addEventListener('click', () => {
+            setTimeout(loadCurrentModel, 100);
+        });
+    }
+});
