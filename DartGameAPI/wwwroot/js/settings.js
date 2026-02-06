@@ -1906,6 +1906,12 @@ async function runAutoTune() {
 }
 
 function showAutoTuneResults(data) {
+    // Check if we have valid results
+    if (!data.best_config || !data.best_result) {
+        alert(`Auto-tune completed but found no optimal config.\n\nDarts analyzed: ${data.darts_analyzed}\nCorrections in data: ${data.corrections_in_data}\n\nTry playing more games with benchmark enabled and making corrections when detection is wrong.`);
+        return;
+    }
+    
     // Create modal
     const modal = document.createElement('div');
     modal.className = 'benchmark-modal';
