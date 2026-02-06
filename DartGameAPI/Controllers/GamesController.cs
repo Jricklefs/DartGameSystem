@@ -811,7 +811,7 @@ public class CreateGameRequest
     public GameMode Mode { get; set; } = GameMode.Practice;
     public List<string> PlayerNames { get; set; } = new();
     public int BestOf { get; set; } = 5;
-    public bool RequireDoubleOut { get; set; } = true;
+    public bool RequireDoubleOut { get; set; } = false;
 }
 
 public class ManualThrowRequest

@@ -607,6 +607,7 @@ async function startGame() {
                 mode: gameMode,
                 playerNames: players,
                 bestOf: selectedBestOf,
+                requireDoubleOut: rules['double-out'] ?? false,
                 rules: rules
             })
         });
@@ -729,7 +730,7 @@ const gameConfig = {
         defaultVariant: '501',
         rules: [
             { id: 'double-in', label: 'Double In', default: false },
-            { id: 'double-out', label: 'Double Out', default: true }
+            { id: 'double-out', label: 'Double Out', default: false }
         ]
     },
     cricket: {

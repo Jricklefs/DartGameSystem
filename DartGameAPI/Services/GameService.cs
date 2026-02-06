@@ -39,7 +39,7 @@ public class GameService
 
     #region Games
 
-    public Game CreateGame(string boardId, GameMode mode, List<string> playerNames, int bestOf = 5, bool requireDoubleOut = true)
+    public Game CreateGame(string boardId, GameMode mode, List<string> playerNames, int bestOf = 5, bool requireDoubleOut = false)
     {
         var board = GetBoard(boardId);
         if (board == null)
