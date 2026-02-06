@@ -763,9 +763,100 @@ function stopLiveOverlay() {
     canvas.style.display = 'none';
 }
 
+
+// ==================== REFRESH CAMERA ====================
+async function refreshCameraWithOverlay() {
+    const camIndex = selectedCamera;
+    const img = document.getElementById('camera-base-img');
+    const canvas = document.getElementById('calibration-canvas');
+    const ctx = canvas.getContext('2d');
+    const loading = document.getElementById('main-camera-loading');
+    const offline = document.getElementById('main-camera-offline');
+    const refreshBtn = document.getElementById('refresh-btn');
+    
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = '⏳ Loading...';
+    }
+    
+    loading.classList.remove('hidden');
+    offline.classList.add('hidden');
+    img.style.display = 'none';
+    
+    try {
+        // Get fresh frame from camera
+        const snapResp = await fetch(`${DARTDETECT_URL}/v1/cameras/cam${camIndex}/snapshot`);
+        if (!snapResp.ok) throw new Error('Failed to get camera snapshot');
+        
+        const snapData = await snapResp.json();
+        const frameBase64 = snapData.image;
+        
+        // Load the frame
+        const frameImg = new Image();
+        frameImg.onload = async () => {
+            // Set canvas size to match image
+            canvas.width = frameImg.naturalWidth;
+            canvas.height = frameImg.naturalHeight;
+            
+            // Draw the camera frame
+            ctx.drawImage(frameImg, 0, 0);
+            
+            // Now draw calibration overlay on top if we have one
+            const stored = storedCalibrations[`cam${camIndex}`];
+            if (stored && stored.overlayImagePath) {
+                const overlayImg = new Image();
+                overlayImg.onload = () => {
+                    // Draw overlay at 70% opacity
+                    ctx.globalAlpha = 0.7;
+                    ctx.drawImage(overlayImg, 0, 0, canvas.width, canvas.height);
+                    ctx.globalAlpha = 1.0;
+                    
+                    loading.classList.add('hidden');
+                    if (refreshBtn) {
+                        refreshBtn.disabled = false;
+                        refreshBtn.textContent = '🔄 Refresh';
+                    }
+                };
+                overlayImg.onerror = () => {
+                    console.warn('Failed to load overlay image');
+                    loading.classList.add('hidden');
+                    if (refreshBtn) {
+                        refreshBtn.disabled = false;
+                        refreshBtn.textContent = '🔄 Refresh';
+                    }
+                };
+                overlayImg.src = stored.overlayImagePath;
+            } else {
+                // No calibration, just show the frame
+                loading.classList.add('hidden');
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = '🔄 Refresh';
+                }
+            }
+        };
+        
+        frameImg.onerror = () => {
+            throw new Error('Failed to load frame image');
+        };
+        
+        frameImg.src = `data:image/jpeg;base64,${frameBase64}`;
+        
+    } catch (err) {
+        console.error('Refresh failed:', err);
+        loading.classList.add('hidden');
+        offline.classList.remove('hidden');
+        offline.querySelector('span').textContent = '❌ ' + err.message;
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = '🔄 Refresh';
+        }
+    }
+}
+
 function initEventListeners() {
     // Live button - show live camera feed with calibration overlay
-    document.getElementById('live-btn')?.addEventListener('click', toggleLiveOverlay);
+    document.getElementById('refresh-btn')?.addEventListener('click', refreshCameraWithOverlay);
     
     // Refresh button
     document.getElementById('refresh-btn')?.addEventListener('click', refreshCurrentCamera);
