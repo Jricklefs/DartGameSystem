@@ -657,6 +657,56 @@ function setStatus(id, online, text) {
     el.className = `status-value ${online ? 'status-online' : 'status-offline'}`;
 }
 
+
+
+// ============================================================================
+// Rotate 20 - Shift segment alignment by 1 position
+// ============================================================================
+
+async function rotate20() {
+    const camId = `cam${selectedCamera}`;
+    const stored = storedCalibrations[camId];
+    
+    if (!stored || !stored.calibrationData) {
+        alert('No calibration data to rotate. Calibrate first.');
+        return;
+    }
+    
+    const btn = document.getElementById('rotate20-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Rotating...';
+    
+    try {
+        // Call API to rotate the 20 position by 1 segment (18 degrees)
+        const res = await fetch(`${DART_DETECT_URL}/v1/calibrations/${camId}/rotate20`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            console.log('Rotate 20 result:', data);
+            
+            // Reload calibrations and refresh view
+            await loadStoredCalibrations();
+            await selectCamera(selectedCamera);
+            
+            // Show new angle
+            const qualityLabel = document.getElementById('cam-quality-label');
+            qualityLabel.textContent = `✅ Rotated! 20 now at ${Math.round(data.twentyAngle || 0)}°`;
+        } else {
+            const err = await res.json();
+            alert(`Rotate failed: ${err.error || err.detail || 'Unknown error'}`);
+        }
+    } catch (e) {
+        console.error('Rotate 20 error:', e);
+        alert(`Rotate failed: ${e.message}`);
+    }
+    
+    btn.disabled = false;
+    btn.textContent = '🔄 Rotate 20';
+}
+
 // ============================================================================
 // Event Listeners
 // ============================================================================
