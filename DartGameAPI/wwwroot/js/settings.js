@@ -1752,7 +1752,16 @@ async function loadCalibrationModel() {
             const select = document.getElementById('calibration-model-select');
             const status = document.getElementById('cal-model-status');
             
-            if (select) {
+            // Populate dropdown options
+            if (select && data.models) {
+                select.innerHTML = '';
+                for (const [key, info] of Object.entries(data.models)) {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = info.name || key;
+                    opt.title = info.description || '';
+                    select.appendChild(opt);
+                }
                 select.value = data.active || 'default';
             }
             if (status) {
