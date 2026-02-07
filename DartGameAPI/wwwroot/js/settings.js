@@ -1673,7 +1673,11 @@ const MODEL_DESCRIPTIONS = {
     "default": "Balanced speed/accuracy, INT8 optimized",
     "best": "Newer architecture, potentially better accuracy",
     "rect": "Non-square input, higher precision",
-    "square": "Square input variant"
+    "square": "Square input variant",
+    "384x640": "Smaller rect input, faster inference",
+    "552x960": "Medium rect input, balanced",
+    "736x1280": "Large rect input, highest resolution",
+    "11m": "Larger 11M parameter model for better accuracy"
 };
 
 async function loadCurrentModel() {
