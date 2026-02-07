@@ -1876,51 +1876,24 @@ async function runAutoTune() {
     const btn = document.getElementById('auto-tune-btn');
     if (btn) {
         btn.disabled = true;
-        btn.textContent = '⏳ Starting...';
+        btn.textContent = '⏳ Analyzing...';
     }
     
-    // Create progress modal
-    const progressModal = document.createElement('div');
-    progressModal.id = 'autotune-progress-modal';
-    progressModal.style.cssText = `
+    // Simple loading overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'autotune-overlay';
+    overlay.style.cssText = `
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.9); z-index: 1000;
+        background: rgba(0,0,0,0.8); z-index: 1000;
         display: flex; align-items: center; justify-content: center;
+        flex-direction: column;
     `;
-    progressModal.innerHTML = `
-        <div style="background: #1a1a1a; border: 2px solid var(--gold); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%;">
-            <h2 style="color: var(--gold); margin: 0 0 20px 0;">🔧 Auto-Tune Running</h2>
-            <div style="margin-bottom: 15px;">
-                <div style="color: var(--paper-muted); margin-bottom: 5px;" id="autotune-status">Initializing...</div>
-                <div style="background: #333; border-radius: 8px; height: 24px; overflow: hidden;">
-                    <div id="autotune-progress-bar" style="background: linear-gradient(90deg, #d4af37, #f4cf67); height: 100%; width: 0%; transition: width 0.3s;"></div>
-                </div>
-                <div style="color: var(--paper-muted); margin-top: 5px; font-size: 0.9em;" id="autotune-detail">Loading benchmark data...</div>
-            </div>
-        </div>
+    overlay.innerHTML = `
+        <div style="color: var(--gold); font-size: 3rem; margin-bottom: 20px;">🔧</div>
+        <div style="color: var(--paper); font-size: 1.2rem;">Analyzing benchmark data...</div>
+        <div style="color: var(--paper-muted); margin-top: 10px;">This may take a few seconds</div>
     `;
-    document.body.appendChild(progressModal);
-    
-    // Start polling for progress
-    let pollInterval = setInterval(async () => {
-        try {
-            const progResp = await fetch(`${DART_DETECT_URL}/v1/benchmark/auto-tune/progress`);
-            const prog = await progResp.json();
-            
-            if (prog.running) {
-                const dartPct = prog.total_darts > 0 ? (prog.current_dart / prog.total_darts * 100) : 0;
-                const configPct = prog.total_configs > 0 ? ((prog.current_config - 1) / prog.total_configs * 100) : 0;
-                const totalPct = configPct + (dartPct / prog.total_configs);
-                
-                document.getElementById('autotune-progress-bar').style.width = totalPct + '%';
-                document.getElementById('autotune-status').textContent = prog.status || 'Processing...';
-                document.getElementById('autotune-detail').textContent = 
-                    `Config ${prog.current_config}/${prog.total_configs} • Dart ${prog.current_dart}/${prog.total_darts}`;
-            }
-        } catch (e) {
-            // Ignore polling errors
-        }
-    }, 500);
+    document.body.appendChild(overlay);
     
     try {
         const resp = await fetch(`${DART_DETECT_URL}/v1/benchmark/auto-tune`, {
@@ -1928,8 +1901,7 @@ async function runAutoTune() {
             headers: { 'Content-Type': 'application/json' }
         });
         
-        clearInterval(pollInterval);
-        progressModal.remove();
+        overlay.remove();
         
         const data = await resp.json();
         
@@ -1942,8 +1914,7 @@ async function runAutoTune() {
         showAutoTuneResults(data);
         
     } catch (err) {
-        clearInterval(pollInterval);
-        progressModal.remove();
+        overlay.remove();
         console.error('Auto-tune failed:', err);
         alert('Auto-tune failed: ' + err.message);
     } finally {
@@ -1954,14 +1925,9 @@ async function runAutoTune() {
     }
 }
 
+
+
 function showAutoTuneResults(data) {
-    // Check if we have valid results
-    if (!data.best_config || !data.best_result) {
-        alert(`Auto-tune completed but found no optimal config.\n\nDarts analyzed: ${data.darts_analyzed}\nCorrections in data: ${data.corrections_in_data}\n\nTry playing more games with benchmark enabled and making corrections when detection is wrong.`);
-        return;
-    }
-    
-    // Create modal
     const modal = document.createElement('div');
     modal.className = 'benchmark-modal';
     modal.style.cssText = `
@@ -1971,94 +1937,124 @@ function showAutoTuneResults(data) {
         padding: 20px;
     `;
     
-    const best = data.best_result;
-    const current = data.current_config;
+    const summary = data.summary || {};
+    const analysis = data.analysis || {};
+    const recommendations = data.recommendations || [];
+    const nextSteps = data.next_steps || [];
     
-    let resultsHtml = '';
-    for (const r of data.top_10_results.slice(0, 5)) {
-        const isBest = r.confidence === best.confidence && 
-                       r.boundary_weight === best.boundary_weight &&
-                       r.polar_threshold === best.polar_threshold;
-        resultsHtml += `
-            <tr style="${isBest ? 'background: #1a4d1a;' : ''}">
-                <td>${r.confidence}</td>
-                <td>${r.boundary_weight}</td>
-                <td>${r.polar_threshold}</td>
-                <td>${r.accuracy}%</td>
-                <td style="color: #4ade80;">+${r.would_fix}</td>
-                <td style="color: #ff6b6b;">${r.would_break}</td>
-                <td><strong>${r.score}</strong></td>
-            </tr>
+    // Build recommendations HTML
+    let recsHtml = '';
+    for (const rec of recommendations) {
+        const typeColor = {
+            'calibration': '#f59e0b',
+            'focus': '#3b82f6', 
+            'normal': '#22c55e',
+            'ok': '#22c55e'
+        }[rec.type] || '#888';
+        
+        recsHtml += `
+            <div style="background: #0a0a0a; border-left: 4px solid ${typeColor}; padding: 12px; margin-bottom: 10px; border-radius: 0 6px 6px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: ${typeColor};">${rec.issue}</strong>
+                    <span style="background: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">${rec.count} errors</span>
+                </div>
+                <p style="color: var(--paper-muted); margin: 8px 0; font-size: 0.9rem;">${rec.description}</p>
+                <p style="color: var(--paper); margin: 0; font-size: 0.9rem;">👉 <strong>${rec.action}</strong></p>
+            </div>
         `;
     }
     
+    // Build next steps HTML
+    let stepsHtml = nextSteps.map(step => 
+        `<div style="padding: 8px 0; border-bottom: 1px solid #333; color: var(--paper);">${step}</div>`
+    ).join('');
+    
+    // Build analysis breakdown
+    const analysisItems = [
+        { label: 'Zone Errors (wrong multiplier)', value: analysis.zone_errors || 0, color: '#f59e0b' },
+        { label: 'Adjacent Segment Errors', value: analysis.adjacent_errors || 0, color: '#22c55e' },
+        { label: 'Opposite Side Errors', value: analysis.opposite_errors || 0, color: '#ef4444' },
+        { label: 'Missed Detections', value: analysis.missed_detections || 0, color: '#3b82f6' },
+        { label: 'Camera Disagreements', value: analysis.camera_disagreements || 0, color: '#a855f7' }
+    ];
+    
+    let analysisHtml = analysisItems.map(item => `
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #222;">
+            <span style="color: var(--paper-muted);">${item.label}</span>
+            <span style="color: ${item.color}; font-weight: bold;">${item.value}</span>
+        </div>
+    `).join('');
+    
+    // Camera issues
+    let camIssuesHtml = '';
+    const camIssues = analysis.detection_issues_by_camera || {};
+    if (Object.keys(camIssues).length > 0) {
+        camIssuesHtml = '<div style="margin-top: 10px;"><strong style="color: var(--paper-muted);">Detection Failures by Camera:</strong>';
+        for (const [cam, count] of Object.entries(camIssues)) {
+            camIssuesHtml += `<span style="margin-left: 15px; color: #ef4444;">${cam}: ${count}</span>`;
+        }
+        camIssuesHtml += '</div>';
+    }
+    
     modal.innerHTML = `
-        <div style="display: flex; flex-direction: column; max-height: 90vh; max-width: 900px; width: 100%;">
-            <!-- Fixed header with close button -->
-            <div style="background: #1a1a1a; border: 2px solid var(--gold); border-bottom: none; border-radius: 12px 12px 0 0; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="color: var(--gold); margin: 0;">Game Details</h2>
-                <button onclick="this.closest('.benchmark-modal').remove()" 
-                        style="background: #333; border: 1px solid #555; color: var(--paper); font-size: 1.2rem; cursor: pointer; padding: 5px 12px; border-radius: 4px;">✕ Close</button>
-            </div>
-            <!-- Scrollable content -->
-            <div style="background: #1a1a1a; border: 2px solid var(--gold); border-radius: 12px; 
+        <div style="background: #1a1a1a; border: 2px solid var(--gold); border-radius: 12px; 
                     max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="color: var(--gold); margin: 0;">🔧 Auto-Tune Results</h2>
+                <h2 style="color: var(--gold); margin: 0;">🔧 Auto-Tune Analysis</h2>
                 <button onclick="this.closest('.benchmark-modal').remove()" 
                         style="background: none; border: none; color: var(--paper); font-size: 1.5rem; cursor: pointer;">✕</button>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #333;">
-                    <h3 style="color: var(--paper); margin: 0 0 10px 0;">📊 Analysis</h3>
-                    <p style="color: var(--paper-muted); margin: 5px 0;">Darts analyzed: <strong style="color: var(--paper);">${data.darts_analyzed}</strong></p>
-                    <p style="color: var(--paper-muted); margin: 5px 0;">Corrections found: <strong style="color: #ff6b6b;">${data.corrections_in_data}</strong></p>
-                    <p style="color: var(--paper-muted); margin: 5px 0;">Combinations tested: <strong style="color: var(--paper);">${data.combinations_tested}</strong></p>
+            <!-- Summary Stats -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.8rem; color: var(--gold); font-weight: bold;">${summary.current_accuracy || '--'}</div>
+                    <div style="color: var(--paper-muted); font-size: 0.85rem;">Accuracy</div>
                 </div>
-                
-                <div style="background: #0a3d0a; padding: 15px; border-radius: 8px; border: 1px solid #2a5a2a;">
-                    <h3 style="color: #4ade80; margin: 0 0 10px 0;">✅ Best Config</h3>
-                    <p style="color: var(--paper-muted); margin: 5px 0;">Confidence: <strong style="color: var(--paper);">${data.best_config.confidence_threshold}</strong></p>
-                    <p style="color: var(--paper-muted); margin: 5px 0;">Boundary weight: <strong style="color: var(--paper);">${data.best_config.boundary_weight_min}</strong></p>
-                    <p style="color: var(--paper-muted); margin: 5px 0;">Polar threshold: <strong style="color: var(--paper);">${data.best_config.polar_override_threshold}°</strong></p>
-                    <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 1.2rem;">Accuracy: <strong>${best.accuracy}%</strong></p>
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.8rem; color: var(--paper); font-weight: bold;">${summary.total_darts || 0}</div>
+                    <div style="color: var(--paper-muted); font-size: 0.85rem;">Total Darts</div>
                 </div>
-            </div>
-            
-            <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
-                <h3 style="color: var(--paper); margin: 0 0 10px 0;">🏆 Top Configurations</h3>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                        <thead>
-                            <tr style="color: var(--gold); border-bottom: 1px solid #333;">
-                                <th style="padding: 8px; text-align: left;">Conf</th>
-                                <th style="padding: 8px; text-align: left;">Boundary</th>
-                                <th style="padding: 8px; text-align: left;">Polar</th>
-                                <th style="padding: 8px; text-align: left;">Accuracy</th>
-                                <th style="padding: 8px; text-align: left;">Fixes</th>
-                                <th style="padding: 8px; text-align: left;">Breaks</th>
-                                <th style="padding: 8px; text-align: left;">Score</th>
-                            </tr>
-                        </thead>
-                        <tbody style="color: var(--paper);">
-                            ${resultsHtml}
-                        </tbody>
-                    </table>
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.8rem; color: #ef4444; font-weight: bold;">${summary.total_corrections || 0}</div>
+                    <div style="color: var(--paper-muted); font-size: 0.85rem;">Corrections</div>
+                </div>
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.8rem; color: #22c55e; font-weight: bold;">${summary.corrections_fixed || 0}</div>
+                    <div style="color: var(--paper-muted); font-size: 0.85rem;">Auto-Fixed</div>
                 </div>
             </div>
             
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <!-- Error Analysis -->
+            <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: var(--paper); margin: 0 0 10px 0;">📊 Error Breakdown</h3>
+                ${analysisHtml}
+                ${camIssuesHtml}
+            </div>
+            
+            <!-- Recommendations -->
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: var(--paper); margin: 0 0 15px 0;">💡 Recommendations</h3>
+                ${recsHtml || '<p style="color: var(--paper-muted);">No issues detected!</p>'}
+            </div>
+            
+            <!-- Next Steps -->
+            <div style="background: #0a0a0a; padding: 15px; border-radius: 8px;">
+                <h3 style="color: var(--gold); margin: 0 0 10px 0;">📋 Next Steps</h3>
+                ${stepsHtml || '<p style="color: var(--paper-muted);">Keep playing!</p>'}
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center;">
                 <button onclick="this.closest('.benchmark-modal').remove()" 
-                        class="btn btn-secondary">Cancel</button>
-                <button onclick="applyAutoTuneConfig(${JSON.stringify(data.best_config).replace(/"/g, '&quot;')}); this.closest('.benchmark-modal').remove();"
-                        class="btn btn-primary" style="background: #28a745;">Apply Best Config</button>
+                        class="btn btn-primary" style="padding: 12px 30px;">
+                    ✓ Got It
+                </button>
             </div>
         </div>
     `;
-    
     document.body.appendChild(modal);
 }
+
 
 async function applyAutoTuneConfig(config) {
     try {
