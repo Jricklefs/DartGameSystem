@@ -265,7 +265,8 @@ async function selectCamera(camIndex) {
         // Show 20-angle info if Mark 20 was used
         const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
         
-        qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}%${angleInfo}`;
+        const modelInfo = stored.calibrationModel ? ` [${stored.calibrationModel}]` : '';
+        qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}%${angleInfo}${modelInfo}`;
         qualityLabel.className = 'cam-quality-label calibrated';
     } else {
         // No stored calibration - show placeholder
@@ -518,6 +519,7 @@ async function calibrateCurrentCamera() {
                     calibrationImage: snapData.image,
                     overlayImage: camResult.overlay_image,
                     quality: camResult.quality,
+                    calibrationModel: await getCurrentCalibrationModel(),
                     calibrationData: JSON.stringify(camResult.calibration_data)
                 })
             });
@@ -534,7 +536,8 @@ async function calibrateCurrentCamera() {
             }
             
             loading.classList.add('hidden');
-            qualityLabel.textContent = `✅ Stored: ${Math.round(camResult.quality * 100)}%`;
+            const modelName = await getCurrentCalibrationModel();
+            qualityLabel.textContent = `✅ Stored: ${Math.round(camResult.quality * 100)}% (${modelName})`;
             qualityLabel.className = 'cam-quality-label calibrated';
             
             updateCameraIndicator(selectedCamera);

@@ -287,6 +287,7 @@ public class CalibrationEntity
     public string? OverlayImagePath { get; set; }
     public double Quality { get; set; }
     public double? TwentyAngle { get; set; }
+    public string? CalibrationModel { get; set; }
     public string? CalibrationData { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

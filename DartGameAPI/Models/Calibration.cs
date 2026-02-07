@@ -20,6 +20,9 @@ public class Calibration
     
     public double? TwentyAngle { get; set; }
     
+    [MaxLength(100)]
+    public string? CalibrationModel { get; set; }  // Model used for calibration (e.g., "default", "11m")
+    
     public string? CalibrationData { get; set; }
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -36,6 +39,7 @@ public class CalibrationDto
     public string? OverlayImage { get; set; }      // Base64 for upload
     public double Quality { get; set; }
     public double? TwentyAngle { get; set; }
+    public string? CalibrationModel { get; set; }  // Model used for calibration
     public string? CalibrationData { get; set; }
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

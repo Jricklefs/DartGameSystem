@@ -121,6 +121,7 @@ public class CalibrationsController : ControllerBase
         
         existing.Quality = dto.Quality;
         existing.TwentyAngle = dto.TwentyAngle;
+        existing.CalibrationModel = dto.CalibrationModel;
         existing.CalibrationData = dto.CalibrationData;
         existing.UpdatedAt = DateTime.UtcNow;
 
@@ -233,6 +234,7 @@ public class CalibrationsController : ControllerBase
         OverlayImagePath = entity.OverlayImagePath,
         Quality = entity.Quality,
         TwentyAngle = entity.TwentyAngle,
+        CalibrationModel = entity.CalibrationModel,
         CalibrationData = entity.CalibrationData,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
