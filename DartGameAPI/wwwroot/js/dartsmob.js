@@ -1143,6 +1143,9 @@ function initDartCorrection() {
     // Cancel button
     document.getElementById('correction-cancel')?.addEventListener('click', closeCorrectionModal);
     
+    // Bounce Out button - mark dart as excluded from benchmark (bounced out, can't correct)
+    document.getElementById('correction-bounceout')?.addEventListener('click', markBounceOut);
+    
     // False button - remove this dart entirely (phantom detection)
     document.getElementById('correction-false')?.addEventListener('click', removeFalseDart);
     
@@ -1388,6 +1391,58 @@ async function removeFalseDart() {
         console.error('Remove dart error:', e);
         log.error('FalseDart', 'Remove failed', { error: e.message });
         alert('Failed to remove dart');
+    }
+}
+
+async function markBounceOut() {
+    // Mark this dart as "bounce out" - excluded from benchmark training data
+    // The dart still happened (scores as 0/miss) but shouldn't be used for detection training
+    if (correctionDartIndex === null || !currentGame) {
+        return;
+    }
+    
+    const dart = currentGame.currentTurn?.darts?.[correctionDartIndex];
+    
+    try {
+        // Call benchmark API to mark as excluded
+        await fetch(`${DETECT_API}/v1/benchmark/exclude-dart`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                game_id: currentGame.id,
+                dart_index: correctionDartIndex,
+                reason: 'bounce_out'
+            })
+        }).catch(() => {}); // Don't fail if DartDetect is down
+        
+        // Also correct the dart to MISS (score 0) since it bounced out
+        const response = await fetch(`/api/games/${currentGame.id}/correct`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                dartIndex: correctionDartIndex,
+                segment: 0,
+                multiplier: 1
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            currentGame = result.game;
+        }
+        
+        log.info('BounceOut', `Marked dart ${correctionDartIndex} as bounce out - excluded from benchmark`, { 
+            dart, gameId: currentGame.id 
+        });
+        
+        updateScoreboard();
+        updateCurrentTurn();
+        closeCorrectionModal();
+        
+    } catch (e) {
+        console.error('Bounce out error:', e);
+        log.error('BounceOut', 'Failed to mark bounce out', { error: e.message });
+        alert('Failed to mark dart as bounce out');
     }
 }
 
