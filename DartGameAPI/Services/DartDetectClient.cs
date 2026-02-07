@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using DartGameAPI.Data;
 using DartGameAPI.Models;
 
@@ -17,17 +19,21 @@ public class DartDetectClient
     private readonly HttpClient _httpClient;
     private readonly ILogger<DartDetectClient> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IMemoryCache _cache;
     private readonly string _baseUrl;
+    private static readonly TimeSpan CalibrationCacheTtl = TimeSpan.FromSeconds(30);
 
     public DartDetectClient(
         HttpClient httpClient, 
         IConfiguration config, 
         ILogger<DartDetectClient> logger,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        IMemoryCache cache)
     {
         _httpClient = httpClient;
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _cache = cache;
         _baseUrl = config["DartDetectApi:BaseUrl"] ?? "http://localhost:8000";
         _httpClient.BaseAddress = new Uri(_baseUrl);
         _httpClient.Timeout = TimeSpan.FromSeconds(10);
@@ -68,50 +74,28 @@ public class DartDetectClient
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<DartsMobDbContext>();
             
-            var camerasWithCalibration = new List<object>();
+            var camerasWithCalibration = new List<DetectCameraPayload>();
             
             foreach (var img in images)
             {
-                // Look up calibration for this camera
-                var calibration = await db.Calibrations
-                    .Where(c => c.CameraId == img.CameraId)
-                    .OrderByDescending(c => c.CreatedAt)
-                    .FirstOrDefaultAsync(ct);
+                var calibrationData = await GetCalibrationDataAsync(db, img.CameraId, ct);
                 
-                object? calibrationData = null;
-                if (calibration?.CalibrationData != null)
+                camerasWithCalibration.Add(new DetectCameraPayload
                 {
-                    try
-                    {
-                        calibrationData = JsonSerializer.Deserialize<object>(calibration.CalibrationData);
-                        _logger.LogDebug("Loaded calibration for camera {CameraId} (quality: {Quality})", 
-                            img.CameraId, calibration.Quality);
-                    }
-                    catch (JsonException ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to parse calibration data for camera {CameraId}", img.CameraId);
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning("No calibration found for camera {CameraId}", img.CameraId);
-                }
-                
-                camerasWithCalibration.Add(new
-                {
-                    camera_id = img.CameraId,
-                    image = img.Image,
-                    calibration = calibrationData
+                    CameraId = img.CameraId,
+                    Image = img.Image,
+                    Calibration = calibrationData
                 });
             }
             
             _logger.LogInformation("[TIMING] DB calibration fetch: {ElapsedMs}ms", sw.ElapsedMilliseconds);
             var httpStart = sw.ElapsedMilliseconds;
             
-            var payload = new { 
-                cameras = camerasWithCalibration,
-                board_id = boardId,
-                dart_number = dartNumber
+            var payload = new DetectRequestPayload
+            {
+                Cameras = camerasWithCalibration,
+                BoardId = boardId,
+                DartNumber = dartNumber
             };
             
             _logger.LogInformation("[DETECT] Sending {Count} images with calibration to DartDetect (board={BoardId}, dart={DartNum})", 
@@ -175,6 +159,42 @@ public class DartDetectClient
             return false;
         }
     }
+
+    private async Task<object?> GetCalibrationDataAsync(DartsMobDbContext db, string cameraId, CancellationToken ct)
+    {
+        var cacheKey = $"calibration:{cameraId}";
+        if (_cache.TryGetValue(cacheKey, out object? cached))
+        {
+            return cached;
+        }
+
+        var calibration = await db.Calibrations
+            .Where(c => c.CameraId == cameraId)
+            .OrderByDescending(c => c.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+        object? calibrationData = null;
+        if (calibration?.CalibrationData != null)
+        {
+            try
+            {
+                calibrationData = JsonSerializer.Deserialize<object>(calibration.CalibrationData);
+                _logger.LogDebug("Loaded calibration for camera {CameraId} (quality: {Quality})",
+                    cameraId, calibration.Quality);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse calibration data for camera {CameraId}", cameraId);
+            }
+        }
+        else
+        {
+            _logger.LogWarning("No calibration found for camera {CameraId}", cameraId);
+        }
+
+        _cache.Set(cacheKey, calibrationData, CalibrationCacheTtl);
+        return calibrationData;
+    }
 }
 
 // Simple DTO for input - uses existing models for response
@@ -182,6 +202,26 @@ public class CameraImageDto
 {
     public string CameraId { get; set; } = string.Empty;
     public string Image { get; set; } = string.Empty;
+}
+
+public class DetectCameraPayload
+{
+    [JsonPropertyName("camera_id")]
+    public string CameraId { get; set; } = string.Empty;
+    [JsonPropertyName("image")]
+    public string Image { get; set; } = string.Empty;
+    [JsonPropertyName("calibration")]
+    public object? Calibration { get; set; }
+}
+
+public class DetectRequestPayload
+{
+    [JsonPropertyName("cameras")]
+    public List<DetectCameraPayload> Cameras { get; set; } = new();
+    [JsonPropertyName("board_id")]
+    public string BoardId { get; set; } = "default";
+    [JsonPropertyName("dart_number")]
+    public int DartNumber { get; set; } = 1;
 }
 
 public class DartDetectException : Exception

@@ -13,6 +13,7 @@ public class DartSensorService : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHubContext<GameHub> _hubContext;
     private readonly ILogger<DartSensorService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly string _dartDetectBaseUrl;
     private readonly int _pollIntervalMs;
     
@@ -21,11 +22,17 @@ public class DartSensorService : BackgroundService
     private readonly Dictionary<string, DateTime> _baselineCapturedAt = new();
     private readonly object _baselineLock = new();
 
-    public DartSensorService(IServiceScopeFactory scopeFactory, IHubContext<GameHub> hubContext, IConfiguration config, ILogger<DartSensorService> logger)
+    public DartSensorService(
+        IServiceScopeFactory scopeFactory,
+        IHubContext<GameHub> hubContext,
+        IConfiguration config,
+        ILogger<DartSensorService> logger,
+        IHttpClientFactory httpClientFactory)
     {
         _scopeFactory = scopeFactory;
         _hubContext = hubContext;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
         _dartDetectBaseUrl = config["DartDetectApi:BaseUrl"] ?? "http://localhost:8000";
         _pollIntervalMs = config.GetValue("DartSensor:PollIntervalMs", 100);
     }
@@ -69,7 +76,8 @@ public class DartSensorService : BackgroundService
         
         try
         {
-            using var httpClient = new HttpClient { BaseAddress = new Uri(_dartDetectBaseUrl) };
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.BaseAddress = new Uri(_dartDetectBaseUrl);
             var tips = await DetectCurrentTipsAsync(httpClient, ct);
             
             lock (_baselineLock)
@@ -117,7 +125,8 @@ public class DartSensorService : BackgroundService
     {
         try
         {
-            using var httpClient = new HttpClient { BaseAddress = new Uri(_dartDetectBaseUrl) };
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.BaseAddress = new Uri(_dartDetectBaseUrl);
             var currentTips = await DetectCurrentTipsAsync(httpClient, ct);
             
             if (!currentTips.Any()) return;

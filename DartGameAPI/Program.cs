@@ -20,6 +20,8 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "DartGame API", Version = "v1" });
 });
 
+builder.Services.AddMemoryCache();
+
 // Database context
 builder.Services.AddDbContext<DartsMobDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DartsMobDB")));

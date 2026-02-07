@@ -1,4 +1,3 @@
-using DartGameAPI.Data;
 using Microsoft.AspNetCore.SignalR;
 using DartGameAPI.Hubs;
 using DartGameAPI.Models;

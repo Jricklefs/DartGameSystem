@@ -12,13 +12,19 @@ public class CalibrationsController : ControllerBase
     private readonly DartsMobDbContext _db;
     private readonly ILogger<CalibrationsController> _logger;
     private readonly IWebHostEnvironment _env;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly string _calibrationDir;
 
-    public CalibrationsController(DartsMobDbContext db, ILogger<CalibrationsController> logger, IWebHostEnvironment env)
+    public CalibrationsController(
+        DartsMobDbContext db,
+        ILogger<CalibrationsController> logger,
+        IWebHostEnvironment env,
+        IHttpClientFactory httpClientFactory)
     {
         _db = db;
         _logger = logger;
         _env = env;
+        _httpClientFactory = httpClientFactory;
         _calibrationDir = Path.Combine(_env.WebRootPath, "images", "calibrations");
         
         // Ensure directory exists
@@ -139,7 +145,7 @@ public class CalibrationsController : ControllerBase
         // Call DartDetectionAI to update segment_20_index in its calibration store
         try
         {
-            using var httpClient = new HttpClient();
+            using var httpClient = _httpClientFactory.CreateClient();
             var dartDetectUrl = $"http://192.168.0.158:8000/api/calibrations/{cameraId}/mark20?x={request.X}&y={request.Y}";
             var response = await httpClient.PostAsync(dartDetectUrl, null);
             

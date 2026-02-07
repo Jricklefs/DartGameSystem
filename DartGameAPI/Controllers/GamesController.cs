@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -17,19 +18,22 @@ public class GamesController : ControllerBase
     private readonly IHubContext<GameHub> _hubContext;
     private readonly DartsMobDbContext _db;
     private readonly ILogger<GamesController> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public GamesController(
         GameService gameService, 
         DartDetectClient dartDetectClient,
         IHubContext<GameHub> hubContext, 
         DartsMobDbContext db, 
-        ILogger<GamesController> logger)
+        ILogger<GamesController> logger,
+        IHttpClientFactory httpClientFactory)
     {
         _gameService = gameService;
         _dartDetectClient = dartDetectClient;
         _hubContext = hubContext;
         _db = db;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     // ===== HUB ENDPOINT - Receives images from DartSensor =====
@@ -48,8 +52,6 @@ public class GamesController : ControllerBase
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var epochMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var requestId = request.RequestId ?? Guid.NewGuid().ToString()[..8];
-        var timingLog = new System.Text.StringBuilder();
-        timingLog.AppendLine($"[TIMING][{requestId}] DG: Start @ epoch={epochMs}");
         _logger.LogInformation("[TIMING][{RequestId}] DG: Received detect @ epoch={Epoch}", requestId, epochMs);
         
         _logger.LogDebug("Received detect request with {Count} images from board {BoardId}", 
@@ -83,13 +85,11 @@ public class GamesController : ControllerBase
         _ = UpdateBenchmarkContext(boardId, game.Id, game.CurrentRound, player?.Name);
 
         var ddStartEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        timingLog.AppendLine($"[TIMING][{requestId}] DG: Before DD call @ epoch={ddStartEpoch}, elapsed={sw.ElapsedMilliseconds}ms");
         _logger.LogInformation("[TIMING][{RequestId}] DG: Calling DartDetect @ epoch={Epoch} (prep={Prep}ms)", 
             requestId, ddStartEpoch, sw.ElapsedMilliseconds);
         var detectResult = await _dartDetectClient.DetectAsync(images, boardId, dartNumber);
         var ddEndEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var ddDuration = ddEndEpoch - ddStartEpoch;
-        timingLog.AppendLine($"[TIMING][{requestId}] DG: After DD call @ epoch={ddEndEpoch}, DD took {ddDuration}ms");
         _logger.LogInformation("[TIMING][{RequestId}] DG: DartDetect returned @ epoch={Epoch} (took={Took}ms)", 
             requestId, ddEndEpoch, ddDuration);
         
@@ -137,9 +137,6 @@ public class GamesController : ControllerBase
             await _hubContext.SendGameEnded(game.BoardId, game);
         }
 
-        timingLog.AppendLine($"[{sw.ElapsedMilliseconds}ms] Returning response");
-        System.IO.File.AppendAllText(@"C:\Users\clawd\detect_timing.log", timingLog.ToString() + "\n");
-        
         return Ok(new { 
             message = "Dart detected", 
             darts = new[] { new { dart.Zone, dart.Score, dart.Segment, dart.Multiplier } }
@@ -692,7 +689,7 @@ public class GamesController : ControllerBase
             _logger.LogInformation("Recording benchmark correction for dart {DartNumber}: {OldSeg}x{OldMult} -> {NewSeg}x{NewMult}", 
                 dartNumber, oldDart.Segment, oldDart.Multiplier, newDart.Segment, newDart.Multiplier);
             
-            using var client = new HttpClient();
+            using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(2);
             
             var payload = new
@@ -705,13 +702,7 @@ public class GamesController : ControllerBase
                 corrected_multiplier = newDart.Multiplier
             };
             
-            var content = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(payload),
-                System.Text.Encoding.UTF8,
-                "application/json"
-            );
-            
-            var response = await client.PostAsync("http://127.0.0.1:8000/v1/benchmark/correction", content);
+            var response = await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/benchmark/correction", payload);
             _logger.LogInformation("Benchmark correction response: {StatusCode}", response.StatusCode);
         }
         catch (Exception ex)
@@ -727,7 +718,7 @@ public class GamesController : ControllerBase
     {
         try
         {
-            using var client = new HttpClient();
+            using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(2);
             
             var payload = new
@@ -741,13 +732,7 @@ public class GamesController : ControllerBase
             _logger.LogInformation("Setting benchmark context: board={BoardId}, game={GameId}, round={Round}, player={Player}", 
                 boardId, gameId, round, playerName ?? "player");
             
-            var content = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(payload),
-                System.Text.Encoding.UTF8,
-                "application/json"
-            );
-            
-            var response = await client.PostAsync("http://127.0.0.1:8000/v1/benchmark/context", content);
+            var response = await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/benchmark/context", payload);
             _logger.LogInformation("Benchmark context response: {StatusCode}", response.StatusCode);
         }
         catch (Exception ex)
