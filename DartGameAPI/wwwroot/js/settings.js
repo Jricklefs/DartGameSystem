@@ -247,7 +247,9 @@ async function selectCamera(camIndex) {
     
     // Show stored calibration if available (use overlayImagePath now)
     if (stored && stored.overlayImagePath) {
-        img.src = stored.overlayImagePath;
+        // Add cache buster to force reload
+        const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
+        img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
         img.style.display = 'block';
         img.classList.add('loaded');
         loading.classList.add('hidden');
