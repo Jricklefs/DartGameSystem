@@ -2116,7 +2116,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadDetectionMethod() {
     try {
-        const resp = await fetch(`${DART_DETECT_URL}/v1/detection/method`);
+        const resp = await fetch(`${DART_DETECT_URL}/v1/settings/method`);
         if (resp.ok) {
             const data = await resp.json();
             const select = document.getElementById('detection-method-select');
@@ -2140,7 +2140,7 @@ async function applyDetectionMethod() {
     try {
         if (statusSpan) statusSpan.textContent = 'Applying...';
         
-        const resp = await fetch(`${DART_DETECT_URL}/v1/detection/method`, {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/settings/method`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ method: method })
