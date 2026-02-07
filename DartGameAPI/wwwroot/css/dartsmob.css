@@ -1120,10 +1120,10 @@ html, body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 12px 16px 20px;
-    height: calc(100vh - 56px);
+    min-height: calc(100vh - 56px);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 /* Settings Navigation - legacy, now in header */
