@@ -2112,6 +2112,79 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+// ==================== DETECTION METHOD ====================
+
+async function loadDetectionMethod() {
+    try {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/detection/method`);
+        if (resp.ok) {
+            const data = await resp.json();
+            const select = document.getElementById('detection-method-select');
+            if (select && data.method) {
+                select.value = data.method;
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load detection method:', err);
+    }
+}
+
+async function applyDetectionMethod() {
+    const select = document.getElementById('detection-method-select');
+    const statusSpan = document.getElementById('method-status');
+    
+    if (!select) return;
+    
+    const method = select.value;
+    
+    try {
+        if (statusSpan) statusSpan.textContent = 'Applying...';
+        
+        const resp = await fetch(`${DART_DETECT_URL}/v1/detection/method`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ method: method })
+        });
+        
+        if (resp.ok) {
+            const data = await resp.json();
+            if (statusSpan) {
+                statusSpan.textContent = `✓ Using ${method} detection`;
+                statusSpan.style.color = '#22c55e';
+            }
+        } else {
+            const err = await resp.json();
+            if (statusSpan) {
+                statusSpan.textContent = `✗ ${err.error || 'Failed'}`;
+                statusSpan.style.color = '#ef4444';
+            }
+        }
+    } catch (err) {
+        console.error('Failed to set detection method:', err);
+        if (statusSpan) {
+            statusSpan.textContent = '✗ API error';
+            statusSpan.style.color = '#ef4444';
+        }
+    }
+}
+
+// Wire up detection method events
+document.addEventListener('DOMContentLoaded', () => {
+    const methodBtn = document.getElementById('apply-method-btn');
+    if (methodBtn) {
+        methodBtn.addEventListener('click', applyDetectionMethod);
+    }
+    
+    // Load detection method when accuracy tab shown
+    const accuracyTab = document.querySelector('[data-tab="accuracy"]');
+    if (accuracyTab) {
+        accuracyTab.addEventListener('click', () => {
+            setTimeout(loadDetectionMethod, 150);
+        });
+    }
+});
+
+
 // ==================== AUTO-TUNE ====================
 
 async function runAutoTune() {
