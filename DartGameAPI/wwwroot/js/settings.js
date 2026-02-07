@@ -1714,21 +1714,37 @@ async function applyDetectionModel() {
     status.textContent = '';
     status.style.color = 'var(--paper-muted)';
     
-    // Show progress overlay
+    // Show progress overlay - dark modal popup
     const overlay = document.createElement('div');
     overlay.id = 'model-switch-overlay';
     overlay.style.cssText = `
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.85); z-index: 1000;
+        background: rgba(0,0,0,0.95); z-index: 1000;
         display: flex; align-items: center; justify-content: center;
-        flex-direction: column;
     `;
     overlay.innerHTML = `
-        <div style="color: var(--gold); font-size: 3rem; margin-bottom: 20px;">🔄</div>
-        <div style="color: var(--paper); font-size: 1.2rem; margin-bottom: 10px;">Switching Model & Recalibrating...</div>
-        <div style="color: var(--paper-muted); max-width: 400px; text-align: center;">
-            This will grab fresh images from all cameras and run calibration with the new model.
+        <div style="background: #1a1a1a; border: 2px solid var(--gold); border-radius: 12px; 
+                    padding: 40px; max-width: 450px; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.8);">
+            <div style="color: var(--gold); font-size: 4rem; margin-bottom: 20px;">🔄</div>
+            <h2 style="color: var(--gold); margin: 0 0 15px 0;">Switching Model</h2>
+            <div style="color: var(--paper); font-size: 1.1rem; margin-bottom: 20px;">
+                Recalibrating all cameras...
+            </div>
+            <div style="color: var(--paper-muted); font-size: 0.9rem; line-height: 1.5;">
+                Grabbing fresh images and running calibration with the new model. This may take 10-20 seconds.
+            </div>
+            <div style="margin-top: 25px;">
+                <div style="background: #333; border-radius: 8px; height: 6px; overflow: hidden;">
+                    <div style="background: linear-gradient(90deg, var(--gold), #f4cf67); height: 100%; width: 30%; animation: pulse 1.5s ease-in-out infinite;"></div>
+                </div>
+            </div>
         </div>
+        <style>
+            @keyframes pulse {
+                0%, 100% { width: 30%; opacity: 1; }
+                50% { width: 70%; opacity: 0.7; }
+            }
+        </style>
     `;
     document.body.appendChild(overlay);
     
