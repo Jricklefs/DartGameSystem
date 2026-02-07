@@ -302,7 +302,6 @@
                         <option value="384x640">YOLO26n 384x640 INT8</option>
                         <option value="552x960">YOLO26n 552x960 INT8</option>
                         <option value="736x1280">YOLO26n 736x1280 INT8</option>
-                        <option value="11m">11M Dartboard Model</option>
                     </select>
                     <button id="apply-model-btn" class="btn btn-primary" style="padding: 10px 20px;">Apply Model</button>
                     <span id="model-status" style="color: var(--paper-muted);"></span>
@@ -310,6 +309,21 @@
                 
                 <div id="model-description" style="color: var(--paper-muted); margin-top: 10px; font-size: 0.85rem; font-style: italic;">
                     Balanced speed/accuracy, INT8 optimized
+                </div>
+                <!-- Calibration Model Selection -->
+                <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #333;">
+                    <h4 style="color: var(--gold); margin: 0 0 10px 0;">Calibration Model</h4>
+                    <p style="color: var(--paper-muted); font-size: 0.85rem; margin-bottom: 15px;">
+                        Model used for ring detection during calibration. The 11M model may provide better accuracy.
+                    </p>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                        <select id="calibration-model-select" style="padding: 10px 15px; background: #0a0a0a; border: 1px solid var(--gold-dark); color: var(--paper); border-radius: 4px; min-width: 250px; font-size: 1rem;">
+                            <option value="default">Dartboard 1280 INT8 (Default)</option>
+                            <option value="11m">11M Dartboard Model</option>
+                        </select>
+                        <button id="apply-cal-model-btn" class="btn btn-primary" style="padding: 10px 20px;">Apply</button>
+                        <span id="cal-model-status" style="color: var(--paper-muted);"></span>
+                    </div>
                 </div>
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;">
                     <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">

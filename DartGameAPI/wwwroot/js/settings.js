@@ -1676,9 +1676,70 @@ const MODEL_DESCRIPTIONS = {
     "square": "Square input variant",
     "384x640": "Smaller rect input, faster inference",
     "552x960": "Medium rect input, balanced",
-    "736x1280": "Large rect input, highest resolution",
-    "11m": "Larger 11M parameter model for better accuracy"
+    "736x1280": "Large rect input, highest resolution"
 };
+
+// ==================== CALIBRATION MODEL SELECTION ====================
+
+async function loadCalibrationModel() {
+    try {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/calibration-models`);
+        if (resp.ok) {
+            const data = await resp.json();
+            const select = document.getElementById('calibration-model-select');
+            const status = document.getElementById('cal-model-status');
+            
+            if (select) {
+                select.value = data.active || 'default';
+            }
+            if (status) {
+                status.textContent = `Active: ${data.active || 'default'}`;
+                status.style.color = 'var(--gold)';
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load calibration model:', err);
+    }
+}
+
+async function applyCalibrationModel() {
+    const select = document.getElementById('calibration-model-select');
+    const btn = document.getElementById('apply-cal-model-btn');
+    const status = document.getElementById('cal-model-status');
+    
+    if (!select) return;
+    
+    const model = select.value;
+    btn.disabled = true;
+    btn.textContent = '⏳ Switching...';
+    status.textContent = '';
+    
+    try {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/calibration-models/select`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model })
+        });
+        
+        if (resp.ok) {
+            const data = await resp.json();
+            status.textContent = `✓ Switched to ${data.active}`;
+            status.style.color = 'var(--success)';
+        } else {
+            const err = await resp.json();
+            status.textContent = `✗ ${err.error || 'Failed'}`;
+            status.style.color = 'var(--error)';
+        }
+    } catch (err) {
+        status.textContent = `✗ Error: ${err.message}`;
+        status.style.color = 'var(--error)';
+    }
+    
+    btn.disabled = false;
+    btn.textContent = 'Apply';
+}
+
+
 
 async function loadCurrentModel() {
     try {
@@ -1872,6 +1933,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modelSelect) {
         modelSelect.addEventListener('change', onModelSelectChange);
     }
+    
+    // Calibration model button
+    const applyCalBtn = document.getElementById('apply-cal-model-btn');
+    if (applyCalBtn) {
+        applyCalBtn.addEventListener('click', applyCalibrationModel);
+    }
+    
+    // Load calibration model status
+    loadCalibrationModel();
     
     // Load current model when accuracy tab is shown
     const accuracyTab = document.querySelector('[data-tab="accuracy"]');
