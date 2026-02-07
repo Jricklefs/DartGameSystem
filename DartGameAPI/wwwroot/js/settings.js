@@ -472,6 +472,12 @@ function blobToBase64(blob) {
     });
 }
 
+// Get current calibration model from the dropdown
+function getCurrentCalibrationModel() {
+    const select = document.getElementById('calibration-model-select');
+    return select ? select.value : 'default';
+}
+
 async function calibrateCurrentCamera() {
     const btn = document.getElementById('calibrate-btn');
     const qualityLabel = document.getElementById('cam-quality-label');
@@ -519,7 +525,7 @@ async function calibrateCurrentCamera() {
                     calibrationImage: snapData.image,
                     overlayImage: camResult.overlay_image,
                     quality: camResult.quality,
-                    calibrationModel: await getCurrentCalibrationModel(),
+                    calibrationModel: getCurrentCalibrationModel(),
                     calibrationData: JSON.stringify(camResult.calibration_data)
                 })
             });
@@ -536,7 +542,7 @@ async function calibrateCurrentCamera() {
             }
             
             loading.classList.add('hidden');
-            const modelName = await getCurrentCalibrationModel();
+            const modelName = getCurrentCalibrationModel();
             qualityLabel.textContent = `✅ Stored: ${Math.round(camResult.quality * 100)}% (${modelName})`;
             qualityLabel.className = 'cam-quality-label calibrated';
             
