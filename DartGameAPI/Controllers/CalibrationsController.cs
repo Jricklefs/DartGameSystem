@@ -108,7 +108,7 @@ public class CalibrationsController : ControllerBase
             existing.CalibrationImagePath = relativePath;
         }
         
-        // Save overlay image to file
+        // Save overlay image to file (from base64)
         if (!string.IsNullOrEmpty(dto.OverlayImage))
         {
             var filename = $"{dto.CameraId}_overlay_{DateTime.UtcNow:yyyyMMddHHmmss}.png";
@@ -117,6 +117,11 @@ public class CalibrationsController : ControllerBase
             
             await System.IO.File.WriteAllBytesAsync(fullPath, Convert.FromBase64String(dto.OverlayImage));
             existing.OverlayImagePath = relativePath;
+        }
+        // Or update path directly (for rotate20 which saves the file itself)
+        else if (!string.IsNullOrEmpty(dto.OverlayImagePath))
+        {
+            existing.OverlayImagePath = dto.OverlayImagePath;
         }
         
         existing.Quality = dto.Quality;
