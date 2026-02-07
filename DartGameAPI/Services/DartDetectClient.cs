@@ -32,8 +32,8 @@ public class DartDetectClient
         _httpClient.BaseAddress = new Uri(_baseUrl);
         _httpClient.Timeout = TimeSpan.FromSeconds(10);
         
-        // Start background keep-alive to prevent connection pool timeout
-        StartKeepAlive();
+        // Keep-alive disabled - was not helping with latency
+        // StartKeepAlive();
     }
     
     private System.Threading.Timer? _keepAliveTimer;
