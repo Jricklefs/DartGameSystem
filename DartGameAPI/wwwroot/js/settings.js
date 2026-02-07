@@ -1703,54 +1703,134 @@ async function loadCurrentModel() {
 
 async function applyDetectionModel() {
     const select = document.getElementById('detection-model-select');
-    const status = document.getElementById('model-status');
     const btn = document.getElementById('apply-model-btn');
+    const status = document.getElementById('model-status');
     
     if (!select) return;
     
-    const modelKey = select.value;
+    const model = select.value;
+    btn.disabled = true;
+    btn.textContent = '⏳ Switching & Recalibrating...';
+    status.textContent = '';
+    status.style.color = 'var(--paper-muted)';
     
-    if (btn) btn.disabled = true;
-    if (status) {
-        status.textContent = 'Switching model...';
-        status.style.color = 'var(--paper-muted)';
-    }
+    // Show progress overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'model-switch-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        flex-direction: column;
+    `;
+    overlay.innerHTML = `
+        <div style="color: var(--gold); font-size: 3rem; margin-bottom: 20px;">🔄</div>
+        <div style="color: var(--paper); font-size: 1.2rem; margin-bottom: 10px;">Switching Model & Recalibrating...</div>
+        <div style="color: var(--paper-muted); max-width: 400px; text-align: center;">
+            This will grab fresh images from all cameras and run calibration with the new model.
+        </div>
+    `;
+    document.body.appendChild(overlay);
     
     try {
-        const resp = await fetch(`${DART_DETECT_URL}/v1/models/select`, {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/models/select-and-recalibrate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: modelKey })
+            body: JSON.stringify({ model })
         });
         
+        overlay.remove();
         const data = await resp.json();
         
-        if (resp.ok && data.success) {
-            if (status) {
-                status.textContent = `✓ Switched to ${modelKey}`;
-                status.style.color = '#4ade80';
-            }
-            // Update description
-            const desc = document.getElementById('model-description');
-            if (desc) {
-                desc.textContent = MODEL_DESCRIPTIONS[modelKey] || '';
-            }
+        if (data.success) {
+            status.textContent = `✓ Switched to ${data.model}, calibrated ${data.cameras_calibrated}/${data.total_cameras} cameras`;
+            status.style.color = '#22c55e';
+            
+            // Refresh calibration display
+            await loadStoredCalibrations();
+            await selectCamera(selectedCamera);
+            
+            // Show success modal with details
+            showModelSwitchResults(data);
         } else {
-            if (status) {
-                status.textContent = `✗ ${data.error || 'Failed to switch model'}`;
-                status.style.color = '#ff6b6b';
-            }
+            status.textContent = `✗ ${data.error || 'Failed'}`;
+            status.style.color = '#ef4444';
         }
     } catch (err) {
-        console.error('Failed to apply model:', err);
-        if (status) {
-            status.textContent = '✗ Connection error';
-            status.style.color = '#ff6b6b';
-        }
+        overlay.remove();
+        console.error('Model switch failed:', err);
+        status.textContent = '✗ Error: ' + err.message;
+        status.style.color = '#ef4444';
     } finally {
-        if (btn) btn.disabled = false;
+        btn.disabled = false;
+        btn.textContent = 'Apply Model';
     }
 }
+
+function showModelSwitchResults(data) {
+    const modal = document.createElement('div');
+    modal.className = 'benchmark-modal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.9); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+    `;
+    
+    const details = data.details || {};
+    const calibrations = details.calibration || [];
+    
+    let calHtml = calibrations.map(c => {
+        const icon = c.success ? '✅' : '❌';
+        const quality = c.success ? ` (quality: ${(c.quality * 100).toFixed(0)}%)` : '';
+        const error = c.error ? ` - ${c.error}` : '';
+        return `<div style="padding: 8px 0; border-bottom: 1px solid #333;">
+            ${icon} <strong>${c.camera_id}</strong>${quality}${error}
+        </div>`;
+    }).join('');
+    
+    modal.innerHTML = `
+        <div style="background: #1a1a1a; border: 2px solid var(--gold); border-radius: 12px; 
+                    max-width: 500px; width: 100%; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--gold); margin: 0;">🔄 Model Switched</h2>
+                <button onclick="this.closest('.benchmark-modal').remove()" 
+                        style="background: none; border: none; color: var(--paper); font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            
+            <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="color: var(--paper-muted); margin-bottom: 5px;">New Model</div>
+                <div style="color: var(--gold); font-size: 1.3rem; font-weight: bold;">${data.model_info?.name || data.model}</div>
+                <div style="color: var(--paper-muted); font-size: 0.9rem;">${data.model_info?.description || ''}</div>
+            </div>
+            
+            <h3 style="color: var(--paper); margin: 0 0 10px 0;">Calibration Results</h3>
+            <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                ${calHtml || '<div style="color: var(--paper-muted);">No cameras calibrated</div>'}
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; color: #22c55e; font-weight: bold;">${data.cameras_calibrated || 0}</div>
+                    <div style="color: var(--paper-muted);">Calibrated</div>
+                </div>
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; color: var(--gold); font-weight: bold;">${data.cameras_saved || 0}</div>
+                    <div style="color: var(--paper-muted);">Saved to DB</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button onclick="this.closest('.benchmark-modal').remove()" 
+                        class="btn btn-primary" style="padding: 12px 30px;">
+                    ✓ Done
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
 
 // Update description when selection changes
 function onModelSelectChange() {
