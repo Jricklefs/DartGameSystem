@@ -295,13 +295,13 @@
                 
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
                     <select id="detection-model-select" style="padding: 10px 15px; background: #0a0a0a; border: 1px solid var(--gold-dark); color: var(--paper); border-radius: 4px; min-width: 250px; font-size: 1rem;">
-                        <option value="default">Pose Nano (Dec 2025) - Default</option>
-                        <option value="best">YOLO26n Pose (Jan 2026)</option>
+                        <option value="736x1280">YOLO26n 736x1280 INT8 (Largest)</option>
                         <option value="rect">736x1280 FP16</option>
-                        <option value="square">Square (Jan 2026)</option>
-                        <option value="384x640">YOLO26n 384x640 INT8</option>
                         <option value="552x960">YOLO26n 552x960 INT8</option>
-                        <option value="736x1280">YOLO26n 736x1280 INT8</option>
+                        <option value="square">Square 1088x1088 (Jan 2026)</option>
+                        <option value="384x640">YOLO26n 384x640 INT8</option>
+                        <option value="best">YOLO26n Pose (Jan 2026)</option>
+                        <option value="default">Pose Nano (Dec 2025)</option>
                     </select>
                     <button id="apply-model-btn" class="btn btn-primary" style="padding: 10px 20px;">Apply Model</button>
                     <span id="model-status" style="color: var(--paper-muted);"></span>
