@@ -189,10 +189,12 @@ async function loadStoredCalibrations() {
         
         if (res.ok) {
             const calibrations = await res.json();
+            console.log('[CALIBRATION] Loaded calibrations:', calibrations);
             storedCalibrations = {};
             calibrations.forEach(c => {
                 storedCalibrations[c.cameraId] = c;
             });
+            console.log('[CALIBRATION] storedCalibrations:', storedCalibrations);
             
             // Update all camera button indicators
             for (let i = 0; i < 3; i++) {
@@ -245,8 +247,11 @@ async function selectCamera(camIndex) {
     
     const stored = storedCalibrations[`cam${camIndex}`];
     
+    console.log('[CALIBRATION] selectCamera:', camIndex, 'stored:', stored);
+    
     // Show stored calibration if available (use overlayImagePath now)
     if (stored && stored.overlayImagePath) {
+        console.log('[CALIBRATION] Loading overlay:', stored.overlayImagePath);
         // Add cache buster to force reload
         const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
         img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
@@ -922,6 +927,9 @@ function initEventListeners() {
     
     // Mark 20 button
     document.getElementById('mark20-btn')?.addEventListener('click', toggleMark20Mode);
+    
+    // Rotate 20 button
+    document.getElementById('rotate20-btn')?.addEventListener('click', rotate20);
     
     // Overlay opacity
     document.getElementById('overlay-opacity')?.addEventListener('input', (e) => {
