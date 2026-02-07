@@ -46,8 +46,11 @@ public class GamesController : ControllerBase
     public async Task<ActionResult> Detect([FromBody] DetectRequest request)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
+        var epochMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var requestId = request.RequestId ?? Guid.NewGuid().ToString()[..8];
         var timingLog = new System.Text.StringBuilder();
-        timingLog.AppendLine($"[{DateTime.Now:HH:mm:ss.fff}] Detect started");
+        timingLog.AppendLine($"[TIMING][{requestId}] DG: Start @ epoch={epochMs}");
+        _logger.LogInformation("[TIMING][{RequestId}] DG: Received detect @ epoch={Epoch}", requestId, epochMs);
         
         _logger.LogDebug("Received detect request with {Count} images from board {BoardId}", 
             request.Images?.Count ?? 0, request.BoardId);
@@ -79,9 +82,16 @@ public class GamesController : ControllerBase
         var player = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
         _ = UpdateBenchmarkContext(boardId, game.Id, game.CurrentRound, player?.Name);
 
-        timingLog.AppendLine($"[{sw.ElapsedMilliseconds}ms] Before DartDetect call");
+        var ddStartEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        timingLog.AppendLine($"[TIMING][{requestId}] DG: Before DD call @ epoch={ddStartEpoch}, elapsed={sw.ElapsedMilliseconds}ms");
+        _logger.LogInformation("[TIMING][{RequestId}] DG: Calling DartDetect @ epoch={Epoch} (prep={Prep}ms)", 
+            requestId, ddStartEpoch, sw.ElapsedMilliseconds);
         var detectResult = await _dartDetectClient.DetectAsync(images, boardId, dartNumber);
-        timingLog.AppendLine($"[{sw.ElapsedMilliseconds}ms] After DartDetect call");
+        var ddEndEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var ddDuration = ddEndEpoch - ddStartEpoch;
+        timingLog.AppendLine($"[TIMING][{requestId}] DG: After DD call @ epoch={ddEndEpoch}, DD took {ddDuration}ms");
+        _logger.LogInformation("[TIMING][{RequestId}] DG: DartDetect returned @ epoch={Epoch} (took={Took}ms)", 
+            requestId, ddEndEpoch, ddDuration);
         
         if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
         {
@@ -795,6 +805,7 @@ public class DetectRequest
 {
     public string? BoardId { get; set; }
     public List<ImagePayload>? Images { get; set; }
+    public string? RequestId { get; set; }  // For cross-API timing correlation
 }
 
 public class ImagePayload
