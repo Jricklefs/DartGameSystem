@@ -153,33 +153,43 @@ public class GamesController : ControllerBase
     }
 
     /// <summary>
-    /// Event: Board cleared - triggers rebase and advances turn if complete
+    /// Event: Board cleared - triggers rebase and advances turn
+    /// When player clears board (pulls darts), their turn is over
     /// </summary>
     [HttpPost("events/clear")]
     public async Task<ActionResult> EventBoardClear([FromBody] BoardEventRequest request)
     {
         var boardId = request.BoardId ?? "default";
         var game = _gameService.GetGameForBoard(boardId);
-        var turnWasComplete = game?.CurrentTurn?.IsComplete == true;
         var previousTurn = game?.CurrentTurn ?? new Turn();
+        var dartCount = previousTurn.Darts?.Count ?? 0;
+        var isBusted = previousTurn.IsBusted;
         
         _gameService.ClearBoard(boardId);
         
         // Tell sensor to rebase via SignalR
         await _hubContext.SendRebase(boardId);
         
-        // If turn was complete (3 darts), notify clients that turn ended
-        if (turnWasComplete && game != null)
+        // Always advance turn when board is cleared (player pulled their darts)
+        // Exception: if busted, wait for bust confirmation from UI
+        if (game != null && !isBusted)
         {
+            _gameService.NextTurn(game);
             await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
-            _logger.LogInformation("Board cleared via event, turn complete - advancing to next player");
+            _logger.LogInformation("Board cleared - {DartCount} darts thrown, advancing to next player", dartCount);
+        }
+        else if (game != null && isBusted)
+        {
+            // Busted - just notify board cleared, wait for bust confirmation
+            await _hubContext.SendBoardCleared(boardId);
+            _logger.LogInformation("Board cleared but player busted - waiting for bust confirmation");
         }
         else
         {
             await _hubContext.SendBoardCleared(boardId);
         }
         
-        return Ok(new { message = "Board cleared", turnAdvanced = turnWasComplete });
+        return Ok(new { message = "Board cleared", turnAdvanced = game != null && !isBusted, dartCount });
     }
 
     /// <summary>
