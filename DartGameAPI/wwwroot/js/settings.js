@@ -164,20 +164,14 @@ async function initCalibration() {
 
 // Update the calibration view based on mode
 function updateCalibrationView() {
-    const baseImg = document.getElementById('camera-base-img');
-    const overlayImg = document.getElementById('camera-base-img');
+    const img = document.getElementById('camera-base-img');
     
-    if (calibrationViewMode === 'combined' && lastCameraSnapshot) {
-        // Show both: camera feed underneath, overlay on top
-        baseImg.src = lastCameraSnapshot;
-        baseImg.style.display = 'block';
-        overlayImg.style.position = 'absolute';
-        overlayImg.style.zIndex = '2';
-    } else {
-        // Overlay only - hide base image
-        baseImg.style.display = 'none';
-        overlayImg.style.position = 'relative';
-        overlayImg.style.zIndex = '1';
+    // The overlay image already contains both camera + overlay drawn on it
+    // So we don't need separate images - just show the overlay
+    if (img.src) {
+        img.style.display = 'block';
+        img.style.position = 'absolute';
+        img.style.zIndex = '15';
     }
 }
 
