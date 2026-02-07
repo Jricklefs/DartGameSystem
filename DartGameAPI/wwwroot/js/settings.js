@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCalibration();
     initSystemStatus();
     initEventListeners();
+    initImprovementLoop();
 });
 
 // ============================================================================
@@ -2091,3 +2092,213 @@ async function applyAutoTuneConfig(config) {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('auto-tune-btn')?.addEventListener('click', runAutoTune);
 });
+
+
+// ============================================================================
+// Improvement Loop
+// ============================================================================
+
+function initImprovementLoop() {
+    const btn = document.getElementById('improve-loop-btn');
+    if (btn) {
+        btn.addEventListener('click', runImprovementLoop);
+    }
+}
+
+async function runImprovementLoop() {
+    const btn = document.getElementById('improve-loop-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Running...';
+    }
+    
+    // Show progress modal
+    const progressModal = document.createElement('div');
+    progressModal.className = 'benchmark-modal';
+    progressModal.id = 'improve-progress-modal';
+    progressModal.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.95); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+    `;
+    progressModal.innerHTML = `
+        <div style="background: #1a1a1a; border: 2px solid #9333ea; border-radius: 12px; 
+                    max-width: 500px; width: 100%; padding: 30px; text-align: center;">
+            <h2 style="color: #9333ea; margin: 0 0 20px 0;">🔄 Improvement Loop</h2>
+            <p style="color: var(--paper-muted); margin-bottom: 20px;" id="improve-status">Starting improvement loop...</p>
+            <div style="background: #333; border-radius: 8px; height: 24px; overflow: hidden;">
+                <div id="improve-progress-bar" style="background: linear-gradient(90deg, #9333ea, #c084fc); height: 100%; width: 0%; transition: width 0.3s;"></div>
+            </div>
+            <div style="color: var(--paper-muted); margin-top: 10px; font-size: 0.9em;" id="improve-detail">Testing parameter combinations...</div>
+            <div style="margin-top: 20px;">
+                <button onclick="stopImprovementLoop()" class="btn btn-danger" style="background: #8b0000;">⏹️ Stop</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(progressModal);
+    
+    // Start polling for progress
+    let pollInterval = setInterval(async () => {
+        try {
+            const progResp = await fetch(`${DART_DETECT_URL}/v1/benchmark/improve/status`);
+            const prog = await progResp.json();
+            
+            if (prog.running) {
+                document.getElementById('improve-status').textContent = prog.status || 'Processing...';
+                document.getElementById('improve-detail').textContent = 
+                    `Iteration ${prog.iteration} • Best: ${prog.best_accuracy?.toFixed(1) || '--'}%`;
+                
+                // Simple progress based on history length (assuming ~24 configs)
+                const pct = Math.min(95, (prog.history?.length || 0) / 24 * 100);
+                document.getElementById('improve-progress-bar').style.width = pct + '%';
+            }
+        } catch (e) {
+            // Ignore polling errors
+        }
+    }, 1000);
+    
+    try {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/benchmark/improve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        clearInterval(pollInterval);
+        progressModal.remove();
+        
+        const data = await resp.json();
+        
+        if (!resp.ok || !data.success) {
+            alert(`Improvement loop failed: ${data.error || 'Unknown error'}`);
+            return;
+        }
+        
+        // Show results
+        showImprovementResults(data);
+        
+    } catch (err) {
+        clearInterval(pollInterval);
+        progressModal.remove();
+        console.error('Improvement loop failed:', err);
+        alert('Improvement loop failed: ' + err.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🔄 Improvement Loop';
+        }
+    }
+}
+
+async function stopImprovementLoop() {
+    try {
+        await fetch(`${DART_DETECT_URL}/v1/benchmark/improve/stop`, { method: 'POST' });
+    } catch (e) {
+        console.error('Failed to stop:', e);
+    }
+}
+
+function showImprovementResults(data) {
+    const modal = document.createElement('div');
+    modal.className = 'benchmark-modal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.9); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+    `;
+    
+    let resultsHtml = '';
+    const sorted = [...(data.all_results || [])].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
+    
+    for (const r of sorted) {
+        if (r.error) continue;
+        const isBest = r.config.confidence === data.best_config?.confidence_threshold;
+        resultsHtml += `
+            <tr style="${isBest ? 'background: #1a4d1a;' : ''}">
+                <td>${r.config.confidence}</td>
+                <td>${r.config.polar_threshold}</td>
+                <td>${r.corrections_fixed || 0}</td>
+                <td>${r.fix_rate || 0}%</td>
+                <td>${r.consistency || 0}%</td>
+                <td><strong>${r.score || 0}</strong></td>
+            </tr>
+        `;
+    }
+    
+    modal.innerHTML = `
+        <div style="background: #1a1a1a; border: 2px solid #9333ea; border-radius: 12px; 
+                    max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #9333ea; margin: 0;">🔄 Improvement Results</h2>
+                <button onclick="this.closest('.benchmark-modal').remove()" 
+                        style="background: none; border: none; color: var(--paper); font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                    <div style="font-size: 2rem; color: #9333ea; font-weight: bold;">${data.best_corrections_fixed || 0}</div>
+                    <div style="color: var(--paper-muted);">Corrections Fixed</div>
+                </div>
+                <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                    <div style="font-size: 2rem; color: var(--gold); font-weight: bold;">${data.best_score?.toFixed(1) || 0}</div>
+                    <div style="color: var(--paper-muted);">Best Score</div>
+                </div>
+            </div>
+            
+            <div style="background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                <h3 style="color: var(--paper); margin: 0 0 10px 0;">🏆 Best Configuration</h3>
+                <div style="color: var(--paper-muted);">
+                    Confidence: <strong style="color: #9333ea;">${data.best_config?.confidence_threshold || '--'}</strong><br>
+                    Polar Threshold: <strong style="color: #9333ea;">${data.best_config?.polar_threshold || '--'}</strong>
+                </div>
+            </div>
+            
+            <h3 style="color: var(--paper); margin: 0 0 10px 0;">📊 Top Configurations</h3>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; color: var(--paper); font-size: 0.9rem;">
+                    <thead>
+                        <tr style="background: #333; color: var(--gold);">
+                            <th style="padding: 8px; text-align: left;">Conf</th>
+                            <th style="padding: 8px; text-align: left;">Polar</th>
+                            <th style="padding: 8px; text-align: left;">Fixed</th>
+                            <th style="padding: 8px; text-align: left;">Fix%</th>
+                            <th style="padding: 8px; text-align: left;">Cons%</th>
+                            <th style="padding: 8px; text-align: left;">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>${resultsHtml}</tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="applyBestConfig()" class="btn btn-primary" style="background: #9333ea; padding: 12px 30px; font-size: 1.1rem;">
+                    ✅ Apply Best Configuration
+                </button>
+            </div>
+            
+            <p style="color: var(--paper-muted); text-align: center; margin-top: 15px; font-size: 0.85rem;">
+                Tested ${data.iterations || 0} configurations in ${data.elapsed_seconds || 0}s
+            </p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+async function applyBestConfig() {
+    try {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/benchmark/improve/apply-best`, {
+            method: 'POST'
+        });
+        const data = await resp.json();
+        
+        if (data.success) {
+            alert('Best configuration applied!\n\nRestart DartDetect and run benchmark to verify.');
+            document.querySelector('.benchmark-modal')?.remove();
+        } else {
+            alert('Failed to apply: ' + (data.error || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Failed to apply: ' + err.message);
+    }
+}
