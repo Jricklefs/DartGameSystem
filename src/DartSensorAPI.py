@@ -265,7 +265,11 @@ class DartGameClient:
         dart_number: which dart this is (1, 2, or 3)
         """
         import time
+        import uuid
         pipeline_start = time.time()
+        epoch_ms = int(pipeline_start * 1000)
+        request_id = str(uuid.uuid4())[:8]
+        print(f"[TIMING][{request_id}] DS: Start dart {dart_number} @ epoch={epoch_ms}")
         
         try:
             images = []
@@ -281,7 +285,8 @@ class DartGameClient:
             payload = {
                 "boardId": self.board_id,
                 "dartNumber": dart_number,
-                "images": images
+                "images": images,
+                "requestId": request_id  # For cross-API timing correlation
             }
             
             print(f"[DART] Sending {len(images)} images to {self.base_url}/api/games/detect (dart {dart_number}) [encode: {encode_time:.0f}ms]")
@@ -298,7 +303,8 @@ class DartGameClient:
             if resp.ok:
                 result = resp.json()
                 print(f"[DART] Response: {result}")
-                print(f"[TIMING] Dart {dart_number}: encode={encode_time:.0f}ms, API={api_time:.0f}ms, TOTAL={total_time:.0f}ms")
+                epoch_end = int(time.time() * 1000)
+                print(f"[TIMING][{request_id}] DS: Dart {dart_number} complete @ epoch={epoch_end} | encode={encode_time:.0f}ms, API={api_time:.0f}ms, TOTAL={total_time:.0f}ms")
                 log_to_api("INFO", "Timing", f"Dart {dart_number} pipeline complete",
                           {"dart_num": dart_number, "encode_ms": round(encode_time), 
                            "api_ms": round(api_time), "total_ms": round(total_time)})
