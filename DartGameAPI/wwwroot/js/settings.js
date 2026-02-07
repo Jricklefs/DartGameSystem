@@ -836,7 +836,7 @@ async function refreshCameraWithOverlay() {
     
     try {
         // Get fresh frame from camera
-        const snapResp = await fetch(`${DART_DETECT_URL}/v1/cameras/cam${camIndex}/snapshot`);
+        const snapResp = await fetch(`${DART_SENSOR_URL}/cameras/${camIndex}/snapshot`);
         if (!snapResp.ok) throw new Error('Failed to get camera snapshot');
         
         const snapData = await snapResp.json();
