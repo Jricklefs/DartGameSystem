@@ -2148,6 +2148,23 @@ async function applyDetectionMethod() {
         
         if (resp.ok) {
             const data = await resp.json();
+            
+            // Trigger recalibration when switching methods to refresh overlays
+            if (statusSpan) statusSpan.textContent = 'Recalibrating cameras...';
+            try {
+                const recalResp = await fetch(`${DART_DETECT_URL}/v1/recalibrate-all`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (recalResp.ok) {
+                    // Reload stored calibrations to get fresh overlays
+                    await loadStoredCalibrations();
+                    selectCamera(selectedCamera);  // Refresh current view
+                }
+            } catch (recalErr) {
+                console.warn('Recalibration failed:', recalErr);
+            }
+            
             if (statusSpan) {
                 statusSpan.textContent = `✓ Using ${method} detection`;
                 statusSpan.style.color = '#22c55e';

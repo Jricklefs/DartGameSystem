@@ -174,6 +174,19 @@ public class GamesController : ControllerBase
         
         _gameService.ClearBoard(boardId);
         
+        // Clear DartDetect cache for clean differential detection
+        try 
+        {
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(2);
+            await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/clear", new { board_id = boardId });
+            _logger.LogDebug("DartDetect cache cleared for board {BoardId}", boardId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to clear DartDetect cache: {Error}", ex.Message);
+        }
+        
         // Tell sensor to rebase via SignalR
         await _hubContext.SendRebase(boardId);
         
