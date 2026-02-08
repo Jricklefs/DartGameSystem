@@ -21,7 +21,8 @@ import requests
 import base64
 from pathlib import Path
 from typing import Optional, List, Tuple
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+from collections import deque
 
 from detector_v2 import MultiCameraDartDetector, DartDetectorV2, DetectorConfig, BoardState
 
@@ -258,11 +259,12 @@ class DartGameClient:
         _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
         return base64.b64encode(buffer).decode('utf-8')
     
-    def send_dart_images(self, frames: dict, dart_number: int = 1) -> dict:
+    def send_dart_images(self, frames: dict, dart_number: int = 1, before_frames: dict = None) -> dict:
         """
         Send camera frames to DartGame API for detection.
-        frames: dict of {camera_id: numpy_frame}
+        frames: dict of {camera_id: numpy_frame} - current "after" frames
         dart_number: which dart this is (1, 2, or 3)
+        before_frames: dict of {camera_id: numpy_frame} - frames from before dart landed
         """
         import time
         import uuid
@@ -282,10 +284,21 @@ class DartGameClient:
             
             encode_time = (time.time() - pipeline_start) * 1000
             
+            # Encode before frames if provided
+            before_images = []
+            if before_frames:
+                for cam_id, frame in before_frames.items():
+                    if frame is not None:
+                        before_images.append({
+                            "cameraId": cam_id,
+                            "image": self.encode_image(frame)
+                        })
+            
             payload = {
                 "boardId": self.board_id,
                 "dartNumber": dart_number,
                 "images": images,
+                "beforeImages": before_images if before_images else None,  # For clean diff
                 "requestId": request_id  # For cross-API timing correlation
             }
             
@@ -346,6 +359,7 @@ class CameraInfo:
     cap: cv2.VideoCapture
     name: str
     last_frame: Optional[np.ndarray] = None
+    frame_buffer: deque = field(default_factory=lambda: deque(maxlen=15))  # ~0.5s rolling buffer
 
 
 class DartSensorUI:
@@ -584,6 +598,7 @@ class DartSensorUI:
             ret, frame = cam.cap.read()
             if ret:
                 cam.last_frame = frame
+                cam.frame_buffer.append(frame.copy())  # Rolling buffer for before/after
     
     def get_primary_frame(self) -> Optional[np.ndarray]:
         """Get frame from selected camera."""
@@ -942,9 +957,20 @@ class DartSensorUI:
                                 # Send to DartGame API with dart number for differential detection
                                 # Capture 3 frames over 100ms and average for more stable detection
                                 frames_to_send = capture_averaged_frames(self.cameras, num_frames=3, delay_ms=35)
+                                
+                                # Get "before" frames from buffer (captured before dart motion)
+                                before_frames = {}
+                                for cam in self.cameras:
+                                    cam_id = f"cam{cam.index}"
+                                    if len(cam.frame_buffer) >= 5:
+                                        # Use frame from 5 frames ago (~166ms before)
+                                        before_frames[cam_id] = cam.frame_buffer[-5]
+                                    elif len(cam.frame_buffer) > 0:
+                                        before_frames[cam_id] = cam.frame_buffer[0]
+                                
                                 threading.Thread(
                                     target=self.api_client.send_dart_images,
-                                    args=(frames_to_send, dart_num),
+                                    args=(frames_to_send, dart_num, before_frames),
                                     daemon=True
                                 ).start()
                                 
