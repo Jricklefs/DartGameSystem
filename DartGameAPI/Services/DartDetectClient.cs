@@ -65,7 +65,7 @@ public class DartDetectClient
     /// Send images to DartDetect for dart tip detection and scoring.
     /// Includes calibration data with each camera (fully stateless).
     /// </summary>
-    public async Task<DetectResponse?> DetectAsync(List<CameraImageDto> images, string boardId = "default", int dartNumber = 1, CancellationToken ct = default)
+    public async Task<DetectResponse?> DetectAsync(List<CameraImageDto> images, string boardId = "default", int dartNumber = 1, List<CameraImageDto>? beforeImages = null, CancellationToken ct = default)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
@@ -91,9 +91,22 @@ public class DartDetectClient
             _logger.LogInformation("[TIMING] DB calibration fetch: {ElapsedMs}ms", sw.ElapsedMilliseconds);
             var httpStart = sw.ElapsedMilliseconds;
             
+            // Build before images payload if provided
+            List<BeforeImagePayload>? beforePayload = null;
+            if (beforeImages != null && beforeImages.Any())
+            {
+                beforePayload = beforeImages.Select(i => new BeforeImagePayload
+                {
+                    CameraId = i.CameraId,
+                    Image = i.Image
+                }).ToList();
+                _logger.LogInformation("[DETECT] Including {Count} before images for clean diff", beforePayload.Count);
+            }
+            
             var payload = new DetectRequestPayload
             {
                 Cameras = camerasWithCalibration,
+                BeforeImages = beforePayload,
                 BoardId = boardId,
                 DartNumber = dartNumber
             };
@@ -218,10 +231,20 @@ public class DetectRequestPayload
 {
     [JsonPropertyName("cameras")]
     public List<DetectCameraPayload> Cameras { get; set; } = new();
+    [JsonPropertyName("before_images")]
+    public List<BeforeImagePayload>? BeforeImages { get; set; }  // Frames before dart
     [JsonPropertyName("board_id")]
     public string BoardId { get; set; } = "default";
     [JsonPropertyName("dart_number")]
     public int DartNumber { get; set; } = 1;
+}
+
+public class BeforeImagePayload
+{
+    [JsonPropertyName("camera_id")]
+    public string CameraId { get; set; } = string.Empty;
+    [JsonPropertyName("image")]
+    public string Image { get; set; } = string.Empty;
 }
 
 public class DartDetectException : Exception

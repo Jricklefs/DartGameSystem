@@ -74,6 +74,13 @@ public class GamesController : ControllerBase
             CameraId = i.CameraId,
             Image = i.Image
         }).ToList() ?? new List<CameraImageDto>();
+        
+        // Forward before images if provided (for clean diff detection)
+        var beforeImages = request.BeforeImages?.Select(i => new CameraImageDto
+        {
+            CameraId = i.CameraId,
+            Image = i.Image
+        }).ToList();
 
         // Get dart number for differential detection (darts already scored + 1)
         var dartsThisTurn = game.CurrentTurn?.Darts ?? new List<DartThrow>();
@@ -87,7 +94,7 @@ public class GamesController : ControllerBase
         var ddStartEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         _logger.LogInformation("[TIMING][{RequestId}] DG: Calling DartDetect @ epoch={Epoch} (prep={Prep}ms)", 
             requestId, ddStartEpoch, sw.ElapsedMilliseconds);
-        var detectResult = await _dartDetectClient.DetectAsync(images, boardId, dartNumber);
+        var detectResult = await _dartDetectClient.DetectAsync(images, boardId, dartNumber, beforeImages);
         var ddEndEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var ddDuration = ddEndEpoch - ddStartEpoch;
         _logger.LogInformation("[TIMING][{RequestId}] DG: DartDetect returned @ epoch={Epoch} (took={Took}ms)", 
@@ -800,6 +807,7 @@ public class DetectRequest
 {
     public string? BoardId { get; set; }
     public List<ImagePayload>? Images { get; set; }
+    public List<ImagePayload>? BeforeImages { get; set; }  // Frames before dart landed
     public string? RequestId { get; set; }  // For cross-API timing correlation
 }
 
