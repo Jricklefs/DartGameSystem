@@ -473,7 +473,7 @@ class DartSensorUI:
                 cam_id = f"cam{cam.index}"
                 self.detector.set_baseline(cam_id, cam.last_frame)
         
-        self.detector.clear_all_image1()
+        self.clear_board()
         cfg = self.detector.config
         print(f"[HUB] Baseline captured, detection ACTIVE")
         print(f"[HUB] Thresholds: base={cfg.base_threshold_pct:.1f}%, dart={cfg.dart_threshold_pct:.1f}%, clear={cfg.clear_threshold_pct:.1f}%, clearing={cfg.clearing_start_pct:.1f}%")
@@ -533,7 +533,7 @@ class DartSensorUI:
                 self.detector.set_baseline(cam_id, cam.last_frame)
         
         self.detector.dart_count = 0
-        self.detector.clear_all_image1()
+        self.clear_board()
         print(f"[HUB] Rebase complete")
     
     def connect_to_hub(self):
@@ -618,6 +618,13 @@ class DartSensorUI:
         self.detector.config.settling_ms = self.config_values['settling_ms']
         self.detector.config.cooldown_ms = self.config_values['cooldown_ms']
     
+    def clear_board(self):
+        """Clear detector state AND frame buffers for fresh start."""
+        self.detector.clear_all_image1()
+        for cam in self.cameras:
+            cam.frame_buffer.clear()
+        self.log("Board and frame buffers cleared")
+
     def create_config_window(self):
         """Create configuration window with trackbars."""
         cv2.namedWindow(self.config_window, cv2.WINDOW_NORMAL)
@@ -904,7 +911,7 @@ class DartSensorUI:
                                                   {"clearing_duration_sec": round(clearing_duration, 2)})
                                         print("[CLEAR] ========== BOARD CLEARED (CONFIRMED) ==========")
                                         self.detector.dart_count = 0  # Reset dart count for next turn
-                                        self.detector.clear_all_image1()
+                                        self.clear_board()
                                         threading.Thread(
                                             target=self.api_client.notify_board_clear,
                                             daemon=True
@@ -985,7 +992,7 @@ class DartSensorUI:
                                 log_to_api("WARN", "Clearing", "Clearing timeout after 10s - force resetting",
                                           {"clearing_duration_sec": 10.0})
                                 self.detector.dart_count = 0
-                                self.detector.clear_all_image1()
+                                self.clear_board()
                                 del self._clearing_mode
                                 if hasattr(self, '_clear_confirm_start'):
                                     del self._clear_confirm_start
@@ -1087,12 +1094,11 @@ class DartSensorUI:
                         self.detector.set_all_baselines(all_frames)
                         self.log(f"Baselines captured ({len(all_frames)} cameras)")
                 elif key == ord('c'):
-                    self.detector.clear_all_image1()
-                    self.log("All Image1 cleared")
+                    self.clear_board()
                 elif key == ord('r'):
                     if all_frames:
                         self.detector.set_all_baselines(all_frames)
-                        self.detector.clear_all_image1()
+                        self.clear_board()
                         self.detected_darts = []
                         self.log("Reset complete")
                 elif key == ord('d'):
