@@ -561,7 +561,7 @@ class DartSensorUI:
         self.log(f"Found {len(available)} camera(s)")
         return available
     
-    def init_cameras(self, indices: List[int], width: int = 640, height: int = 480):
+    def init_cameras(self, indices: List[int], width: int = 1280, height: int = 720):
         """Initialize cameras at specified indices."""
         self.log(f"Initializing {len(indices)} camera(s)...")
         
