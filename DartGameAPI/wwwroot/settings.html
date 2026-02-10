@@ -345,15 +345,15 @@
                     <h4 style="color: var(--gold); margin: 0 0 10px 0;">🔬 Detection Method</h4>
                     <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                         <select id="detection-method-select" style="padding: 10px 15px; background: #0a0a0a; border: 1px solid var(--gold-dark); color: var(--paper); border-radius: 4px; min-width: 250px; font-size: 1rem;">
-                            <option value="yolo">YOLO Neural Network (Default)</option>
-                            <option value="skeleton">Skeleton Detection (Autodarts-style)</option>
+                            <option value="skeleton">Skeleton Detection (Default, Autodarts-style)</option>
+                            <option value="yolo">YOLO Neural Network</option>
                         </select>
                         <button id="apply-method-btn" class="btn btn-primary" style="padding: 10px 20px;">Apply</button>
                         <span id="method-status" style="color: var(--paper-muted);"></span>
                     </div>
                     <div id="method-description" style="color: var(--paper-muted); margin-top: 10px; font-size: 0.85rem;">
-                        <strong>YOLO:</strong> Uses trained neural network for robust dart tip detection.<br>
-                        <strong>Skeleton:</strong> Frame differencing + skeletonization + lowest point (classical CV, like Autodarts).
+                        <strong>Skeleton:</strong> Frame differencing + skeletonization + tip projection (classical CV, like Autodarts). Best accuracy.<br>
+                        <strong>YOLO:</strong> Uses trained neural network for dart tip detection.
                     </div>
                 </div>
 
