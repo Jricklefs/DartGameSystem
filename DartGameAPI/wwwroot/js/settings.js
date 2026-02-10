@@ -15,6 +15,10 @@ const DEFAULT_BACKGROUNDS = [
     '/images/backgrounds/speakeasy-5.jpg'
 ];
 
+// NSFW backgrounds (loaded dynamically from /images/backgrounds/nsfw/)
+let nsfwBackgrounds = [];
+let nsfwMode = false;
+
 // Dartboard segment order (clockwise starting from 20 at top)
 const SEGMENT_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
 
@@ -43,6 +47,51 @@ document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
     initImprovementLoop();
 });
+
+
+
+// ============================================================================
+// NSFW Background Mode
+// ============================================================================
+
+async function loadNsfwBackgrounds() {
+    try {
+        // Fetch list of NSFW images from server
+        const resp = await fetch('/api/backgrounds/nsfw');
+        if (resp.ok) {
+            nsfwBackgrounds = await resp.json();
+            console.log(`Loaded ${nsfwBackgrounds.length} NSFW backgrounds`);
+        }
+    } catch (e) {
+        console.error('Failed to load NSFW backgrounds:', e);
+        nsfwBackgrounds = [];
+    }
+}
+
+function toggleNsfwMode(enabled) {
+    nsfwMode = enabled;
+    
+    // Save to theme settings
+    const theme = JSON.parse(localStorage.getItem('dartsmob-theme') || '{}');
+    theme.nsfwMode = enabled;
+    localStorage.setItem('dartsmob-theme', JSON.stringify(theme));
+    
+    // Switch backgrounds
+    if (enabled && nsfwBackgrounds.length > 0) {
+        selectedBackgrounds = [...nsfwBackgrounds];
+    } else {
+        selectedBackgrounds = [...DEFAULT_BACKGROUNDS];
+    }
+    
+    // Apply first background
+    if (selectedBackgrounds.length > 0) {
+        document.getElementById('background-layer').style.backgroundImage = 
+            `url('${selectedBackgrounds[0]}')`;
+    }
+    
+    // Refresh background grid
+    renderBackgroundGrid();
+}
 
 // ============================================================================
 // Tab Navigation
@@ -74,6 +123,19 @@ function initBackground() {
     const theme = JSON.parse(localStorage.getItem('dartsmob-theme') || '{}');
     selectedBackgrounds = theme.backgrounds || [...DEFAULT_BACKGROUNDS];
     customBackgrounds = theme.customBackgrounds || [];
+    nsfwMode = theme.nsfwMode || false;
+    
+    // Load NSFW backgrounds
+    loadNsfwBackgrounds().then(() => {
+        // Set checkbox state
+        const nsfwCheckbox = document.getElementById('nsfw-mode');
+        if (nsfwCheckbox) {
+            nsfwCheckbox.checked = nsfwMode;
+            if (nsfwMode && nsfwBackgrounds.length > 0) {
+                selectedBackgrounds = [...nsfwBackgrounds];
+            }
+        }
+    });
     
     if (selectedBackgrounds.length > 0) {
         document.getElementById('background-layer').style.backgroundImage = 
