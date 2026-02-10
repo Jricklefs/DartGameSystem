@@ -173,6 +173,8 @@ public static class GameHubExtensions
                 {
                     game.CurrentTurn.TurnNumber,
                     game.CurrentTurn.TurnScore,
+                    Busted = game.CurrentTurn.IsBusted,
+                    ScoreBeforeBust = game.CurrentTurn.ScoreBeforeBust,
                     Darts = game.CurrentTurn.Darts.Select(d => new
                     {
                         d.Index,
