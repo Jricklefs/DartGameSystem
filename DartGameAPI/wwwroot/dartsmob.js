@@ -51,6 +51,7 @@ let currentGame = null;
 let selectedMode = 'Practice';
 let selectedBestOf = 5;
 let lookingForMatch = false;  // Looking for match toggle state
+let bustAcknowledged = false; // True when user clicked Continue on bust, waiting for board clear
 
 // ==========================================================================
 // Initialization
@@ -328,6 +329,13 @@ function handleDartThrown(data) {
 
 function handleBoardCleared(data) {
     console.log('Board cleared - PPD stays visible until Next Player');
+    
+    // If bust was acknowledged, finalize the bust now that darts are pulled
+    if (bustAcknowledged) {
+        finalizeBust();
+        return;
+    }
+    
     // Do NOT clear PPD boxes here - player just removed darts
     // PPD and turn total stay visible until Next Player is pressed
 }
@@ -344,6 +352,7 @@ function handleDartRemoved(data) {
 function handleGameStarted(data) {
     console.log('Game started:', data);
     currentGame = data;
+    bustAcknowledged = false;  // Reset bust state
     showScreen('game-screen');
     updateScoreboard();
     updateCurrentTurn();
@@ -357,6 +366,7 @@ function handleGameEnded(data) {
 
 function handleTurnEnded(data) {
     console.log('Turn ended:', data);
+    bustAcknowledged = false;  // Reset bust state for new turn
     // Update game state with new turn info (round may have increased)
     if (data.game) {
         currentGame = data.game;
@@ -547,11 +557,21 @@ async function confirmBust() {
     if (popup) {
         const bustActions = popup.querySelector('.bust-actions');
         if (bustActions) bustActions.classList.add('hidden');
-        popup.classList.add('hidden');
-        popup.classList.remove('show');
-        popup.querySelector('.throw-value').style.color = '';
+        
+        // Show "Pull your darts" message instead of hiding
+        popup.querySelector('.throw-zone').textContent = 'BUSTED';
+        popup.querySelector('.throw-value').textContent = 'Pull your darts';
+        popup.querySelector('.throw-value').style.color = '#ffaa00';
+        popup.querySelector('.throw-value').style.fontSize = '1.2rem';
     }
     
+    // Set flag - actual turn end happens when board is cleared
+    bustAcknowledged = true;
+    console.log('Bust acknowledged - waiting for board clear');
+}
+
+async function finalizeBust() {
+    // Called when board is cleared after bust was acknowledged
     if (!currentGame?.id) return;
     
     try {
@@ -563,14 +583,28 @@ async function confirmBust() {
             currentGame = data.game;
             updateScoreboard();
             updateCurrentTurn();
-            console.log('Bust confirmed, turn ended');
+            console.log('Bust finalized, turn ended');
         }
     } catch (error) {
         console.error('Error confirming bust:', error);
     }
+    
+    // Hide the popup now
+    const popup = document.getElementById('throw-popup');
+    if (popup) {
+        popup.classList.add('hidden');
+        popup.classList.remove('show');
+        popup.querySelector('.throw-value').style.color = '';
+        popup.querySelector('.throw-value').style.fontSize = '';
+    }
+    
+    bustAcknowledged = false;
 }
 
 function showBustCorrectionPopup() {
+    // Reset bust acknowledgment since they're correcting
+    bustAcknowledged = false;
+    
     // Hide the bust popup first
     const popup = document.getElementById('throw-popup');
     if (popup) {
