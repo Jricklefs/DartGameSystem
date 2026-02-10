@@ -947,6 +947,16 @@ class DartSensorUI:
                             elif settling_start is None:
                                 settling_start = time.time()
                                 self.log(f"Motion detected, settling...")
+                                # IMPORTANT: Save "before" frames NOW, when motion is first detected
+                                # This captures the board state BEFORE the dart landed
+                                self._before_frames_for_next_dart = {}
+                                for cam in self.cameras:
+                                    cam_id = f"cam{cam.index}"
+                                    if len(cam.frame_buffer) >= 2:
+                                        # Use the second-to-last frame (most recent clean frame)
+                                        self._before_frames_for_next_dart[cam_id] = cam.frame_buffer[-2].copy()
+                                    elif len(cam.frame_buffer) > 0:
+                                        self._before_frames_for_next_dart[cam_id] = cam.frame_buffer[-1].copy()
                             elif (time.time() - settling_start) * 1000 >= self.detector.config.settling_ms:
                                 # Settled - capture dart
                                 self.detector.dart_count += 1
@@ -965,15 +975,17 @@ class DartSensorUI:
                                 # Capture 3 frames over 100ms and average for more stable detection
                                 frames_to_send = capture_averaged_frames(self.cameras, num_frames=3, delay_ms=35)
                                 
-                                # Get "before" frames from buffer (captured before dart motion)
-                                before_frames = {}
-                                for cam in self.cameras:
-                                    cam_id = f"cam{cam.index}"
-                                    if len(cam.frame_buffer) >= 5:
-                                        # Use frame from 5 frames ago (~166ms before)
-                                        before_frames[cam_id] = cam.frame_buffer[-5]
-                                    elif len(cam.frame_buffer) > 0:
-                                        before_frames[cam_id] = cam.frame_buffer[0]
+                                # Use "before" frames saved when motion was first detected
+                                before_frames = getattr(self, '_before_frames_for_next_dart', {})
+                                if not before_frames:
+                                    # Fallback: try frame buffer (less reliable)
+                                    self.log("WARNING: No saved before_frames, using frame buffer fallback")
+                                    for cam in self.cameras:
+                                        cam_id = f"cam{cam.index}"
+                                        if len(cam.frame_buffer) >= 5:
+                                            before_frames[cam_id] = cam.frame_buffer[-5]
+                                        elif len(cam.frame_buffer) > 0:
+                                            before_frames[cam_id] = cam.frame_buffer[0]
                                 
                                 threading.Thread(
                                     target=self.api_client.send_dart_images,
