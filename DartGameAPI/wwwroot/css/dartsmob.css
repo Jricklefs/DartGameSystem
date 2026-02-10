@@ -2886,3 +2886,17 @@ html, body {
 #auto-refresh-toggle.active {
     background: #4a4;
 }
+
+.tuning-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ccc;
+    cursor: pointer;
+}
+
+.tuning-checkbox input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}

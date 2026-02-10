@@ -2716,7 +2716,8 @@ async function refreshTuningPreview() {
     if (!img) return;
     
     try {
-        const resp = await fetch(`${DART_DETECT_URL}/v1/tuning/threshold?threshold=${threshold}&camera_id=${camera}`);
+        const showRaw = document.getElementById('show-pipeline')?.checked || false;
+        const resp = await fetch(`${DART_DETECT_URL}/v1/tuning/threshold?threshold=${threshold}&camera_id=${camera}&show_raw=${showRaw}`);
         const data = await resp.json();
         
         if (data.error) {
