@@ -253,18 +253,22 @@ function speakDartScore(dart) {
     
     const zone = dart.zone?.toLowerCase() || '';
     const segment = dart.segment || 0;
+    const multiplier = dart.multiplier || 0;
     let audioFile = '';
     let ttsText = '';
     
-    if (zone === 'miss' || segment === 0) {
-        audioFile = 'miss';
-        ttsText = 'Miss';
-    } else if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull') {
+    // Check for bull first (segment 0 or 25 with multiplier > 0)
+    if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull' || 
+        (segment === 0 && multiplier === 2) || (segment === 25 && multiplier === 2)) {
         audioFile = 'double-bullseye';
         ttsText = 'Double Bullseye';
-    } else if (zone === 'outer_bull' || zone === 'bull') {
+    } else if (zone === 'outer_bull' || zone === 'bull' || 
+               (segment === 0 && multiplier === 1) || (segment === 25 && multiplier === 1)) {
         audioFile = 'bullseye';
         ttsText = 'Bullseye';
+    } else if (zone === 'miss' || (segment === 0 && multiplier === 0)) {
+        audioFile = 'miss';
+        ttsText = 'Miss';
     } else if (zone === 'double' || zone === 'double_ring') {
         audioFile = `double-${segment}`;
         ttsText = `Double ${segment}`;
@@ -322,9 +326,11 @@ function handleDartThrown(data) {
     
     // Check for winner - game state Finished = 2
     if (data.game?.state === 2 || data.game?.state === 'Finished') {
-        const winner = data.game.players?.find(p => p.id === data.game.winnerId);
-        console.log('🏆 Game finished via dart! Winner:', winner?.name);
-        setTimeout(() => showWinnerModal(winner?.name || 'Winner'), 1000);
+        const winnerName = data.game.winnerName || 
+                          data.game.players?.find(p => p.id === data.game.winnerId)?.name ||
+                          'Winner';
+        console.log('🏆 Game finished via dart! Winner:', winnerName);
+        setTimeout(() => showWinnerModal(winnerName), 1000);
     }
 }
 

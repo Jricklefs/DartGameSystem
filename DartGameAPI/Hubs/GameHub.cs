@@ -160,6 +160,8 @@ public static class GameHubExtensions
                 game.Id,
                 game.Mode,
                 game.State,
+                game.WinnerId,
+                WinnerName = game.Players.FirstOrDefault(p => p.Id == game.WinnerId)?.Name,
                 game.CurrentPlayerIndex,
                 CurrentPlayer = game.CurrentPlayer?.Name,
                 Players = game.Players.Select(p => new
