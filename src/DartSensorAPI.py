@@ -561,9 +561,9 @@ class DartSensorUI:
         self.log(f"Found {len(available)} camera(s)")
         return available
     
-    def init_cameras(self, indices: List[int], width: int = 1280, height: int = 720):
+    def init_cameras(self, indices: List[int], width: int = 1280, height: int = 720, fps: int = 60):
         """Initialize cameras at specified indices."""
-        self.log(f"Initializing {len(indices)} camera(s)...")
+        self.log(f"Initializing {len(indices)} camera(s) at {width}x{height} @ {fps}fps...")
         
         for i, idx in enumerate(indices):
             time.sleep(1.5)  # Staggered init
@@ -575,7 +575,13 @@ class DartSensorUI:
             if cap.isOpened():
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+                cap.set(cv2.CAP_PROP_FPS, fps)  # Request target FPS
                 cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                
+                # Read back actual settings
+                actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                actual_fps = cap.get(cv2.CAP_PROP_FPS)
                 
                 ret, frame = cap.read()
                 if ret:
@@ -585,7 +591,8 @@ class DartSensorUI:
                         name=f"Camera {idx}",
                         last_frame=frame
                     ))
-                    self.log(f"  Camera {idx} ready")
+                    self.log(f"  Camera {idx}: {actual_w}x{actual_h} @ {actual_fps:.1f}fps")
+                    print(f"[CAM] Camera {idx}: got {actual_w}x{actual_h}@{actual_fps:.1f}fps")
                 else:
                     cap.release()
                     self.log(f"  Camera {idx} failed to grab frame")
