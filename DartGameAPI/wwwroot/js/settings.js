@@ -2630,3 +2630,87 @@ async function applyBestConfig() {
         alert('Failed to apply: ' + err.message);
     }
 }
+
+
+// ============================================================================
+// Detection Tuning Tab
+// ============================================================================
+
+let tuningAutoRefresh = false;
+let tuningInterval = null;
+
+function initTuning() {
+    const slider = document.getElementById('threshold-slider');
+    const valueSpan = document.getElementById('threshold-value');
+    const refreshBtn = document.getElementById('refresh-tuning');
+    const autoBtn = document.getElementById('auto-refresh-toggle');
+    const cameraSelect = document.getElementById('tuning-camera');
+    
+    if (!slider) return; // Tab doesn't exist
+    
+    slider.addEventListener('input', () => {
+        valueSpan.textContent = slider.value;
+    });
+    
+    slider.addEventListener('change', () => {
+        refreshTuningPreview();
+    });
+    
+    cameraSelect.addEventListener('change', () => {
+        refreshTuningPreview();
+    });
+    
+    refreshBtn.addEventListener('click', refreshTuningPreview);
+    
+    autoBtn.addEventListener('click', () => {
+        tuningAutoRefresh = !tuningAutoRefresh;
+        autoBtn.textContent = tuningAutoRefresh ? '⏸️ Stop' : '▶️ Auto';
+        autoBtn.classList.toggle('active', tuningAutoRefresh);
+        
+        if (tuningAutoRefresh) {
+            tuningInterval = setInterval(refreshTuningPreview, 1000);
+        } else if (tuningInterval) {
+            clearInterval(tuningInterval);
+            tuningInterval = null;
+        }
+    });
+}
+
+async function refreshTuningPreview() {
+    const threshold = document.getElementById('threshold-slider')?.value || 25;
+    const camera = document.getElementById('tuning-camera')?.value || 'cam0';
+    const img = document.getElementById('tuning-image');
+    const status = document.getElementById('tuning-status');
+    const pixelCount = document.getElementById('mask-pixel-count');
+    
+    if (!img) return;
+    
+    status.textContent = 'Loading...';
+    
+    try {
+        const resp = await fetch(`${DARTDETECT_API}/v1/tuning/threshold?threshold=${threshold}&camera_id=${camera}`);
+        const data = await resp.json();
+        
+        if (data.error) {
+            status.textContent = `Error: ${data.error}`;
+            return;
+        }
+        
+        if (data.image) {
+            img.src = `data:image/jpeg;base64,${data.image}`;
+            status.textContent = `Camera: ${data.camera_id} | Threshold: ${data.threshold}`;
+            pixelCount.textContent = `Mask pixels: ${data.mask_pixels?.toLocaleString() || '--'}`;
+        } else {
+            status.textContent = 'No image data received';
+        }
+    } catch (err) {
+        status.textContent = `Failed: ${err.message}`;
+    }
+}
+
+// Call initTuning after DOM loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTuning);
+} else {
+    initTuning();
+}

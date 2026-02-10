@@ -485,6 +485,44 @@
             </div>
         </div>
 
+    
+        <!-- Tuning Tab -->
+        <section id="tab-tuning" class="settings-section">
+            <div class="section-title-row">
+                <h2 class="section-title">DETECTION TUNING</h2>
+            </div>
+            
+            <div class="tuning-container">
+                <div class="tuning-controls">
+                    <div class="tuning-row">
+                        <label>Camera:</label>
+                        <select id="tuning-camera">
+                            <option value="cam0">Camera 0</option>
+                            <option value="cam1">Camera 1</option>
+                            <option value="cam2">Camera 2</option>
+                        </select>
+                    </div>
+                    <div class="tuning-row">
+                        <label>Threshold: <span id="threshold-value">25</span></label>
+                        <input type="range" id="threshold-slider" min="5" max="80" value="25" step="5">
+                    </div>
+                    <div class="tuning-row">
+                        <button class="btn-primary" id="refresh-tuning">🔄 Refresh</button>
+                        <button class="btn-secondary" id="auto-refresh-toggle">▶️ Auto</button>
+                    </div>
+                    <div class="tuning-info">
+                        <p id="mask-pixel-count">Mask pixels: --</p>
+                        <p class="tuning-help">Lower threshold = more sensitive (more noise)<br>
+                        Higher threshold = less sensitive (may miss darts)</p>
+                    </div>
+                </div>
+                <div class="tuning-preview">
+                    <img id="tuning-image" src="" alt="Waiting for preview...">
+                    <p id="tuning-status">Click Refresh to load preview</p>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <script src="/js/settings.js"></script>

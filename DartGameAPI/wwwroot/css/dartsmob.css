@@ -2813,3 +2813,76 @@ html, body {
     z-index: 15;
     display: block !important;
 }
+
+
+/* ============================================================================
+   Tuning Tab Styles
+   ============================================================================ */
+
+.tuning-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tuning-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    background: rgba(0,0,0,0.3);
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.tuning-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tuning-row label {
+    color: #ccc;
+    min-width: 100px;
+}
+
+.tuning-row select,
+.tuning-row input[type="range"] {
+    flex: 1;
+}
+
+#threshold-slider {
+    width: 200px;
+    cursor: pointer;
+}
+
+.tuning-info {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.tuning-help {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+.tuning-preview {
+    text-align: center;
+}
+
+#tuning-image {
+    max-width: 100%;
+    border: 2px solid #333;
+    border-radius: 8px;
+    min-height: 200px;
+    background: #111;
+}
+
+#tuning-status {
+    color: #888;
+    margin-top: 0.5rem;
+}
+
+#auto-refresh-toggle.active {
+    background: #4a4;
+}
