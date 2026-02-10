@@ -507,23 +507,29 @@
                         <input type="range" id="threshold-slider" min="5" max="80" value="25" step="5">
                     </div>
                     <div class="tuning-row">
-                        <button class="btn-primary" id="refresh-tuning">🔄 Refresh</button>
+                        <button class="btn-primary" id="capture-baseline">📷 Capture Baseline</button>
+                        <button class="btn-secondary" id="refresh-tuning">🔄 Refresh</button>
                         <button class="btn-secondary" id="auto-refresh-toggle">▶️ Auto</button>
                     </div>
                     <div class="tuning-info">
                         <p id="mask-pixel-count">Mask pixels: --</p>
-                        <p class="tuning-help">Lower threshold = more sensitive (more noise)<br>
-                        Higher threshold = less sensitive (may miss darts)</p>
+                        <p class="tuning-help">
+                            1. Clear the board<br>
+                            2. Click "Capture Baseline"<br>
+                            3. Throw a dart<br>
+                            4. Click "Refresh" to see detection<br>
+                            5. Adjust threshold until only dart shows red
+                        </p>
                     </div>
                 </div>
                 <div class="tuning-preview">
-                    <img id="tuning-image" src="" alt="Waiting for preview...">
-                    <p id="tuning-status">Click Refresh to load preview</p>
+                    <img id="tuning-image" src="" alt="Click Capture Baseline to start">
+                    <p id="tuning-status">Clear the board and click Capture Baseline</p>
                 </div>
             </div>
         </section>
 
-    </main>
+        </main>
 
     <script src="/js/settings.js"></script>
 </body>

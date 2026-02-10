@@ -2632,6 +2632,7 @@ async function applyBestConfig() {
 }
 
 
+
 // ============================================================================
 // Detection Tuning Tab
 // ============================================================================
@@ -2643,6 +2644,7 @@ function initTuning() {
     const slider = document.getElementById('threshold-slider');
     const valueSpan = document.getElementById('threshold-value');
     const refreshBtn = document.getElementById('refresh-tuning');
+    const captureBtn = document.getElementById('capture-baseline');
     const autoBtn = document.getElementById('auto-refresh-toggle');
     const cameraSelect = document.getElementById('tuning-camera');
     
@@ -2657,9 +2659,12 @@ function initTuning() {
     });
     
     cameraSelect.addEventListener('change', () => {
-        refreshTuningPreview();
+        // Don't auto-refresh on camera change - need new baseline
+        document.getElementById('tuning-status').textContent = 
+            'Camera changed. Capture new baseline for this camera.';
     });
     
+    captureBtn.addEventListener('click', captureBaseline);
     refreshBtn.addEventListener('click', refreshTuningPreview);
     
     autoBtn.addEventListener('click', () => {
@@ -2668,12 +2673,37 @@ function initTuning() {
         autoBtn.classList.toggle('active', tuningAutoRefresh);
         
         if (tuningAutoRefresh) {
-            tuningInterval = setInterval(refreshTuningPreview, 1000);
+            tuningInterval = setInterval(refreshTuningPreview, 500);
         } else if (tuningInterval) {
             clearInterval(tuningInterval);
             tuningInterval = null;
         }
     });
+}
+
+async function captureBaseline() {
+    const camera = document.getElementById('tuning-camera')?.value || 'cam0';
+    const status = document.getElementById('tuning-status');
+    const img = document.getElementById('tuning-image');
+    
+    status.textContent = 'Capturing baseline...';
+    
+    try {
+        const resp = await fetch(`${DARTDETECT_API}/v1/tuning/threshold?camera_id=${camera}&reset_baseline=true`);
+        const data = await resp.json();
+        
+        if (data.error) {
+            status.textContent = `Error: ${data.error}`;
+            return;
+        }
+        
+        if (data.image) {
+            img.src = `data:image/jpeg;base64,${data.image}`;
+            status.textContent = data.message || 'Baseline captured! Throw a dart and click Refresh.';
+        }
+    } catch (err) {
+        status.textContent = `Failed: ${err.message}`;
+    }
 }
 
 async function refreshTuningPreview() {
@@ -2685,8 +2715,6 @@ async function refreshTuningPreview() {
     
     if (!img) return;
     
-    status.textContent = 'Loading...';
-    
     try {
         const resp = await fetch(`${DARTDETECT_API}/v1/tuning/threshold?threshold=${threshold}&camera_id=${camera}`);
         const data = await resp.json();
@@ -2696,12 +2724,16 @@ async function refreshTuningPreview() {
             return;
         }
         
+        if (data.baseline_captured) {
+            // First call - baseline was just captured
+            status.textContent = data.message || 'Baseline captured!';
+        } else {
+            status.textContent = `Camera: ${data.camera_id} | Threshold: ${data.threshold}`;
+        }
+        
         if (data.image) {
             img.src = `data:image/jpeg;base64,${data.image}`;
-            status.textContent = `Camera: ${data.camera_id} | Threshold: ${data.threshold}`;
             pixelCount.textContent = `Mask pixels: ${data.mask_pixels?.toLocaleString() || '--'}`;
-        } else {
-            status.textContent = 'No image data received';
         }
     } catch (err) {
         status.textContent = `Failed: ${err.message}`;
