@@ -2689,7 +2689,7 @@ async function captureBaseline() {
     status.textContent = 'Capturing baseline...';
     
     try {
-        const resp = await fetch(`${DARTDETECT_API}/v1/tuning/threshold?camera_id=${camera}&reset_baseline=true`);
+        const resp = await fetch(`${DART_DETECT_URL}/v1/tuning/threshold?camera_id=${camera}&reset_baseline=true`);
         const data = await resp.json();
         
         if (data.error) {
@@ -2716,7 +2716,7 @@ async function refreshTuningPreview() {
     if (!img) return;
     
     try {
-        const resp = await fetch(`${DARTDETECT_API}/v1/tuning/threshold?threshold=${threshold}&camera_id=${camera}`);
+        const resp = await fetch(`${DART_DETECT_URL}/v1/tuning/threshold?threshold=${threshold}&camera_id=${camera}`);
         const data = await resp.json();
         
         if (data.error) {
