@@ -308,6 +308,7 @@ function initBackground() {
         if (nsfwCheckbox) {
             nsfwCheckbox.checked = false;
         }
+        renderBackgroundGallery();
     });
     
     if (selectedBackgrounds.length > 0) {
