@@ -78,4 +78,69 @@ public class BackgroundsController : ControllerBase
             return StatusCode(500, "Error listing backgrounds");
         }
     }
+
+    /// <summary>
+    /// Upload NSFW background image
+    /// </summary>
+    [HttpPost("nsfw/upload")]
+    [RequestSizeLimit(10_000_000)]
+    public async Task<ActionResult> UploadNsfwBackground(IFormFile file)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file provided");
+
+            var extensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var ext = Path.GetExtension(file.FileName).ToLower();
+            if (!extensions.Contains(ext))
+                return BadRequest("Invalid file type");
+
+            var nsfwPath = Path.Combine(_env.WebRootPath, "images", "backgrounds", "nsfw");
+            Directory.CreateDirectory(nsfwPath);
+
+            var safeName = $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Path.GetFileNameWithoutExtension(file.FileName)}{ext}";
+            var filePath = Path.Combine(nsfwPath, safeName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            _logger.LogInformation("Uploaded NSFW background: {Name}", safeName);
+            return Ok(new { path = $"/images/backgrounds/nsfw/{safeName}" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading NSFW background");
+            return StatusCode(500, "Upload failed");
+        }
+    }
+
+    /// <summary>
+    /// Delete NSFW background image
+    /// </summary>
+    [HttpDelete("nsfw/{filename}")]
+    public ActionResult DeleteNsfwBackground(string filename)
+    {
+        try
+        {
+            if (filename.Contains("..") || filename.Contains("/") || filename.Contains("\\"))
+                return BadRequest("Invalid filename");
+
+            var filePath = Path.Combine(_env.WebRootPath, "images", "backgrounds", "nsfw", filename);
+
+            if (!System.IO.File.Exists(filePath))
+                return NotFound("File not found");
+
+            System.IO.File.Delete(filePath);
+            _logger.LogInformation("Deleted NSFW background: {Name}", filename);
+            return Ok(new { deleted = filename });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting NSFW background");
+            return StatusCode(500, "Delete failed");
+        }
+    }
 }

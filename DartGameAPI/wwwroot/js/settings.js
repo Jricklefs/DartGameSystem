@@ -337,28 +337,119 @@ function loadThemeSettings() {
 
 function renderBackgroundGallery() {
     const gallery = document.getElementById('background-gallery');
-    const allBackgrounds = [...DEFAULT_BACKGROUNDS, ...customBackgrounds];
     
-    gallery.innerHTML = allBackgrounds.map(bg => `
-        <div class="bg-thumb ${selectedBackgrounds.includes(bg) ? 'selected' : ''}" 
-             style="background-image: url('${bg}')"
-             data-bg="${bg}">
+    // SFW section
+    const allSfw = [...DEFAULT_BACKGROUNDS, ...customBackgrounds];
+    let html = '<div class="bg-section-label" style="color: var(--gold); margin-bottom: 8px; font-size: 0.9rem;">Standard Backgrounds</div>';
+    html += '<div class="bg-grid">';
+    html += allSfw.map(bg => `
+        <div class="bg-thumb ${selectedBackgrounds.includes(bg) ? 'selected' : ''}"
+            style="background-image: url('${bg}')"
+            onclick="toggleBackground('${bg}')">
             ${customBackgrounds.includes(bg) ? '<span class="custom-badge">Custom</span>' : ''}
         </div>
     `).join('');
+    html += '</div>';
     
-    gallery.querySelectorAll('.bg-thumb').forEach(thumb => {
-        thumb.addEventListener('click', () => {
-            const bg = thumb.dataset.bg;
-            if (selectedBackgrounds.includes(bg)) {
-                selectedBackgrounds = selectedBackgrounds.filter(b => b !== bg);
-                thumb.classList.remove('selected');
-            } else {
-                selectedBackgrounds.push(bg);
-                thumb.classList.add('selected');
-            }
+    // NSFW section
+    html += '<div style="border-top: 1px solid #333; margin: 15px 0; padding-top: 15px;">';
+    html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">';
+    html += '<span style="color: #ff4444; font-size: 0.9rem;">🔞 NSFW Backgrounds</span>';
+    html += '<label class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 12px; margin: 0; cursor: pointer;">📤 Upload NSFW<input type="file" id="nsfw-upload" accept="image/*" hidden onchange="uploadNsfwImage(this)"></label>';
+    html += '</div>';
+    
+    if (nsfwBackgrounds.length === 0) {
+        html += '<div style="color: #666; font-style: italic; padding: 10px;">No NSFW images uploaded</div>';
+    } else {
+        html += '<div class="bg-grid">';
+        html += nsfwBackgrounds.map(bg => {
+            const filename = bg.split('/').pop();
+            const blurStyle = nsfwMode ? '' : 'filter: blur(20px);';
+            return `
+                <div class="bg-thumb ${selectedBackgrounds.includes(bg) ? 'selected' : ''}" style="position: relative;">
+                    <div style="position: absolute; inset: 0; background-image: url('${bg}'); background-size: cover; background-position: center; border-radius: 6px; ${blurStyle}"></div>
+                    <div style="position: absolute; inset: 0; border-radius: 6px;" onclick="toggleBackground('${bg}')"></div>
+                    <button onclick="event.stopPropagation(); deleteNsfwImage('${filename}')" 
+                        style="position: absolute; top: 2px; right: 2px; background: rgba(139,0,0,0.8); border: none; color: white; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 0.7rem; z-index: 2;">🗑️</button>
+                </div>
+            `;
+        }).join('');
+        html += '</div>';
+    }
+    html += '</div>';
+    
+    gallery.innerHTML = html;
+}
+
+function toggleBackground(bg) {
+    if (selectedBackgrounds.includes(bg)) {
+        selectedBackgrounds = selectedBackgrounds.filter(b => b !== bg);
+    } else {
+        selectedBackgrounds.push(bg);
+    }
+    renderBackgroundGallery();
+}
+
+function renderBackgroundGrid() {
+    renderBackgroundGallery();
+}
+
+async function uploadNsfwImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const resp = await fetch('/api/backgrounds/nsfw/upload', {
+            method: 'POST',
+            body: formData
         });
-    });
+        
+        if (!resp.ok) {
+            const err = await resp.text();
+            alert('Upload failed: ' + err);
+            return;
+        }
+        
+        const result = await resp.json();
+        nsfwBackgrounds.push(result.path);
+        
+        if (nsfwMode) {
+            selectedBackgrounds.push(result.path);
+        }
+        
+        renderBackgroundGallery();
+    } catch (e) {
+        console.error('NSFW upload failed:', e);
+        alert('Upload failed');
+    }
+    
+    input.value = '';
+}
+
+async function deleteNsfwImage(filename) {
+    if (!confirm('Delete this image?')) return;
+    
+    try {
+        const resp = await fetch(`/api/backgrounds/nsfw/${encodeURIComponent(filename)}`, {
+            method: 'DELETE'
+        });
+        
+        if (!resp.ok) {
+            alert('Delete failed');
+            return;
+        }
+        
+        const path = `/images/backgrounds/nsfw/${filename}`;
+        nsfwBackgrounds = nsfwBackgrounds.filter(bg => bg !== path);
+        selectedBackgrounds = selectedBackgrounds.filter(bg => bg !== path);
+        renderBackgroundGallery();
+    } catch (e) {
+        console.error('NSFW delete failed:', e);
+        alert('Delete failed');
+    }
 }
 
 // ============================================================================
