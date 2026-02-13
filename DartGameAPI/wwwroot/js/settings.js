@@ -1950,7 +1950,7 @@ async function initStereoCalibration() {
             const response = await fetch(`${DART_DETECT_URL}/v1/stereo/capture`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cameras, board_id: 'default' })
+                body: JSON.stringify({ cameras, board_id: (window._currentBoardId || 'default') })
             });
             const data = await response.json();
             
@@ -1994,7 +1994,7 @@ async function initStereoCalibration() {
             const response = await fetch(`${DART_DETECT_URL}/v1/stereo/calibrate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ board_id: 'default' })
+                body: JSON.stringify({ board_id: (window._currentBoardId || 'default') })
             });
             const data = await response.json();
             
@@ -2027,7 +2027,7 @@ async function initStereoCalibration() {
             await fetch(`${DART_DETECT_URL}/v1/stereo/clear-captures`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ board_id: 'default' })
+                body: JSON.stringify({ board_id: (window._currentBoardId || 'default') })
             });
             
             document.getElementById('capture-count').textContent = '0 images captured';
@@ -2083,7 +2083,7 @@ function initAccuracy() {
             const response = await fetch(`${DART_DETECT_URL}/v1/benchmark/replay-all-darts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ board_id: 'default', limit: 200 })
+                body: JSON.stringify({ board_id: (window._currentBoardId || 'default'), limit: 200 })
             });
             const data = await response.json();
             
