@@ -8,7 +8,9 @@
 // ==========================================================================
 
 const DETECT_API = 'http://192.168.0.158:8000';
-const boardId = 'default';
+let boardId = 'default';
+// Fetch actual board ID from API
+fetch('/api/boards/current').then(r => r.json()).then(b => { boardId = b.id; console.log('Board:', b.name, b.id); }).catch(() => {});
 
 // ==========================================================================
 // Centralized Logging
