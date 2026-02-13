@@ -299,17 +299,14 @@ function initBackground() {
     const theme = JSON.parse(localStorage.getItem('dartsmob-theme') || '{}');
     selectedBackgrounds = theme.backgrounds || [...DEFAULT_BACKGROUNDS];
     customBackgrounds = theme.customBackgrounds || [];
-    nsfwMode = theme.nsfwMode || false;
+    nsfwMode = false; // always unchecked on load
     
     // Load NSFW backgrounds
     loadNsfwBackgrounds().then(() => {
         // Set checkbox state
         const nsfwCheckbox = document.getElementById('nsfw-enable');
         if (nsfwCheckbox) {
-            nsfwCheckbox.checked = nsfwMode;
-            if (nsfwMode && nsfwBackgrounds.length > 0) {
-                selectedBackgrounds = [...nsfwBackgrounds];
-            }
+            nsfwCheckbox.checked = false;
         }
     });
     
