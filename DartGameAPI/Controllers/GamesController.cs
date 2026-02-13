@@ -481,7 +481,15 @@ public class GamesController : ControllerBase
             }
             
             // 4. Check sensor is connected
-            if (!GameHub.IsSensorConnected(boardId))
+            // Check sensor via HTTP
+            var sensorUp = false;
+            try
+            {
+                using var sc = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+                sensorUp = (await sc.GetAsync("http://localhost:8001/status")).IsSuccessStatusCode;
+            }
+            catch { }
+            if (!sensorUp)
             {
                 return BadRequest(new { 
                     error = "Sensor not connected", 
