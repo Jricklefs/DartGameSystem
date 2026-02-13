@@ -1646,7 +1646,7 @@ html, body {
 
 /* Theme Cards */
 .theme-card {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.5);
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 16px;
