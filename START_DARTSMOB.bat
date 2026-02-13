@@ -27,7 +27,7 @@ timeout /t 2 /nobreak > nul
 :: Start DartSensor API (Python on port 8001) - TOP RIGHT
 echo  [2/4] Starting DartSensor API on port 8001...
 cd /d "C:\Users\clawd\DartSensor"
-start "DartSensor API" cmd /c "mode con: cols=80 lines=25 & C:\Users\clawd\DartDetectionAI\.venv\Scripts\python.exe src/DartSensorAPI.py"
+start "DartSensor API" cmd /c "mode con: cols=80 lines=25 & C:\Users\clawd\Python312\python.exe src/DartSensorAPI.py"
 timeout /t 1 /nobreak > nul
 powershell -command "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class Win32 { [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags); [DllImport(\"user32.dll\")] public static extern IntPtr FindWindow(string lpClassName, string lpWindowName); }'; $h = [Win32]::FindWindow($null, 'DartSensor API'); if($h -ne [IntPtr]::Zero) { [Win32]::SetWindowPos($h, [IntPtr]::Zero, 960, 0, 960, 420, 0) }"
 
