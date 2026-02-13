@@ -338,48 +338,50 @@ function loadThemeSettings() {
 function renderBackgroundGallery() {
     const gallery = document.getElementById('background-gallery');
     
-    // SFW section
+    // === Standard Backgrounds Section ===
     const allSfw = [...DEFAULT_BACKGROUNDS, ...customBackgrounds];
-    let html = '<div class="bg-section-label" style="color: var(--gold); margin-bottom: 8px; font-size: 0.9rem;">Standard Backgrounds</div>';
-    html += '<div class="bg-grid">';
+    let html = '<div style="margin-bottom: 20px;">';
+    html += '<h4 style="color: var(--gold); margin: 0 0 10px 0; font-size: 1rem; border-bottom: 1px solid #333; padding-bottom: 6px;">Standard Backgrounds</h4>';
+    html += '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
     html += allSfw.map(bg => `
         <div class="bg-thumb ${selectedBackgrounds.includes(bg) ? 'selected' : ''}"
-            style="background-image: url('${bg}')"
+            style="background-image: url('${bg}'); width: 120px; height: 75px; flex-shrink: 0;"
             onclick="toggleBackground('${bg}')">
             ${customBackgrounds.includes(bg) ? '<span class="custom-badge">Custom</span>' : ''}
         </div>
     `).join('');
     html += '</div>';
-    
-    // NSFW section
-    html += '<div style="border-top: 1px solid #333; margin: 15px 0; padding-top: 15px;">';
-    html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">';
-    html += '<span style="color: #ff4444; font-size: 0.9rem;">🔞 NSFW Backgrounds</span>';
-    html += '<label class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 12px; margin: 0; cursor: pointer;">📤 Upload NSFW<input type="file" id="nsfw-upload" accept="image/*" hidden onchange="uploadNsfwImage(this)"></label>';
+    html += '<label class="btn btn-secondary" style="margin-top: 10px; display: inline-block; font-size: 0.85rem; padding: 6px 14px; cursor: pointer;">📤 Upload Background<input type="file" id="bg-upload" accept="image/*" hidden onchange="handleBackgroundUpload(event)"></label>';
     html += '</div>';
     
+    // === NSFW Backgrounds Section ===
+    html += '<div>';
+    html += '<h4 style="color: #ff4444; margin: 0 0 10px 0; font-size: 1rem; border-bottom: 1px solid #333; padding-bottom: 6px;">🔞 NSFW Backgrounds</h4>';
+    
     if (nsfwBackgrounds.length === 0) {
-        html += '<div style="color: #666; font-style: italic; padding: 10px;">No NSFW images uploaded</div>';
+        html += '<div style="color: #666; font-style: italic; padding: 10px 0;">No NSFW images uploaded</div>';
     } else {
-        html += '<div class="bg-grid">';
+        html += '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
         html += nsfwBackgrounds.map(bg => {
             const filename = bg.split('/').pop();
             const blurStyle = nsfwMode ? '' : 'filter: blur(20px);';
             return `
-                <div class="bg-thumb ${selectedBackgrounds.includes(bg) ? 'selected' : ''}" style="position: relative;">
-                    <div style="position: absolute; inset: 0; background-image: url('${bg}'); background-size: cover; background-position: center; border-radius: 6px; ${blurStyle}"></div>
-                    <div style="position: absolute; inset: 0; border-radius: 6px;" onclick="toggleBackground('${bg}')"></div>
+                <div class="bg-thumb ${selectedBackgrounds.includes(bg) ? 'selected' : ''}" style="position: relative; width: 120px; height: 75px; flex-shrink: 0; overflow: hidden;">
+                    <div style="position: absolute; inset: 0; background-image: url('${bg}'); background-size: cover; background-position: center; border-radius: 6px; ${blurStyle} transition: filter 0.3s;"></div>
+                    <div style="position: absolute; inset: 0; border-radius: 6px; cursor: pointer;" onclick="toggleBackground('${bg}')"></div>
                     <button onclick="event.stopPropagation(); deleteNsfwImage('${filename}')" 
-                        style="position: absolute; top: 2px; right: 2px; background: rgba(139,0,0,0.8); border: none; color: white; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 0.7rem; z-index: 2;">🗑️</button>
+                        style="position: absolute; top: 2px; right: 2px; background: rgba(139,0,0,0.8); border: none; color: white; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.65rem; z-index: 2; line-height: 22px;">🗑️</button>
                 </div>
             `;
         }).join('');
         html += '</div>';
     }
+    html += '<label class="btn btn-secondary" style="margin-top: 10px; display: inline-block; font-size: 0.85rem; padding: 6px 14px; cursor: pointer;">📤 Upload NSFW<input type="file" id="nsfw-upload" accept="image/*" hidden onchange="uploadNsfwImage(this)"></label>';
     html += '</div>';
     
     gallery.innerHTML = html;
 }
+
 
 function toggleBackground(bg) {
     if (selectedBackgrounds.includes(bg)) {
