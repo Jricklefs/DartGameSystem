@@ -456,11 +456,13 @@ function updateCurrentTurn() {
             slot.classList.add('hit');
             slot.textContent = darts[i].score;
             slot.style.cursor = 'pointer';
-            slot.onclick = () => removeDart(i);
+            slot.onclick = () => showDartPopup(i, darts[i]);
             console.log(`[updateCurrentTurn] slot ${i} = ${darts[i].score}`);
         } else {
             slot.classList.remove('hit');
             slot.textContent = '—';
+            slot.style.cursor = 'pointer';
+            slot.onclick = () => showManualEntryPopup(i);
         }
     });
     
@@ -2142,3 +2144,121 @@ function getCorrections() {
 window.exportCorrections = exportCorrections;
 window.clearCorrections = clearCorrections;
 window.getCorrections = getCorrections;
+
+
+// Manual dart entry popup (for missed detections)
+function showManualEntryPopup(dartIndex) {
+    const existing = document.getElementById('dart-popup');
+    if (existing) existing.remove();
+    
+    const segments = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+    const popup = document.createElement('div');
+    popup.id = 'dart-popup';
+    popup.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.7); z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+    `;
+    popup.innerHTML = `
+        <div style="background: #1a1a2e; border: 2px solid #d4af37; border-radius: 12px; 
+                    padding: 20px; min-width: 300px; max-width: 340px; text-align: center; color: #f0e6d3;">
+            <h3 style="margin: 0 0 12px; color: #d4af37;">Enter Dart ${dartIndex + 1}</h3>
+            
+            <div style="margin: 12px 0;">
+                <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px;">
+                    <button class="mult-btn" data-mult="1" onclick="setManualMult(1)" style="padding: 10px 16px; font-size: 1rem; background: #d4af37; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Single</button>
+                    <button class="mult-btn" data-mult="2" onclick="setManualMult(2)" style="padding: 10px 16px; font-size: 1rem; background: #333; color: #fff; border: 1px solid #555; border-radius: 6px; cursor: pointer;">Double</button>
+                    <button class="mult-btn" data-mult="3" onclick="setManualMult(3)" style="padding: 10px 16px; font-size: 1rem; background: #333; color: #fff; border: 1px solid #555; border-radius: 6px; cursor: pointer;">Triple</button>
+                </div>
+                <div id="segment-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
+                    ${segments.map(s => `<button onclick="submitManualDart(${dartIndex}, ${s})" style="padding: 10px; font-size: 1.1rem; background: #2a2a3e; color: #f0e6d3; border: 1px solid #444; border-radius: 6px; cursor: pointer;">${s}</button>`).join('')}
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: center; margin-top: 10px;">
+                    <button onclick="submitManualBull(${dartIndex}, 25)" style="padding: 10px 20px; font-size: 1rem; background: #2a5a2a; color: #fff; border: none; border-radius: 6px; cursor: pointer;">Bull (25)</button>
+                    <button onclick="submitManualBull(${dartIndex}, 50)" style="padding: 10px 20px; font-size: 1rem; background: #5a2a2a; color: #fff; border: none; border-radius: 6px; cursor: pointer;">Bullseye (50)</button>
+                    <button onclick="submitManualMiss(${dartIndex})" style="padding: 10px 20px; font-size: 1rem; background: #333; color: #888; border: 1px solid #555; border-radius: 6px; cursor: pointer;">Miss</button>
+                </div>
+            </div>
+            
+            <button onclick="closeDartPopup()" style="margin-top: 12px; padding: 10px; font-size: 1rem; background: transparent; color: #888; border: 1px solid #444; border-radius: 8px; cursor: pointer; width: 100%;">
+                Cancel
+            </button>
+        </div>
+    `;
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) closeDartPopup();
+    });
+    document.body.appendChild(popup);
+    window._manualMult = 1;
+}
+
+function setManualMult(mult) {
+    window._manualMult = mult;
+    document.querySelectorAll('.mult-btn').forEach(b => {
+        if (parseInt(b.dataset.mult) === mult) {
+            b.style.background = '#d4af37';
+            b.style.color = '#000';
+            b.style.border = 'none';
+            b.style.fontWeight = 'bold';
+        } else {
+            b.style.background = '#333';
+            b.style.color = '#fff';
+            b.style.border = '1px solid #555';
+            b.style.fontWeight = 'normal';
+        }
+    });
+}
+
+async function submitManualDart(dartIndex, segment) {
+    closeDartPopup();
+    if (!currentGame?.id) return;
+    const mult = window._manualMult || 1;
+    try {
+        const resp = await fetch(`/api/games/${currentGame.id}/manual`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ segment: segment, multiplier: mult })
+        });
+        if (!resp.ok) {
+            console.error('Manual dart failed:', await resp.text());
+        }
+    } catch (e) {
+        console.error('Error submitting manual dart:', e);
+    }
+}
+
+async function submitManualBull(dartIndex, score) {
+    closeDartPopup();
+    if (!currentGame?.id) return;
+    const segment = score === 50 ? 25 : 25;
+    const mult = score === 50 ? 2 : 1;
+    try {
+        const resp = await fetch(`/api/games/${currentGame.id}/manual`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ segment: segment, multiplier: mult })
+        });
+        if (!resp.ok) {
+            console.error('Manual bull failed:', await resp.text());
+        }
+    } catch (e) {
+        console.error('Error submitting manual bull:', e);
+    }
+}
+
+async function submitManualMiss(dartIndex) {
+    closeDartPopup();
+    if (!currentGame?.id) return;
+    try {
+        const resp = await fetch(`/api/games/${currentGame.id}/manual`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ segment: 0, multiplier: 0 })
+        });
+        if (!resp.ok) {
+            console.error('Manual miss failed:', await resp.text());
+        }
+    } catch (e) {
+        console.error('Error submitting manual miss:', e);
+    }
+}
