@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using DartGameAPI.Models;
-using DartGameAPI.Services;
+using Microsoft.Data.SqlClient;
 
 namespace DartGameAPI.Controllers;
 
@@ -8,57 +7,51 @@ namespace DartGameAPI.Controllers;
 [Route("api/[controller]")]
 public class BoardsController : ControllerBase
 {
-    private readonly GameService _gameService;
+    private readonly IConfiguration _config;
 
-    public BoardsController(GameService gameService)
+    public BoardsController(IConfiguration config)
     {
-        _gameService = gameService;
+        _config = config;
     }
 
-    /// <summary>
-    /// List all boards
-    /// </summary>
+    private string GetConnectionString() => _config.GetConnectionString("DartsMobDB")
+        ?? "Server=JOESSERVER2019;Database=DartsMobDB;User Id=DartsMobApp;Password=Stewart14s!2;TrustServerCertificate=True;";
+
     [HttpGet]
-    public ActionResult<IEnumerable<Board>> GetBoards()
+    public async Task<ActionResult> GetBoards()
     {
-        return Ok(_gameService.GetAllBoards());
+        var connStr = GetConnectionString();
+        using var conn = new SqlConnection(connStr);
+        await conn.OpenAsync();
+
+        var boards = new List<object>();
+        using var cmd = new SqlCommand("SELECT BoardId, Name, CreatedAt FROM Boards ORDER BY CreatedAt", conn);
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            boards.Add(new
+            {
+                id = reader.GetString(0),
+                name = reader.GetString(1),
+                createdAt = reader.GetDateTime(2)
+            });
+        }
+        return Ok(boards);
     }
 
-    /// <summary>
-    /// Get a specific board
-    /// </summary>
-    [HttpGet("{id}")]
-    public ActionResult<Board> GetBoard(string id)
+    [HttpGet("current")]
+    public async Task<ActionResult> GetCurrentBoard()
     {
-        var board = _gameService.GetBoard(id);
-        if (board == null) return NotFound();
-        return Ok(board);
-    }
+        var connStr = GetConnectionString();
+        using var conn = new SqlConnection(connStr);
+        await conn.OpenAsync();
 
-    /// <summary>
-    /// Register a new board
-    /// </summary>
-    [HttpPost]
-    public ActionResult<Board> RegisterBoard([FromBody] RegisterBoardRequest request)
-    {
-        _gameService.RegisterBoard(request.Id, request.Name, request.CameraIds);
-        return Ok(_gameService.GetBoard(request.Id));
+        using var cmd = new SqlCommand("SELECT TOP 1 BoardId, Name FROM Boards ORDER BY CreatedAt", conn);
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
+        {
+            return Ok(new { id = reader.GetString(0), name = reader.GetString(1) });
+        }
+        return NotFound("No board registered");
     }
-
-    /// <summary>
-    /// Clear darts from board (player pulled darts)
-    /// </summary>
-    [HttpPost("{id}/clear")]
-    public ActionResult ClearBoard(string id)
-    {
-        _gameService.ClearBoard(id);
-        return Ok(new { message = "Board cleared" });
-    }
-}
-
-public class RegisterBoardRequest
-{
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public List<string> CameraIds { get; set; } = new();
 }

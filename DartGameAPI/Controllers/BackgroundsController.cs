@@ -21,6 +21,15 @@ public class BackgroundsController : ControllerBase
     private string GetConnectionString() => _config.GetConnectionString("DartsMobDB")
         ?? "Server=JOESSERVER2019;Database=DartsMobDB;User Id=DartsMobApp;Password=Stewart14s!2;TrustServerCertificate=True;";
 
+    private async Task<string> GetCurrentBoardId()
+    {
+        using var conn = new SqlConnection(GetConnectionString());
+        await conn.OpenAsync();
+        using var cmd = new SqlCommand("SELECT TOP 1 BoardId FROM Boards ORDER BY CreatedAt", conn);
+        var result = await cmd.ExecuteScalarAsync();
+        return result?.ToString() ?? "default";
+    }
+
     // ===== Background Selections (Server-Side Persistence) =====
 
     public class BackgroundItem
@@ -34,12 +43,14 @@ public class BackgroundsController : ControllerBase
     {
         try
         {
+            var boardId = await GetCurrentBoardId();
             var dbStandard = new List<(string path, int sort)>();
             var dbNsfw = new List<(string path, int sort)>();
 
             using var conn = new SqlConnection(GetConnectionString());
             await conn.OpenAsync();
-            using var cmd = new SqlCommand("SELECT ImagePath, IsNsfw, SortOrder FROM BackgroundSettings WHERE IsSelected = 1 ORDER BY SortOrder", conn);
+            using var cmd = new SqlCommand("SELECT ImagePath, IsNsfw, SortOrder FROM BackgroundSettings WHERE IsSelected = 1 AND BoardId = @BoardId ORDER BY SortOrder", conn);
+            cmd.Parameters.AddWithValue("@BoardId", boardId);
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
@@ -115,31 +126,38 @@ public class BackgroundsController : ControllerBase
     {
         try
         {
+            var boardId = await GetCurrentBoardId();
+
             using var conn = new SqlConnection(GetConnectionString());
             await conn.OpenAsync();
             using var tx = conn.BeginTransaction();
 
-            using (var del = new SqlCommand("DELETE FROM BackgroundSettings", conn, tx))
+            using (var del = new SqlCommand("DELETE FROM BackgroundSettings WHERE BoardId = @BoardId", conn, tx))
+            {
+                del.Parameters.AddWithValue("@BoardId", boardId);
                 await del.ExecuteNonQueryAsync();
+            }
 
             for (int i = 0; i < (dto.Standard?.Count ?? 0); i++)
             {
-                using var ins = new SqlCommand("INSERT INTO BackgroundSettings (ImagePath, IsSelected, IsNsfw, SortOrder) VALUES (@p, 1, 0, @s)", conn, tx);
+                using var ins = new SqlCommand("INSERT INTO BackgroundSettings (ImagePath, IsSelected, IsNsfw, SortOrder, BoardId) VALUES (@p, 1, 0, @s, @BoardId)", conn, tx);
                 ins.Parameters.AddWithValue("@p", dto.Standard![i]);
                 ins.Parameters.AddWithValue("@s", i);
+                ins.Parameters.AddWithValue("@BoardId", boardId);
                 await ins.ExecuteNonQueryAsync();
             }
 
             for (int i = 0; i < (dto.Nsfw?.Count ?? 0); i++)
             {
-                using var ins = new SqlCommand("INSERT INTO BackgroundSettings (ImagePath, IsSelected, IsNsfw, SortOrder) VALUES (@p, 1, 1, @s)", conn, tx);
+                using var ins = new SqlCommand("INSERT INTO BackgroundSettings (ImagePath, IsSelected, IsNsfw, SortOrder, BoardId) VALUES (@p, 1, 1, @s, @BoardId)", conn, tx);
                 ins.Parameters.AddWithValue("@p", dto.Nsfw![i]);
                 ins.Parameters.AddWithValue("@s", i);
+                ins.Parameters.AddWithValue("@BoardId", boardId);
                 await ins.ExecuteNonQueryAsync();
             }
 
             tx.Commit();
-            _logger.LogInformation("Saved {Standard} standard + {Nsfw} NSFW background selections", dto.Standard?.Count ?? 0, dto.Nsfw?.Count ?? 0);
+            _logger.LogInformation("Saved {Standard} standard + {Nsfw} NSFW background selections for board {BoardId}", dto.Standard?.Count ?? 0, dto.Nsfw?.Count ?? 0, boardId);
             return Ok(new { saved = true });
         }
         catch (Exception ex)
