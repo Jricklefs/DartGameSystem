@@ -81,7 +81,7 @@ public class GameHub : Hub
     /// </summary>
     public static bool IsSensorConnected(string boardId)
     {
-        return _sensorConnections.ContainsKey(boardId);
+        return _sensorConnections.ContainsKey(boardId) || _sensorConnections.ContainsKey("default");
     }
     
     /// <summary>
@@ -89,7 +89,10 @@ public class GameHub : Hub
     /// </summary>
     public static string? GetSensorConnectionId(string boardId)
     {
-        return _sensorConnections.TryGetValue(boardId, out var connId) ? connId : null;
+        if (_sensorConnections.TryGetValue(boardId, out var connId)) return connId;
+        // Fall back to "default" - sensor may have registered before knowing the real board ID
+        if (_sensorConnections.TryGetValue("default", out connId)) return connId;
+        return null;
     }
 }
 

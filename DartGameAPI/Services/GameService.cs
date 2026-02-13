@@ -31,7 +31,13 @@ public class GameService
         };
     }
 
-    public Board? GetBoard(string id) => _boards.GetValueOrDefault(id);
+    public Board? GetBoard(string id) 
+    {
+        if (_boards.TryGetValue(id, out var board)) return board;
+        // "default" is an alias for the first real board
+        if (id == "default" && _boards.Count > 0) return _boards.Values.First();
+        return null;
+    }
     
     public IEnumerable<Board> GetAllBoards() => _boards.Values;
 
