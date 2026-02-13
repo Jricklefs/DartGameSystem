@@ -301,8 +301,21 @@ function initBackground() {
     customBackgrounds = theme.customBackgrounds || [];
     nsfwMode = false; // always unchecked on load
     
-    // Load NSFW backgrounds
-    loadNsfwBackgrounds().then(() => {
+    // Load NSFW backgrounds, then load server selections
+    loadNsfwBackgrounds().then(async () => {
+        // Try to load selections from server
+        try {
+            const resp = await fetch('/api/backgrounds/selections');
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.standard.length > 0 || data.nsfw.length > 0) {
+                    selectedBackgrounds = [...data.standard, ...data.nsfw];
+                    console.log('Loaded background selections from server:', selectedBackgrounds.length);
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load server selections, using local:', e);
+        }
         // Set checkbox state
         const nsfwCheckbox = document.getElementById('nsfw-enable');
         if (nsfwCheckbox) {
@@ -449,7 +462,23 @@ function toggleBackground(bg) {
         selectedBackgrounds.push(bg);
     }
     renderBackgroundGallery();
+    saveBackgroundSelections();
 }
+async function saveBackgroundSelections() {
+    try {
+        const standard = selectedBackgrounds.filter(bg => !nsfwBackgrounds.includes(bg));
+        const nsfw = selectedBackgrounds.filter(bg => nsfwBackgrounds.includes(bg));
+        await fetch('/api/backgrounds/selections', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ standard, nsfw })
+        });
+        console.log('Background selections saved to server');
+    } catch (e) {
+        console.error('Failed to save background selections:', e);
+    }
+}
+
 
 function renderBackgroundGrid() {
     renderBackgroundGallery();
@@ -1350,6 +1379,7 @@ function saveTheme() {
     };
     
     localStorage.setItem('dartsmob-theme', JSON.stringify(theme));
+    saveBackgroundSelections();
     alert('✅ Theme saved!');
 }
 
