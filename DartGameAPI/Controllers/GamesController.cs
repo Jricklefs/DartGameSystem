@@ -793,6 +793,27 @@ public class GamesController : ControllerBase
         _logger.LogInformation("Removed false dart {Index}: {Zone}={Score}", 
             request.DartIndex, removedDart.Zone, removedDart.Score);
 
+        // Exclude from benchmark data in DartDetect
+        try
+        {
+            using var httpClient = new HttpClient();
+            var excludePayload = new
+            {
+                game_id = id,
+                dart_index = request.DartIndex,
+                reason = "false_detection_removed"
+            };
+            var json = System.Text.Json.JsonSerializer.Serialize(excludePayload);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var dartDetectUrl = Environment.GetEnvironmentVariable("DARTDETECT_URL") ?? "http://localhost:8000";
+            await httpClient.PostAsync($"{dartDetectUrl}/v1/benchmark/exclude-dart", content);
+            _logger.LogInformation("Excluded dart from benchmark data");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to exclude dart from benchmark (non-fatal)");
+        }
+
         // Notify clients about the update
         await _hubContext.SendDartRemoved(game.BoardId, removedDart, game);
 

@@ -53,9 +53,9 @@
 
             <!-- Large Camera Preview with Canvas Overlay -->
             <div class="camera-preview-full" id="calibration-preview">
-                <img id="camera-base-img" class="calibration-camera-img" alt="Camera Feed">
+                <img id="camera-base-img" class="calibration-camera-img" alt="Camera Feed" style="display:none">
                 <canvas id="calibration-canvas" class="calibration-canvas"></canvas>
-                <div id="main-camera-loading" class="main-cam-loading hidden">
+                <div id="main-camera-loading" class="main-cam-loading">
                     <span>📷 Loading camera...</span>
                 </div>
                 <div id="main-camera-offline" class="main-cam-offline hidden">
@@ -362,6 +362,23 @@
                     <div id="method-description" style="color: var(--paper-muted); margin-top: 10px; font-size: 0.85rem;">
                         <strong>Skeleton:</strong> Frame differencing + skeletonization + tip projection (classical CV, like Autodarts). Best accuracy.<br>
                         <strong>YOLO:</strong> Uses trained neural network for dart tip detection.
+                    </div>
+                </div>
+
+                <!-- Scoring Mode Selection -->
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;">
+                    <h4 style="color: var(--gold); margin: 0 0 10px 0;">🎯 Scoring Mode</h4>
+                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        <select id="scoring-mode-select" style="padding: 10px 15px; background: #0a0a0a; border: 1px solid var(--gold-dark); color: var(--paper); border-radius: 4px; min-width: 250px; font-size: 1rem;">
+                            <option value="vote">Ellipse Vote (per-camera consensus)</option>
+                            <option value="line_intersection">Line Intersection (experimental)</option>
+                        </select>
+                        <button id="apply-scoring-btn" class="btn btn-primary" style="padding: 10px 20px;">Apply</button>
+                        <span id="scoring-status" style="color: var(--paper-muted);"></span>
+                    </div>
+                    <div style="color: var(--paper-muted); margin-top: 10px; font-size: 0.85rem;">
+                        <strong>Polygon:</strong> Per-camera segment scoring using calibrated polygon boundaries, then weighted vote. Most reliable.<br>
+                        <strong>Line Intersection:</strong> Triangulate dart tip position from camera line fits. Experimental — requires good line convergence.
                     </div>
                 </div>
 

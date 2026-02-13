@@ -21,6 +21,176 @@ let nsfwMode = false;
 
 // Dartboard segment order (clockwise starting from 20 at top)
 const SEGMENT_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+// Draw calibration overlay on canvas using stored calibration data
+function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage) {
+    const ctx = canvas.getContext('2d');
+    canvas.width = baseImage.naturalWidth || baseImage.width;
+    canvas.height = baseImage.naturalHeight || baseImage.height;
+    
+    // Draw base image
+    ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+    
+    if (!calibrationDataJson) return;
+    
+    let cal;
+    try {
+        cal = typeof calibrationDataJson === 'string' ? JSON.parse(calibrationDataJson) : calibrationDataJson;
+    } catch(e) { console.error('Failed to parse calibration data:', e); return; }
+    
+    const center = cal.center;
+    if (!center) return;
+    
+    const cx = center[0], cy = center[1];
+    
+    // Helper: draw OpenCV ellipse
+    function drawEllipse(ell, color, lineWidth) {
+        if (!ell) return;
+        const [ecx, ecy] = ell[0];
+        const [w, h] = ell[1];
+        const angleDeg = ell[2];
+        ctx.save();
+        ctx.translate(ecx, ecy);
+        ctx.rotate(angleDeg * Math.PI / 180);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, w/2, h/2, 0, 0, 2 * Math.PI);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // Draw rings
+    drawEllipse(cal.outer_double_ellipse, 'rgba(255,255,0,0.8)', 2);
+    drawEllipse(cal.inner_double_ellipse, 'rgba(255,255,0,0.5)', 1);
+    drawEllipse(cal.outer_triple_ellipse, 'rgba(255,255,0,0.8)', 2);
+    drawEllipse(cal.inner_triple_ellipse, 'rgba(255,255,0,0.5)', 1);
+    drawEllipse(cal.bull_ellipse, 'rgba(255,255,0,0.6)', 1);
+    drawEllipse(cal.bullseye_ellipse, 'rgba(255,255,0,0.6)', 1);
+    
+    // Draw segment lines
+    const segAngles = cal.segment_angles;
+    const seg20Idx = cal.segment_20_index || 0;
+    
+    if (segAngles && segAngles.length >= 20) {
+        // Get outer double radius for line length
+        let maxR = 300;
+        if (cal.outer_double_ellipse) {
+            maxR = Math.max(cal.outer_double_ellipse[1][0], cal.outer_double_ellipse[1][1]) / 2 + 10;
+        }
+        // Bull radius for inner endpoint
+        let bullR = 20;
+        if (cal.bull_ellipse) {
+            bullR = Math.max(cal.bull_ellipse[1][0], cal.bull_ellipse[1][1]) / 2;
+        }
+        
+        for (let i = 0; i < 20; i++) {
+            const angle = segAngles[i];
+            const dx = Math.cos(angle);
+            const dy = Math.sin(angle);
+            
+            const x1 = cx + bullR * dx;
+            const y1 = cy + bullR * dy;
+            const x2 = cx + maxR * dx;
+            const y2 = cy + maxR * dy;
+            
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Label: segment between boundary i and i+1
+            let nextAngle = segAngles[(i + 1) % 20];
+            let a1 = angle, a2 = nextAngle;
+            if (Math.abs(a2 - a1) > Math.PI) {
+                if (a2 < a1) a2 += 2 * Math.PI;
+                else a1 += 2 * Math.PI;
+            }
+            const midAngle = (a1 + a2) / 2;
+            const segNum = SEGMENT_ORDER[(i + seg20Idx) % 20];
+            const labelR = maxR * 1.08;
+            const lx = cx + labelR * Math.cos(midAngle);
+            const ly = cy + labelR * Math.sin(midAngle);
+            
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // Black outline
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.strokeText(String(segNum), lx, ly);
+            // Green for 20, white for others
+            ctx.fillStyle = segNum === 20 ? '#00ff00' : '#ffffff';
+            ctx.fillText(String(segNum), lx, ly);
+        }
+    }
+    
+    // Center dot
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
+    ctx.fillStyle = 'cyan';
+    ctx.fill();
+}
+
+// Fetch live snapshot and draw calibration overlay
+async function showLiveCalibration(camIndex) {
+    const stored = storedCalibrations[`cam${camIndex}`];
+    const canvas = document.getElementById('calibration-canvas');
+    const img = document.getElementById('camera-base-img');
+    const loading = document.getElementById('main-camera-loading');
+    const offline = document.getElementById('main-camera-offline');
+    
+    if (!canvas) {
+        console.warn('No calibration-canvas element found');
+        return false;
+    }
+    
+    // Fetch live snapshot from DartSensor
+    try {
+        const snapRes = await fetch(`${DART_SENSOR_URL}/cameras/${camIndex}/snapshot`, {
+            signal: AbortSignal.timeout(3000)
+        });
+        if (!snapRes.ok) throw new Error('Snapshot failed');
+        
+        const blob = await snapRes.blob();
+        const snapUrl = URL.createObjectURL(blob);
+        
+        const baseImg = new Image();
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                URL.revokeObjectURL(snapUrl);
+                resolve(false);
+            }, 5000);
+            baseImg.onload = () => {
+                clearTimeout(timeout);
+                canvas.style.display = 'block';
+                canvas.style.position = 'relative';
+                canvas.style.width = '100%';
+                canvas.style.height = 'auto';
+                canvas.style.pointerEvents = 'auto';
+                canvas.style.zIndex = '15';
+                if (img) img.style.display = 'none';
+                loading.classList.add('hidden');
+                offline.classList.add('hidden');
+                const calData = stored ? stored.calibrationData : null;
+                drawCalibrationOverlay(canvas, calData, baseImg);
+                URL.revokeObjectURL(snapUrl);
+                resolve(true);
+            };
+            baseImg.onerror = () => {
+                clearTimeout(timeout);
+                URL.revokeObjectURL(snapUrl);
+                resolve(false);
+            };
+            baseImg.src = snapUrl;
+        });
+    } catch(e) {
+        console.warn('Live snapshot failed, falling back to stored overlay:', e);
+        return false;
+    }
+}
+
 
 // State
 let selectedBackgrounds = [];
@@ -305,18 +475,20 @@ async function selectCamera(camIndex) {
     
     console.log('[CALIBRATION] selectCamera:', camIndex, 'stored:', stored);
     
-    // Show stored calibration if available (use overlayImagePath now)
-    if (stored && stored.overlayImagePath) {
-        console.log('[CALIBRATION] Loading overlay:', stored.overlayImagePath);
-        // Add cache buster to force reload
-        const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
-        img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
-        img.style.display = 'block';
-        img.classList.add('loaded');
-        loading.classList.add('hidden');
-        offline.classList.add('hidden');
-        
-        // If we have calibration image, use it as base for combined view
+    // Show live camera feed with stored calibration overlay
+    if (stored) {
+        // Try live snapshot + overlay first
+        const liveOk = await showLiveCalibration(camIndex);
+        if (!liveOk && stored.overlayImagePath) {
+            // Fallback to stored overlay image
+            console.log('[CALIBRATION] Falling back to stored overlay:', stored.overlayImagePath);
+            const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
+            img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
+            img.style.display = 'block';
+            img.classList.add('loaded');
+            loading.classList.add('hidden');
+            offline.classList.add('hidden');
+        }
         if (stored.calibrationImagePath) {
             lastCameraSnapshot = stored.calibrationImagePath;
         } else {
@@ -2263,6 +2435,77 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+// ==================== SCORING MODE ====================
+
+async function loadScoringMode() {
+    try {
+        const resp = await fetch(`${DART_DETECT_URL}/v1/scoring-mode`);
+        if (resp.ok) {
+            const data = await resp.json();
+            const select = document.getElementById('scoring-mode-select');
+            if (select && data.scoring_mode) {
+                select.value = data.scoring_mode;
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load scoring mode:', err);
+    }
+}
+
+async function applyScoringMode() {
+    const select = document.getElementById('scoring-mode-select');
+    const statusSpan = document.getElementById('scoring-status');
+    
+    if (!select) return;
+    
+    const mode = select.value;
+    
+    try {
+        if (statusSpan) statusSpan.textContent = 'Applying...';
+        
+        const resp = await fetch(`${DART_DETECT_URL}/v1/scoring-mode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: mode })
+        });
+        
+        if (resp.ok) {
+            const data = await resp.json();
+            if (statusSpan) {
+                statusSpan.textContent = `✓ Using ${mode} scoring`;
+                statusSpan.style.color = '#22c55e';
+            }
+        } else {
+            const err = await resp.json();
+            if (statusSpan) {
+                statusSpan.textContent = `✗ ${err.error || 'Failed'}`;
+                statusSpan.style.color = '#ef4444';
+            }
+        }
+    } catch (err) {
+        console.error('Failed to set scoring mode:', err);
+        if (statusSpan) {
+            statusSpan.textContent = '✗ API error';
+            statusSpan.style.color = '#ef4444';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const scoringBtn = document.getElementById('apply-scoring-btn');
+    if (scoringBtn) {
+        scoringBtn.addEventListener('click', applyScoringMode);
+    }
+    
+    // Load scoring mode when accuracy tab shown
+    const accuracyTab = document.querySelector('[data-tab="accuracy"]');
+    if (accuracyTab) {
+        accuracyTab.addEventListener('click', () => {
+            setTimeout(loadScoringMode, 200);
+        });
+    }
+});
 
 // ==================== AUTO-TUNE ====================
 

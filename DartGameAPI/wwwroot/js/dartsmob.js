@@ -455,6 +455,8 @@ function updateCurrentTurn() {
         if (darts[i]) {
             slot.classList.add('hit');
             slot.textContent = darts[i].score;
+            slot.style.cursor = 'pointer';
+            slot.onclick = () => removeDart(i);
             console.log(`[updateCurrentTurn] slot ${i} = ${darts[i].score}`);
         } else {
             slot.classList.remove('hit');
@@ -1090,6 +1092,32 @@ function formatMode(mode) {
 }
 
 // ==========================================================================
+
+// Remove a false dart (e.g. phantom detection during clearing)
+async function removeDart(dartIndex) {
+    if (!currentGame?.id) return;
+    
+    if (!confirm(`Remove dart ${dartIndex + 1}? (Use for false detections)`)) return;
+    
+    try {
+        const resp = await fetch(`/api/games/${currentGame.id}/remove-dart`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dartIndex: dartIndex })
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            console.error('Failed to remove dart:', err);
+            return;
+        }
+        const result = await resp.json();
+        console.log('Dart removed:', result);
+        // UI updates via SignalR DartRemoved event
+    } catch (e) {
+        console.error('Error removing dart:', e);
+    }
+}
+
 // Dart Correction
 // ==========================================================================
 
