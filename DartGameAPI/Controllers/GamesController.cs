@@ -349,13 +349,17 @@ public class GamesController : ControllerBase
             .Select(c => new { c.CameraId, c.IsCalibrated, c.CalibrationQuality })
             .ToListAsync();
         
-        // Check sensor via HTTP health check (DartSensor is HTTP-only, not SignalR)
+        // Check sensor via HTTP health check - must be up AND cameras ready
         var sensorConnected = false;
         try
         {
             using var sensorClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
             var sensorResp = await sensorClient.GetAsync("http://127.0.0.1:8001/status");
-            sensorConnected = sensorResp.IsSuccessStatusCode;
+            if (sensorResp.IsSuccessStatusCode)
+            {
+                var json = await sensorResp.Content.ReadAsStringAsync();
+                sensorConnected = json.Contains(""ready": true") || json.Contains(""ready":true");
+            }
         }
         catch { /* sensor not reachable */ }
         var allCalibrated = cameras.All(c => c.IsCalibrated) && cameras.Count > 0;
