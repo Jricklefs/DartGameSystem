@@ -748,9 +748,10 @@ function showStartGameError(error) {
         // Create modal if it doesn't exist
         modal = document.createElement('div');
         modal.id = 'start-error-modal';
-        modal.className = 'modal-overlay';
+        modal.className = 'modal';
         modal.innerHTML = `
-            <div class="modal art-deco-card" style="max-width: 400px; text-align: center;">
+            <div class="modal-backdrop" onclick="document.getElementById('start-error-modal').classList.add('hidden')"></div>
+            <div class="modal-content art-deco-card" style="max-width: 400px; text-align: center;">
                 <h2 style="color: var(--gold); margin-bottom: 1rem;">⚠️ Cannot Start Game</h2>
                 <p id="start-error-message" style="margin-bottom: 1.5rem; color: #ccc;"></p>
                 <button class="btn-gold" onclick="document.getElementById('start-error-modal').classList.add('hidden')">OK</button>
