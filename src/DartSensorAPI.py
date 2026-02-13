@@ -1292,11 +1292,13 @@ def status():
     if _sensor_ui is None:
         return jsonify({"error": "Sensor not initialized"}), 500
     
+    cam_count = len(_sensor_ui.cameras)
     return jsonify({
         "game_started": _sensor_ui.game_started,
         "dart_count": _sensor_ui.detector.dart_count,
-        "cameras": len(_sensor_ui.cameras),
-        "baselines_captured": sum(1 for c in _sensor_ui.detector.cameras.values() if c.base_image is not None)
+        "cameras": cam_count,
+        "baselines_captured": sum(1 for c in _sensor_ui.detector.cameras.values() if c.base_image is not None),
+        "ready": cam_count > 0
     })
 
 
