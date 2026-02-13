@@ -354,7 +354,7 @@ public class GamesController : ControllerBase
         try
         {
             using var sensorClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-            var sensorResp = await sensorClient.GetAsync("http://localhost:8001/status");
+            var sensorResp = await sensorClient.GetAsync("http://127.0.0.1:8001/status");
             sensorConnected = sensorResp.IsSuccessStatusCode;
         }
         catch { /* sensor not reachable */ }
@@ -486,7 +486,7 @@ public class GamesController : ControllerBase
             try
             {
                 using var sc = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-                sensorUp = (await sc.GetAsync("http://localhost:8001/status")).IsSuccessStatusCode;
+                sensorUp = (await sc.GetAsync("http://127.0.0.1:8001/status")).IsSuccessStatusCode;
             }
             catch { }
             if (!sensorUp)

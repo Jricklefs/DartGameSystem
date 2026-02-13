@@ -322,11 +322,14 @@
             .catch(() => {});
 
         // Check calibration status
-        let boardId = 'default';
+        let boardId = null;
         fetch('/api/boards/current').then(r => r.json()).then(b => {
             boardId = b.id;
-            checkCalibrationStatus(); // re-check with correct boardId
-        }).catch(() => {});
+            checkCalibrationStatus();
+        }).catch(() => {
+            boardId = 'default';
+            checkCalibrationStatus();
+        });
         
         function updateCalibrationDot(canStart, issues) {
             const dot = document.getElementById('calibration-dot');
@@ -344,14 +347,14 @@
         }
         
         function checkCalibrationStatus() {
+            if (!boardId) return;
             fetch(`/api/games/preflight/${boardId}`)
                 .then(r => r.json())
                 .then(data => updateCalibrationDot(data.canStart, data.issues))
                 .catch(() => updateCalibrationDot(false, [{ message: 'Could not check calibration status' }]));
         }
         
-        // Initial check
-        checkCalibrationStatus();
+        // Initial check deferred until boardId is fetched above
         
         // Set up SignalR for real-time sensor status updates
         const connection = new signalR.HubConnectionBuilder()
