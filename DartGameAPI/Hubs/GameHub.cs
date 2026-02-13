@@ -266,6 +266,21 @@ public static class GameHubExtensions
     /// <summary>
     /// Notify clients that a game ended
     /// </summary>
+
+    /// <summary>
+    /// Notify clients that a leg was won (game continues)
+    /// </summary>
+    public static async Task SendLegWon(this IHubContext<GameHub> hub, string boardId, string winnerName, int legsWon, int legsToWin, Game game)
+    {
+        await hub.Clients.Group($"board:{boardId}").SendAsync("LegWon", new
+        {
+            winnerName,
+            legsWon,
+            legsToWin,
+            currentLeg = game.CurrentLeg,
+            game = new { game.Id, game.State, Players = game.Players.Select(p => new { p.Id, p.Name, p.Score, p.LegsWon, p.DartsThrown }) }
+        });
+    }
     public static async Task SendGameEnded(this IHubContext<GameHub> hub, string boardId, Game game)
     {
         await hub.Clients.Group($"board:{boardId}").SendAsync("GameEnded", new

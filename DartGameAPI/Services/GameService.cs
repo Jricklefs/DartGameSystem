@@ -288,6 +288,7 @@ public class GameService
     private void StartNextLeg(Game game)
     {
         game.CurrentLeg++;
+        game.LegWinnerId = null;  // Clear for next leg
         
         // Reset player scores for new leg
         foreach (var player in game.Players)

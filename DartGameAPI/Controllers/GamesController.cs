@@ -143,6 +143,12 @@ public class GamesController : ControllerBase
         {
             await _hubContext.SendGameEnded(game.BoardId, game);
         }
+        else if (game.LegWinnerId != null)
+        {
+            var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
+            if (legWinner != null)
+                await _hubContext.SendLegWon(game.BoardId, legWinner.Name, legWinner.LegsWon, game.LegsToWin, game);
+        }
 
         return Ok(new { 
             message = "Dart detected", 
@@ -656,6 +662,12 @@ public class GamesController : ControllerBase
         {
             await _hubContext.SendGameEnded(game.BoardId, game);
         }
+        else if (game.LegWinnerId != null)
+        {
+            var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
+            if (legWinner != null)
+                await _hubContext.SendLegWon(game.BoardId, legWinner.Name, legWinner.LegsWon, game.LegsToWin, game);
+        }
 
         return Ok(new ThrowResult { NewDart = dart, Game = game });
     }
@@ -703,6 +715,12 @@ public class GamesController : ControllerBase
         if (game.State == GameState.Finished)
         {
             await _hubContext.SendGameEnded(game.BoardId, game);
+        }
+        else if (game.LegWinnerId != null)
+        {
+            var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
+            if (legWinner != null)
+                await _hubContext.SendLegWon(game.BoardId, legWinner.Name, legWinner.LegsWon, game.LegsToWin, game);
         }
 
         return Ok(new ThrowResult { NewDart = newDart, Game = game });
