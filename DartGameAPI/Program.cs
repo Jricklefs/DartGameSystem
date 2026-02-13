@@ -101,9 +101,26 @@ app.MapControllers();
 app.MapHub<GameHub>("/gamehub");
 app.MapHub<OnlineGameHub>("/onlinehub");
 
-// Register default board on startup (can be configured)
+// Load all boards from DB on startup
 var gameService = app.Services.GetRequiredService<GameService>();
-gameService.RegisterBoard("default", "Default Board", new List<string> { "cam0", "cam1", "cam2" });
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DartGameAPI.Data.DartsMobDbContext>();
+    var boards = db.Boards.Where(b => b.IsActive).ToList();
+    var cameras = db.Cameras.Where(c => c.IsActive).ToList();
+    foreach (var board in boards)
+    {
+        var boardCameras = cameras.Where(c => c.BoardId == board.BoardId).Select(c => c.CameraId).ToList();
+        gameService.RegisterBoard(board.BoardId, board.Name, boardCameras);
+        Console.WriteLine($"Registered board: {board.Name} ({board.BoardId}) with {boardCameras.Count} cameras");
+    }
+    if (!boards.Any())
+    {
+        // Fallback: register default board
+        gameService.RegisterBoard("default", "Default Board", new List<string> { "cam0", "cam1", "cam2" });
+        Console.WriteLine("No boards in DB, registered default board");
+    }
+}
 
 // Health check
 app.MapGet("/health", () => new { status = "healthy", timestamp = DateTime.UtcNow });
