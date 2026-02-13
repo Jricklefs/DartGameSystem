@@ -54,4 +54,53 @@ public class BoardsController : ControllerBase
         }
         return NotFound("No board registered");
     }
+
+    [HttpPost]
+    public async Task<ActionResult> RegisterBoard([FromBody] RegisterBoardRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Name))
+            return BadRequest("Board name is required");
+
+        var connStr = GetConnectionString();
+        using var conn = new SqlConnection(connStr);
+        await conn.OpenAsync();
+
+        var boardId = Guid.NewGuid().ToString().ToUpper();
+        using var cmd = new SqlCommand(
+            "INSERT INTO Boards (BoardId, Name, CreatedAt) VALUES (@BoardId, @Name, GETUTCDATE())", conn);
+        cmd.Parameters.AddWithValue("@BoardId", boardId);
+        cmd.Parameters.AddWithValue("@Name", request.Name);
+        await cmd.ExecuteNonQueryAsync();
+
+        return Ok(new { id = boardId, name = request.Name });
+    }
+
+    [HttpPut("{boardId}")]
+    public async Task<ActionResult> UpdateBoard(string boardId, [FromBody] UpdateBoardRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Name))
+            return BadRequest("Board name is required");
+
+        var connStr = GetConnectionString();
+        using var conn = new SqlConnection(connStr);
+        await conn.OpenAsync();
+
+        using var cmd = new SqlCommand("UPDATE Boards SET Name = @Name WHERE BoardId = @BoardId", conn);
+        cmd.Parameters.AddWithValue("@BoardId", boardId);
+        cmd.Parameters.AddWithValue("@Name", request.Name);
+        var rows = await cmd.ExecuteNonQueryAsync();
+
+        if (rows == 0) return NotFound("Board not found");
+        return Ok(new { id = boardId, name = request.Name });
+    }
+}
+
+public class RegisterBoardRequest
+{
+    public string Name { get; set; } = "";
+}
+
+public class UpdateBoardRequest
+{
+    public string Name { get; set; } = "";
 }
