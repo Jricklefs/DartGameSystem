@@ -206,6 +206,20 @@ class HubConnection:
         """Called when connection opens."""
         print(f"[HUB] ========== CONNECTED ==========")
         self.connected = True
+        # Re-fetch board ID if we fell back to default on startup
+        if self.board_id == "default" or not self.board_id:
+            try:
+                import requests as _req
+                _resp = _req.get(f"{DARTGAME_API_URL}/api/boards/current", timeout=5)
+                if _resp.ok:
+                    new_id = _resp.json().get("id", "default")
+                    if new_id != "default":
+                        global BOARD_ID
+                        self.board_id = new_id
+                        BOARD_ID = new_id
+                        print(f"[HUB] Updated board ID to: {new_id}")
+            except Exception as e:
+                print(f"[HUB] Could not re-fetch board ID: {e}")
         # Register this board with the hub
         try:
             self.connection.send("RegisterBoard", [self.board_id])
