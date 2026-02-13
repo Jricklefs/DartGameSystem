@@ -1767,10 +1767,15 @@ html, body {
 
 .select {
     padding: 6px 10px;
-    background: transparent;
+    background: rgba(0, 0, 0, 0.8);
     border: 1px solid var(--gold-dark);
     color: var(--paper);
     border-radius: 4px;
+}
+
+.select option {
+    background: #1a1a1a;
+    color: var(--paper);
 }
 
 .upload-btn {
