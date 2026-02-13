@@ -326,6 +326,8 @@
         fetch('/api/boards/current').then(r => r.json()).then(b => {
             boardId = b.id;
             checkCalibrationStatus();
+            // Recheck every 10s to catch sensor coming online
+            setInterval(checkCalibrationStatus, 10000);
         }).catch(() => {
             boardId = 'default';
             checkCalibrationStatus();
