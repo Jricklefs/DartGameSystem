@@ -146,7 +146,8 @@ public class GameService
                     player.Name, player.Score, dart.Score, newScore, dart.Multiplier);
                 
                 // Bust check: negative, exactly 1 (can't checkout), or 0 without double (if RequireDoubleOut)
-                bool isBust = newScore < 0 || newScore == 1 || 
+                bool isBust = newScore < 0 || 
+                              (newScore == 1 && game.RequireDoubleOut) ||  // Can't checkout from 1 with double-out
                               (newScore == 0 && game.RequireDoubleOut && dart.Multiplier != 2);
                 if (isBust)
                 {
