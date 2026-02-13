@@ -373,7 +373,13 @@ function renderBackgroundGallery() {
     html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;">';
     html += '<div style="display: flex; align-items: center; gap: 20px;">';
     html += '<span style="color: var(--paper); font-size: 1.1rem;">NSFW Backgrounds</span>';
-    html += '<label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--paper-muted); font-size: 0.9rem;"><input type="checkbox" id="nsfw-show" onchange="toggleNsfwShow(this.checked)" style="accent-color: var(--gold);"> Show</label>';
+    html += '<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--paper-muted); font-size: 0.9rem;">';
+    html += '<div style="position: relative; width: 40px; height: 22px;">';
+    html += '<input type="checkbox" id="nsfw-show" onchange="toggleNsfwShow(this.checked)" style="display:none;"' + (nsfwShow ? ' checked' : '') + '>';
+    html += '<div onclick="document.getElementById(\'nsfw-show\').click()" style="position:absolute;inset:0;border-radius:11px;background:' + (nsfwShow ? 'var(--gold)' : '#555') + ';transition:background 0.3s;cursor:pointer;"></div>';
+    html += '<div onclick="document.getElementById(\'nsfw-show\').click()" style="position:absolute;top:2px;' + (nsfwShow ? 'left:20px' : 'left:2px') + ';width:18px;height:18px;border-radius:50%;background:white;transition:left 0.3s;cursor:pointer;"></div>';
+    html += '</div>';
+    html += (nsfwShow ? 'Show' : 'Hide') + '</label>';
     html += '<label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--paper-muted); font-size: 0.9rem;"><input type="checkbox" id="nsfw-enable" ' + (nsfwMode ? 'checked' : '') + ' onchange="toggleNsfwMode(this.checked)" style="accent-color: var(--gold);"> Enable</label>';
     html += '</div>';
     html += '<label class="btn btn-secondary" style="font-size: 0.85rem; padding: 5px 16px; margin: 0; cursor: pointer; border: 1px solid var(--gold-dark); background: transparent; color: var(--gold);">Upload NSFW<input type="file" id="nsfw-upload" accept="image/*" hidden onchange="uploadNsfwImage(this)"></label>';
