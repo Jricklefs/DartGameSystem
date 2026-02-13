@@ -24,8 +24,26 @@ powershell -command "Add-Type -TypeDefinition 'using System; using System.Runtim
 
 timeout /t 2 /nobreak > nul
 
+:: Build and start DartGame API (.NET on port 5000)
+echo  [2/4] Building DartGame API...
+cd /d "C:\Users\clawd\DartGameSystem\DartGameAPI"
+dotnet build --configuration Release -v q
+
+echo  [3/4] Starting DartGame API on port 5000...
+start "DartsMob API" cmd /c "mode con: cols=80 lines=25 & dotnet run --configuration Release --no-build --urls http://0.0.0.0:5000"
+
+timeout /t 4 /nobreak > nul
+
+:: Wait for DartGame API to be ready before starting sensor
+echo  [+] Waiting for DartGame API to be ready...
+:wait_api
+timeout /t 1 /nobreak > nul
+curl -s http://localhost:5000/health >nul 2>&1
+if errorlevel 1 goto wait_api
+echo  [+] DartGame API is ready!
+
 :: Start DartSensor API (Python on port 8001) - TOP RIGHT
-echo  [2/4] Starting DartSensor API on port 8001...
+echo  [3/4] Starting DartSensor API on port 8001...
 cd /d "C:\Users\clawd\DartSensor"
 start "DartSensor API" cmd /c "mode con: cols=80 lines=25 & C:\Users\clawd\Python312\python.exe src/DartSensorAPI.py"
 timeout /t 1 /nobreak > nul
@@ -33,18 +51,8 @@ powershell -command "Add-Type -TypeDefinition 'using System; using System.Runtim
 
 timeout /t 1 /nobreak > nul
 
-:: Build and start DartGame API (.NET on port 5000)
-echo  [3/4] Building DartGame API...
-cd /d "C:\Users\clawd\DartGameSystem\DartGameAPI"
-dotnet build --configuration Release -v q
-
-echo  [4/4] Starting DartGame API on port 5000...
-start "DartsMob API" cmd /c "mode con: cols=80 lines=25 & dotnet run --configuration Release --no-build --urls http://0.0.0.0:5000"
-
-timeout /t 4 /nobreak > nul
-
 :: Open browser on LEFT half (0,0 to 960,1680)
-echo  [+] Opening browser in kiosk mode (left half)...
+echo  [4/4] Opening browser in kiosk mode (left half)...
 start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --new-window --window-position=0,0 --window-size=960,1680 --app="http://localhost:5000?kiosk=1"
 
 echo.
