@@ -18,6 +18,7 @@ const DEFAULT_BACKGROUNDS = [
 // NSFW backgrounds (loaded dynamically from /images/backgrounds/nsfw/)
 let nsfwBackgrounds = [];
 let nsfwMode = false;
+let nsfwShow = false;
 
 // Dartboard segment order (clockwise starting from 20 at top)
 const SEGMENT_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
@@ -238,6 +239,11 @@ async function loadNsfwBackgrounds() {
     }
 }
 
+function toggleNsfwShow(show) {
+    nsfwShow = show;
+    renderBackgroundGallery();
+}
+
 function toggleNsfwMode(enabled) {
     nsfwMode = enabled;
     
@@ -298,7 +304,7 @@ function initBackground() {
     // Load NSFW backgrounds
     loadNsfwBackgrounds().then(() => {
         // Set checkbox state
-        const nsfwCheckbox = document.getElementById('nsfw-mode-gallery');
+        const nsfwCheckbox = document.getElementById('nsfw-enable');
         if (nsfwCheckbox) {
             nsfwCheckbox.checked = nsfwMode;
             if (nsfwMode && nsfwBackgrounds.length > 0) {
@@ -342,7 +348,7 @@ function renderBackgroundGallery() {
     const allSfw = [...DEFAULT_BACKGROUNDS, ...customBackgrounds];
     let html = '<div style="margin-bottom: 25px;">';
     html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;">';
-    html += '<span style="color: var(--paper); font-size: 1.1rem;">Standard Back Grounds</span>';
+    html += '<span style="color: var(--paper); font-size: 1.1rem;">Standard Backgrounds</span>';
     html += '<label class="btn btn-secondary" style="font-size: 0.85rem; padding: 5px 16px; margin: 0; cursor: pointer; border: 1px solid var(--gold-dark); background: transparent; color: var(--gold);">Upload Background<input type="file" id="bg-upload" accept="image/*" hidden onchange="handleBackgroundUpload(event)"></label>';
     html += '</div>';
     html += '<div style="height: 2px; background: var(--gold); margin: 8px 0 12px 0;"></div>';
@@ -361,8 +367,9 @@ function renderBackgroundGallery() {
     html += '<div>';
     html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;">';
     html += '<div style="display: flex; align-items: center; gap: 20px;">';
-    html += '<span style="color: var(--paper); font-size: 1.1rem;">NSFW Back Grounds</span>';
-    html += '<label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--paper-muted); font-size: 0.9rem;"><input type="checkbox" id="nsfw-mode-gallery" ' + (nsfwMode ? 'checked' : '') + ' onchange="toggleNsfwMode(this.checked)" style="accent-color: var(--gold);"> Show/Hide</label>';
+    html += '<span style="color: var(--paper); font-size: 1.1rem;">NSFW Backgrounds</span>';
+    html += '<label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--paper-muted); font-size: 0.9rem;"><input type="checkbox" id="nsfw-show" onchange="toggleNsfwShow(this.checked)" style="accent-color: var(--gold);"> Show</label>';
+    html += '<label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--paper-muted); font-size: 0.9rem;"><input type="checkbox" id="nsfw-enable" ' + (nsfwMode ? 'checked' : '') + ' onchange="toggleNsfwMode(this.checked)" style="accent-color: var(--gold);"> Enable</label>';
     html += '</div>';
     html += '<label class="btn btn-secondary" style="font-size: 0.85rem; padding: 5px 16px; margin: 0; cursor: pointer; border: 1px solid var(--gold-dark); background: transparent; color: var(--gold);">Upload NSFW<input type="file" id="nsfw-upload" accept="image/*" hidden onchange="uploadNsfwImage(this)"></label>';
     html += '</div>';
@@ -374,7 +381,7 @@ function renderBackgroundGallery() {
         html += '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
         html += nsfwBackgrounds.map(bg => {
             const filename = bg.split('/').pop();
-            const blurStyle = nsfwMode ? '' : 'filter: blur(20px);';
+            const blurStyle = nsfwShow ? '' : 'filter: blur(20px);';
             return `
                 <div class="bg-thumb ${selectedBackgrounds.includes(bg) ? 'selected' : ''}" style="position: relative; width: 120px; height: 75px; flex-shrink: 0; overflow: hidden; border: 2px solid var(--gold-dark); border-radius: 8px;">
                     <div style="position: absolute; inset: 0; background-image: url('${bg}'); background-size: cover; background-position: center; border-radius: 6px; ${blurStyle} transition: filter 0.3s;"></div>
