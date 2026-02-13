@@ -349,7 +349,15 @@ public class GamesController : ControllerBase
             .Select(c => new { c.CameraId, c.IsCalibrated, c.CalibrationQuality })
             .ToListAsync();
         
-        var sensorConnected = GameHub.IsSensorConnected(boardId);
+        // Check sensor via HTTP health check (DartSensor is HTTP-only, not SignalR)
+        var sensorConnected = false;
+        try
+        {
+            using var sensorClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+            var sensorResp = await sensorClient.GetAsync("http://localhost:8001/status");
+            sensorConnected = sensorResp.IsSuccessStatusCode;
+        }
+        catch { /* sensor not reachable */ }
         var allCalibrated = cameras.All(c => c.IsCalibrated) && cameras.Count > 0;
         
         var issues = new List<PreflightIssue>();
