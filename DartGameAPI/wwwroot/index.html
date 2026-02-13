@@ -322,7 +322,11 @@
             .catch(() => {});
 
         // Check calibration status
-        const boardId = 'default';
+        let boardId = 'default';
+        fetch('/api/boards/current').then(r => r.json()).then(b => {
+            boardId = b.id;
+            checkCalibrationStatus(); // re-check with correct boardId
+        }).catch(() => {});
         
         function updateCalibrationDot(canStart, issues) {
             const dot = document.getElementById('calibration-dot');
