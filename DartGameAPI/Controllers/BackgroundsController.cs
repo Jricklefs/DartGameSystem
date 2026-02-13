@@ -23,25 +23,53 @@ public class BackgroundsController : ControllerBase
 
     // ===== Background Selections (Server-Side Persistence) =====
 
+    public class BackgroundItem
+    {
+        public string Path { get; set; } = "";
+        public bool Selected { get; set; }
+    }
+
     [HttpGet("selections")]
     public async Task<ActionResult> GetSelections()
     {
         try
         {
-            var standard = new List<string>();
-            var nsfw = new List<string>();
+            var dbStandard = new List<(string path, int sort)>();
+            var dbNsfw = new List<(string path, int sort)>();
 
             using var conn = new SqlConnection(GetConnectionString());
             await conn.OpenAsync();
-            using var cmd = new SqlCommand("SELECT ImagePath, IsNsfw FROM BackgroundSettings WHERE IsSelected = 1", conn);
+            using var cmd = new SqlCommand("SELECT ImagePath, IsNsfw, SortOrder FROM BackgroundSettings WHERE IsSelected = 1 ORDER BY SortOrder", conn);
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
                 var path = reader.GetString(0);
                 var isNsfw = reader.GetBoolean(1);
-                if (isNsfw) nsfw.Add(path);
-                else standard.Add(path);
+                var sort = reader.GetInt32(2);
+                if (isNsfw) dbNsfw.Add((path, sort));
+                else dbStandard.Add((path, sort));
             }
+            reader.Close();
+
+            // Get all images on disk
+            var sfwOnDisk = GetSfwImagePaths();
+            var nsfwOnDisk = GetNsfwImagePaths();
+
+            var selectedStandardPaths = new HashSet<string>(dbStandard.Select(x => x.path));
+            var selectedNsfwPaths = new HashSet<string>(dbNsfw.Select(x => x.path));
+
+            // Build ordered lists: selected first (by sort order), then unselected
+            var standard = new List<BackgroundItem>();
+            foreach (var item in dbStandard.OrderBy(x => x.sort))
+                standard.Add(new BackgroundItem { Path = item.path, Selected = true });
+            foreach (var path in sfwOnDisk.Where(p => !selectedStandardPaths.Contains(p)))
+                standard.Add(new BackgroundItem { Path = path, Selected = false });
+
+            var nsfw = new List<BackgroundItem>();
+            foreach (var item in dbNsfw.OrderBy(x => x.sort))
+                nsfw.Add(new BackgroundItem { Path = item.path, Selected = true });
+            foreach (var path in nsfwOnDisk.Where(p => !selectedNsfwPaths.Contains(p)))
+                nsfw.Add(new BackgroundItem { Path = path, Selected = false });
 
             return Ok(new { standard, nsfw });
         }
@@ -50,6 +78,30 @@ public class BackgroundsController : ControllerBase
             _logger.LogError(ex, "Error getting background selections");
             return StatusCode(500, "Error getting selections");
         }
+    }
+
+    private List<string> GetSfwImagePaths()
+    {
+        var bgPath = System.IO.Path.Combine(_env.WebRootPath, "images", "backgrounds");
+        if (!Directory.Exists(bgPath)) return new List<string>();
+        var extensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        return Directory.GetFiles(bgPath)
+            .Where(f => extensions.Contains(System.IO.Path.GetExtension(f).ToLower()))
+            .Select(f => "/images/backgrounds/" + System.IO.Path.GetFileName(f))
+            .OrderBy(f => f)
+            .ToList();
+    }
+
+    private List<string> GetNsfwImagePaths()
+    {
+        var nsfwPath = System.IO.Path.Combine(_env.WebRootPath, "images", "backgrounds", "nsfw");
+        if (!Directory.Exists(nsfwPath)) return new List<string>();
+        var extensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        return Directory.GetFiles(nsfwPath)
+            .Where(f => extensions.Contains(System.IO.Path.GetExtension(f).ToLower()))
+            .Select(f => "/images/backgrounds/nsfw/" + System.IO.Path.GetFileName(f))
+            .OrderBy(f => f)
+            .ToList();
     }
 
     public class SelectionsDto
@@ -70,17 +122,19 @@ public class BackgroundsController : ControllerBase
             using (var del = new SqlCommand("DELETE FROM BackgroundSettings", conn, tx))
                 await del.ExecuteNonQueryAsync();
 
-            foreach (var path in dto.Standard ?? new List<string>())
+            for (int i = 0; i < (dto.Standard?.Count ?? 0); i++)
             {
-                using var ins = new SqlCommand("INSERT INTO BackgroundSettings (ImagePath, IsSelected, IsNsfw) VALUES (@p, 1, 0)", conn, tx);
-                ins.Parameters.AddWithValue("@p", path);
+                using var ins = new SqlCommand("INSERT INTO BackgroundSettings (ImagePath, IsSelected, IsNsfw, SortOrder) VALUES (@p, 1, 0, @s)", conn, tx);
+                ins.Parameters.AddWithValue("@p", dto.Standard![i]);
+                ins.Parameters.AddWithValue("@s", i);
                 await ins.ExecuteNonQueryAsync();
             }
 
-            foreach (var path in dto.Nsfw ?? new List<string>())
+            for (int i = 0; i < (dto.Nsfw?.Count ?? 0); i++)
             {
-                using var ins = new SqlCommand("INSERT INTO BackgroundSettings (ImagePath, IsSelected, IsNsfw) VALUES (@p, 1, 1)", conn, tx);
-                ins.Parameters.AddWithValue("@p", path);
+                using var ins = new SqlCommand("INSERT INTO BackgroundSettings (ImagePath, IsSelected, IsNsfw, SortOrder) VALUES (@p, 1, 1, @s)", conn, tx);
+                ins.Parameters.AddWithValue("@p", dto.Nsfw![i]);
+                ins.Parameters.AddWithValue("@s", i);
                 await ins.ExecuteNonQueryAsync();
             }
 
@@ -102,18 +156,7 @@ public class BackgroundsController : ControllerBase
     {
         try
         {
-            var nsfwPath = Path.Combine(_env.WebRootPath, "images", "backgrounds", "nsfw");
-            if (!Directory.Exists(nsfwPath))
-            {
-                Directory.CreateDirectory(nsfwPath);
-                return Ok(new List<string>());
-            }
-            var extensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-            var images = Directory.GetFiles(nsfwPath)
-                .Where(f => extensions.Contains(Path.GetExtension(f).ToLower()))
-                .Select(f => $"/images/backgrounds/nsfw/{Path.GetFileName(f)}")
-                .OrderBy(f => f)
-                .ToList();
+            var images = GetNsfwImagePaths();
             _logger.LogInformation("Found {Count} NSFW backgrounds", images.Count);
             return Ok(images);
         }
@@ -129,15 +172,7 @@ public class BackgroundsController : ControllerBase
     {
         try
         {
-            var bgPath = Path.Combine(_env.WebRootPath, "images", "backgrounds");
-            if (!Directory.Exists(bgPath)) return Ok(new List<string>());
-            var extensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-            var images = Directory.GetFiles(bgPath)
-                .Where(f => extensions.Contains(Path.GetExtension(f).ToLower()))
-                .Select(f => $"/images/backgrounds/{Path.GetFileName(f)}")
-                .OrderBy(f => f)
-                .ToList();
-            return Ok(images);
+            return Ok(GetSfwImagePaths());
         }
         catch (Exception ex)
         {
@@ -154,12 +189,12 @@ public class BackgroundsController : ControllerBase
         {
             if (file == null || file.Length == 0) return BadRequest("No file provided");
             var extensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-            var ext = Path.GetExtension(file.FileName).ToLower();
+            var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
             if (!extensions.Contains(ext)) return BadRequest("Invalid file type");
-            var nsfwPath = Path.Combine(_env.WebRootPath, "images", "backgrounds", "nsfw");
+            var nsfwPath = System.IO.Path.Combine(_env.WebRootPath, "images", "backgrounds", "nsfw");
             Directory.CreateDirectory(nsfwPath);
-            var safeName = $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Path.GetFileNameWithoutExtension(file.FileName)}{ext}";
-            var filePath = Path.Combine(nsfwPath, safeName);
+            var safeName = $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{System.IO.Path.GetFileNameWithoutExtension(file.FileName)}{ext}";
+            var filePath = System.IO.Path.Combine(nsfwPath, safeName);
             using (var stream = new FileStream(filePath, FileMode.Create))
                 await file.CopyToAsync(stream);
             _logger.LogInformation("Uploaded NSFW background: {Name}", safeName);
@@ -178,7 +213,7 @@ public class BackgroundsController : ControllerBase
         try
         {
             if (filename.Contains("..") || filename.Contains("/") || filename.Contains("\\")) return BadRequest("Invalid filename");
-            var filePath = Path.Combine(_env.WebRootPath, "images", "backgrounds", "nsfw", filename);
+            var filePath = System.IO.Path.Combine(_env.WebRootPath, "images", "backgrounds", "nsfw", filename);
             if (!System.IO.File.Exists(filePath)) return NotFound("File not found");
             System.IO.File.Delete(filePath);
             _logger.LogInformation("Deleted NSFW background: {Name}", filename);

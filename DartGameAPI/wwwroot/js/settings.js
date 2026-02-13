@@ -20,6 +20,11 @@ let nsfwBackgrounds = [];
 let nsfwMode = false;
 let nsfwShow = false;
 
+// Ordered arrays for drag-and-drop (all images in display order)
+let standardOrder = [];  // [{path, selected}, ...]
+let nsfwOrder = [];      // [{path, selected}, ...]
+let dragState = null;    // {type: 'standard'|'nsfw', index: number}
+
 // Dartboard segment order (clockwise starting from 20 at top)
 const SEGMENT_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
 // Draw calibration overlay on canvas using stored calibration data
@@ -303,18 +308,41 @@ function initBackground() {
     
     // Load NSFW backgrounds, then load server selections
     loadNsfwBackgrounds().then(async () => {
-        // Try to load selections from server
+        // Try to load selections from server (new format with path+selected objects)
         try {
             const resp = await fetch('/api/backgrounds/selections');
             if (resp.ok) {
                 const data = await resp.json();
-                if (data.standard.length > 0 || data.nsfw.length > 0) {
-                    selectedBackgrounds = [...data.standard, ...data.nsfw];
-                    console.log('Loaded background selections from server:', selectedBackgrounds.length);
+                // New API returns [{path, selected}, ...]
+                standardOrder = (data.standard || []).map(item => 
+                    typeof item === 'string' ? {path: item, selected: true} : item
+                );
+                nsfwOrder = (data.nsfw || []).map(item =>
+                    typeof item === 'string' ? {path: item, selected: true} : item
+                );
+                
+                // Also update nsfwBackgrounds from the order list
+                nsfwBackgrounds = nsfwOrder.map(item => item.path);
+                
+                // Rebuild selectedBackgrounds from both lists
+                selectedBackgrounds = [
+                    ...standardOrder.filter(i => i.selected).map(i => i.path),
+                    ...nsfwOrder.filter(i => i.selected).map(i => i.path)
+                ];
+                console.log('Loaded background selections from server:', selectedBackgrounds.length);
+                
+                // If no standard items from server, populate from defaults
+                if (standardOrder.length === 0) {
+                    const allSfw = [...DEFAULT_BACKGROUNDS, ...customBackgrounds];
+                    standardOrder = allSfw.map(p => ({path: p, selected: selectedBackgrounds.includes(p)}));
                 }
             }
         } catch (e) {
             console.warn('Could not load server selections, using local:', e);
+            // Populate order arrays from local data
+            const allSfw = [...DEFAULT_BACKGROUNDS, ...customBackgrounds];
+            standardOrder = allSfw.map(p => ({path: p, selected: selectedBackgrounds.includes(p)}));
+            nsfwOrder = nsfwBackgrounds.map(p => ({path: p, selected: selectedBackgrounds.includes(p)}));
         }
         // Set checkbox state
         const nsfwCheckbox = document.getElementById('nsfw-enable');
@@ -456,18 +484,28 @@ function previewBackground(bg) {
 
 
 function toggleBackground(bg) {
-    if (selectedBackgrounds.includes(bg)) {
-        selectedBackgrounds = selectedBackgrounds.filter(b => b !== bg);
-    } else {
-        selectedBackgrounds.push(bg);
+    // Update in order arrays
+    for (const item of standardOrder) {
+        if (item.path === bg) { item.selected = !item.selected; break; }
     }
+    for (const item of nsfwOrder) {
+        if (item.path === bg) { item.selected = !item.selected; break; }
+    }
+    
+    // Rebuild selectedBackgrounds
+    selectedBackgrounds = [
+        ...standardOrder.filter(i => i.selected).map(i => i.path),
+        ...nsfwOrder.filter(i => i.selected).map(i => i.path)
+    ];
+    
     renderBackgroundGallery();
     saveBackgroundSelections();
 }
 async function saveBackgroundSelections() {
     try {
-        const standard = selectedBackgrounds.filter(bg => !nsfwBackgrounds.includes(bg));
-        const nsfw = selectedBackgrounds.filter(bg => nsfwBackgrounds.includes(bg));
+        // Send selected images in their current display order
+        const standard = standardOrder.filter(i => i.selected).map(i => i.path);
+        const nsfw = nsfwOrder.filter(i => i.selected).map(i => i.path);
         await fetch('/api/backgrounds/selections', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
