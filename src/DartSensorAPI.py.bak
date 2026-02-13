@@ -36,18 +36,7 @@ except ImportError:
 
 # === Configuration ===
 DARTGAME_API_URL = os.environ.get("DARTGAME_URL", "http://localhost:5000")
-BOARD_ID = os.environ.get("BOARD_ID", "")
-if not BOARD_ID:
-    # Fetch current board from DartGame API
-    try:
-        import requests as _req
-        _resp = _req.get(f"{DARTGAME_API_URL}/api/boards/current", timeout=5)
-        if _resp.ok:
-            BOARD_ID = _resp.json().get("id", "default")
-            print(f"[INIT] Fetched board ID from API: {BOARD_ID}")
-    except Exception as _e:
-        print(f"[INIT] Could not fetch board ID: {_e}")
-        BOARD_ID = "default"
+BOARD_ID = os.environ.get("BOARD_ID", "default")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -572,9 +561,9 @@ class DartSensorUI:
         self.log(f"Found {len(available)} camera(s)")
         return available
     
-    def init_cameras(self, indices: List[int], width: int = 1280, height: int = 720, fps: int = 60):
+    def init_cameras(self, indices: List[int], width: int = 1280, height: int = 720):
         """Initialize cameras at specified indices."""
-        self.log(f"Initializing {len(indices)} camera(s) at {width}x{height} @ {fps}fps...")
+        self.log(f"Initializing {len(indices)} camera(s)...")
         
         for i, idx in enumerate(indices):
             time.sleep(1.5)  # Staggered init
@@ -586,13 +575,7 @@ class DartSensorUI:
             if cap.isOpened():
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-                cap.set(cv2.CAP_PROP_FPS, fps)  # Request target FPS
                 cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-                
-                # Read back actual settings
-                actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                actual_fps = cap.get(cv2.CAP_PROP_FPS)
                 
                 ret, frame = cap.read()
                 if ret:
@@ -602,8 +585,7 @@ class DartSensorUI:
                         name=f"Camera {idx}",
                         last_frame=frame
                     ))
-                    self.log(f"  Camera {idx}: {actual_w}x{actual_h} @ {actual_fps:.1f}fps")
-                    print(f"[CAM] Camera {idx}: got {actual_w}x{actual_h}@{actual_fps:.1f}fps")
+                    self.log(f"  Camera {idx} ready")
                 else:
                     cap.release()
                     self.log(f"  Camera {idx} failed to grab frame")
