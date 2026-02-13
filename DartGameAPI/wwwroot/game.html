@@ -652,8 +652,15 @@
                 .catch(() => updateSettingsCalibrationDot(false, [{ message: 'Could not check status' }]));
         }
         
-        // Initial check
-        checkSettingsCalibrationStatus();
+        // Defer check until boardId is fetched by dartsmob.js
+        const waitForBoardId = setInterval(() => {
+            if (boardId && boardId !== 'default') {
+                clearInterval(waitForBoardId);
+                checkSettingsCalibrationStatus();
+            }
+        }, 200);
+        // Fallback after 5s in case boardId fetch fails
+        setTimeout(() => { clearInterval(waitForBoardId); checkSettingsCalibrationStatus(); }, 5000);
         
         // Hook into the existing SignalR connection from dartsmob.js
         // Wait for it to be initialized, then add our handlers
