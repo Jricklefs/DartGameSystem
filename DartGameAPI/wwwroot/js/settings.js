@@ -351,13 +351,20 @@ function renderBackgroundGallery() {
     html += '</div>';
     html += '<div style="height: 2px; background: var(--gold); margin: 8px 0 12px 0;"></div>';
     html += '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
-    html += allSfw.map(bg => `
-        <div class="bg-thumb ${selectedBackgrounds.includes(bg) ? 'selected' : ''}"
-            style="background-image: url('${bg}'); width: 120px; height: 75px; flex-shrink: 0; border: 2px solid var(--gold-dark); border-radius: 8px; background-size: cover; background-position: center; cursor: pointer;"
-            onclick="toggleBackground('${bg}')">
+    html += allSfw.map(bg => {
+        const isSelected = selectedBackgrounds.includes(bg);
+        const dotStyle = isSelected
+            ? 'background: var(--gold); border: 2px solid var(--gold); color: #000; font-size: 10px; line-height: 20px; text-align: center;'
+            : 'background: transparent; border: 2px solid rgba(255,255,255,0.5);';
+        return `
+        <div style="position: relative; width: 120px; height: 75px; flex-shrink: 0; border: 2px solid var(--gold-dark); border-radius: 8px; overflow: hidden;">
+            <div style="position: absolute; inset: 0; background-image: url('${bg}'); background-size: cover; background-position: center; cursor: pointer;" onclick="previewBackground('${bg}')"></div>
+            <div onclick="event.stopPropagation(); toggleBackground('${bg}')" 
+                style="position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; z-index: 2; ${dotStyle}">${isSelected ? '✓' : ''}</div>
             ${customBackgrounds.includes(bg) ? '<span class="custom-badge">Custom</span>' : ''}
         </div>
-    `).join('');
+    `;
+    }).join('');
     html += '</div>';
     html += '</div>';
     
@@ -380,10 +387,15 @@ function renderBackgroundGallery() {
         html += nsfwBackgrounds.map(bg => {
             const filename = bg.split('/').pop();
             const blurStyle = nsfwShow ? '' : 'filter: blur(20px);';
+            const isSelected = selectedBackgrounds.includes(bg);
+            const dotStyle = isSelected
+                ? 'background: var(--gold); border: 2px solid var(--gold); color: #000; font-size: 10px; line-height: 20px; text-align: center;'
+                : 'background: transparent; border: 2px solid rgba(255,255,255,0.5);';
             return `
-                <div class="bg-thumb ${selectedBackgrounds.includes(bg) ? 'selected' : ''}" style="position: relative; width: 120px; height: 75px; flex-shrink: 0; overflow: hidden; border: 2px solid var(--gold-dark); border-radius: 8px;">
-                    <div style="position: absolute; inset: 0; background-image: url('${bg}'); background-size: cover; background-position: center; border-radius: 6px; ${blurStyle} transition: filter 0.3s;"></div>
-                    <div style="position: absolute; inset: 0; border-radius: 6px; cursor: pointer;" onclick="toggleBackground('${bg}')"></div>
+                <div style="position: relative; width: 120px; height: 75px; flex-shrink: 0; overflow: hidden; border: 2px solid var(--gold-dark); border-radius: 8px;">
+                    <div style="position: absolute; inset: 0; background-image: url('${bg}'); background-size: cover; background-position: center; border-radius: 6px; ${blurStyle} transition: filter 0.3s; cursor: pointer;" onclick="previewBackground('${bg}')"></div>
+                    <div onclick="event.stopPropagation(); toggleBackground('${bg}')" 
+                        style="position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; z-index: 2; ${dotStyle}">${isSelected ? '✓' : ''}</div>
                     <button onclick="event.stopPropagation(); deleteNsfwImage('${filename}')" 
                         style="position: absolute; top: 2px; right: 2px; background: rgba(139,0,0,0.8); border: none; color: white; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.65rem; z-index: 2; line-height: 22px;">🗑️</button>
                 </div>
@@ -396,6 +408,31 @@ function renderBackgroundGallery() {
     
     gallery.innerHTML = html;
 }
+
+function previewBackground(bg) {
+    // Create fullscreen preview overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'bg-preview-overlay';
+    overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; cursor: pointer;';
+    overlay.onclick = () => overlay.remove();
+    
+    const img = document.createElement('img');
+    img.src = bg;
+    img.style.cssText = 'max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; border: 2px solid var(--gold-dark);';
+    
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
+    
+    // Close on Escape
+    const handler = (e) => {
+        if (e.key === 'Escape') {
+            overlay.remove();
+            document.removeEventListener('keydown', handler);
+        }
+    };
+    document.addEventListener('keydown', handler);
+}
+
 
 
 
