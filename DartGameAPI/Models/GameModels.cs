@@ -112,6 +112,11 @@ public class Game
     
     // Round tracking (one round = each player throws once)
     public int CurrentRound { get; set; } = 1;
+    /// <summary>
+    /// Max darts per turn. Comes from game mode rules. Default 3.
+    /// When new game modes need different dart counts, update GameService.CreateGame().
+    /// </summary>
+    public int DartsPerTurn { get; set; } = 3;
     
     // Known dart positions on board (to detect new vs existing)
     public List<KnownDart> KnownDarts { get; set; } = new();
