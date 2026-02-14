@@ -169,7 +169,8 @@ public static class GameHubExtensions
                     p.Id,
                     p.Name,
                     p.Score,
-                    p.DartsThrown
+                    p.DartsThrown,
+                    p.LegsWon
                 }).ToList(),
                 CurrentTurn = game.CurrentTurn == null ? null : new
                 {
@@ -225,7 +226,8 @@ public static class GameHubExtensions
                     p.Id,
                     p.Name,
                     p.Score,
-                    p.DartsThrown
+                    p.DartsThrown,
+                    p.LegsWon
                 }).ToList(),
                 CurrentTurn = game.CurrentTurn == null ? null : new
                 {
@@ -288,7 +290,7 @@ public static class GameHubExtensions
             game.Id,
             game.WinnerId,
             WinnerName = game.Players.FirstOrDefault(p => p.Id == game.WinnerId)?.Name,
-            Players = game.Players.Select(p => new { p.Id, p.Name, p.Score, p.DartsThrown })
+            Players = game.Players.Select(p => new { p.Id, p.Name, p.Score, p.DartsThrown, p.LegsWon })
         });
         
         // Tell sensor to stop detecting
@@ -320,7 +322,8 @@ public static class GameHubExtensions
                     p.Id,
                     p.Name,
                     p.Score,
-                    p.DartsThrown
+                    p.DartsThrown,
+                    p.LegsWon
                 }).ToList(),
                 CurrentTurn = game.CurrentTurn == null ? null : new
                 {
