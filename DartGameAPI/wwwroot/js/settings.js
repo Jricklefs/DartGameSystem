@@ -6,6 +6,45 @@ const DART_DETECT_URL = 'http://192.168.0.158:8000';
 const DART_SENSOR_URL = 'http://192.168.0.158:8001';  // DartSensor for camera snapshots
 const DART_GAME_URL = window.location.origin;
 
+// ============== Image Preview Lightbox ==============
+function openImagePreview(src, event) {
+    if (event) event.stopPropagation();
+    
+    // Remove existing lightbox if any
+    const existing = document.getElementById('image-lightbox');
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'image-lightbox';
+    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center; z-index:10000; cursor:pointer;';
+    overlay.onclick = () => overlay.remove();
+    
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:90%; max-height:90%; object-fit:contain; border-radius:8px; box-shadow:0 0 30px rgba(0,0,0,0.5);';
+    
+    // Close button
+    const closeBtn = document.createElement('div');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = 'position:absolute; top:20px; right:30px; font-size:40px; color:white; cursor:pointer; z-index:10001;';
+    closeBtn.onclick = () => overlay.remove();
+    
+    overlay.appendChild(img);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+    
+    // ESC to close
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            overlay.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+}
+
+
+
 // Default backgrounds
 const DEFAULT_BACKGROUNDS = [
     '/images/backgrounds/speakeasy-1.jpg',
@@ -1810,7 +1849,7 @@ async function showGameDetails(boardId, gameId) {
                 
                 html += `
                     <div style="background: #1a1a1a; border: 2px solid ${borderColor}; border-radius: 8px; padding: 10px; width: 180px;">
-                        ${imgUrl ? `<img src="${imgUrl}" style="width: 100%; border-radius: 4px; margin-bottom: 8px;">` : ''}
+                        ${imgUrl ? `<img src="${imgUrl}" style="width: 100%; border-radius: 4px; margin-bottom: 8px; cursor: pointer;" onclick="openImagePreview(this.src, event)">` : ''}
                         <div style="text-align: center;">
                             <span style="font-size: 1.5rem; color: var(--paper);">${dart.dart}</span>
                             <div style="margin-top: 5px;">
