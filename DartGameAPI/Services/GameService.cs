@@ -55,6 +55,15 @@ public class GameService
             State = GameState.InProgress,
             LegsToWin = legsToWin,
             RequireDoubleOut = requireDoubleOut,
+            // Set max darts per turn based on game mode (extensible for future modes)
+            DartsPerTurn = mode switch
+            {
+                GameMode.Practice => 3,
+                GameMode.Game501 => 3,
+                GameMode.Game301 => 3,
+                GameMode.Cricket => 3,
+                _ => 3
+            },
             CurrentLeg = 1,
             Players = playerNames.Select(name => new Player
             {

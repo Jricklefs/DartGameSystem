@@ -40,7 +40,7 @@ public class GamesController : ControllerBase
 
     /// <summary>
     /// Hub detect endpoint - receives images from DartSensor, forwards to DartDetect.
-    /// Hub-and-spoke: Sensor → GameAPI → DetectAPI
+    /// Hub-and-spoke: Sensor â†’ GameAPI â†’ DetectAPI
     /// 
     /// DartSensor only calls this when motion detected (new dart landed).
     /// DartDetect now handles differential detection and returns only the NEW dart.
@@ -66,6 +66,27 @@ public class GamesController : ControllerBase
         if (game.State != GameState.InProgress)
         {
             return Ok(new { message = "Game not in progress", darts = new List<object>() });
+        }
+
+        // === DART COUNT GUARD ===
+        // Reject detections if the turn already has the max number of darts.
+        // This prevents phantom dart 4+ from being scored when a dart is pulled
+        // and the sensor sees "new motion" while the board still has darts on it.
+        var guardDarts = game.CurrentTurn?.Darts ?? new List<DartThrow>();
+        if (guardDarts.Count >= game.DartsPerTurn)
+        {
+            _logger.LogWarning("[GUARD] Rejected dart detection - turn already has {Count}/{Max} darts. Likely phantom from dart removal.",
+                guardDarts.Count, game.DartsPerTurn);
+            return Ok(new { message = "Turn complete - max darts reached", darts = new List<object>() });
+        }
+
+        // === BUST GUARD ===
+        // If the turn is busted, reject new detections until UI confirms the bust.
+        // The player may still be pulling darts, which triggers sensor motion.
+        if (game.CurrentTurn?.IsBusted == true)
+        {
+            _logger.LogWarning("[GUARD] Rejected dart detection - turn is busted, waiting for UI confirmation.");
+            return Ok(new { message = "Turn busted - waiting for confirmation", darts = new List<object>() });
         }
 
         // Forward images to DartDetect API
