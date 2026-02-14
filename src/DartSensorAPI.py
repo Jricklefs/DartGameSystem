@@ -1005,7 +1005,9 @@ class DartSensorUI:
                                 
                                 # Send to DartGame API with dart number for differential detection
                                 # Capture 3 frames over 100ms and average for more stable detection
-                                frames_to_send = capture_averaged_frames(self.cameras, num_frames=3, delay_ms=35)
+                                # Performance: single frame capture (was 3 frames x 35ms)
+                                # Frame averaging adds ~105ms latency with minimal benefit for skeleton detection
+                                frames_to_send = capture_averaged_frames(self.cameras, num_frames=1, delay_ms=0)
                                 
                                 # Use "before" frames saved when motion was first detected
                                 before_frames = getattr(self, '_before_frames_for_next_dart', {})
