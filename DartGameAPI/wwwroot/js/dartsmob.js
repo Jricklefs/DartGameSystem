@@ -1278,6 +1278,53 @@ function closeCorrectionModal() {
 }
 
 async function submitCorrection() {
+    // Handle "Not Detected" mode - submit as manual throw instead of correction
+    if (window._notDetectedMode) {
+        window._notDetectedMode = false;
+        
+        // Reset modal title
+        const modalTitle = document.querySelector('#dart-correction-modal .modal-title');
+        if (modalTitle) modalTitle.textContent = 'Correct Dart';
+        
+        let segment, multiplier;
+        if (correctionInput === 'miss') {
+            segment = 0;
+            multiplier = 0;
+        } else if (correctionInput === 'bull') {
+            segment = 25;
+            multiplier = correctionMultiplier;  // 1=outer bull (25), 2=inner bull (50)
+        } else {
+            segment = parseInt(correctionInput);
+            multiplier = correctionMultiplier || 1;
+        }
+        
+        if (isNaN(segment) && correctionInput !== 'miss') {
+            console.log('[NOT-DETECTED] Invalid input:', correctionInput);
+            return;
+        }
+        
+        console.log('[NOT-DETECTED] Submitting manual dart: S' + segment + 'x' + multiplier);
+        
+        // Submit as manual throw
+        fetch('/api/games/' + currentGame.id + '/manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ segment: segment, multiplier: multiplier })
+        })
+        .then(r => r.json())
+        .then(data => {
+            console.log('[NOT-DETECTED] Manual dart submitted:', data);
+            closeCorrectionModal();
+        })
+        .catch(err => {
+            console.error('[NOT-DETECTED] Failed:', err);
+            closeCorrectionModal();
+        });
+        
+        return;  // Don't fall through to normal correction logic
+    }
+    
+    // Original correction logic follows...
     const { segment, score, display } = getSegmentAndScore();
     
     if (correctionDartIndex === null || !currentGame) {
@@ -2165,3 +2212,51 @@ window.exportCorrections = exportCorrections;
 window.clearCorrections = clearCorrections;
 window.getCorrections = getCorrections;
 
+
+
+// ==========================================================================
+// Dart Not Detected
+// ==========================================================================
+// When a dart is thrown but the cameras don't detect it, this button
+// opens the correction modal so the player can manually enter the score.
+// The dart is submitted as a manual throw to keep dart count in sync.
+// This preserves benchmark data integrity - we know a dart was missed.
+
+function dartNotDetected() {
+    if (!currentGame || currentGame.state !== 1) {
+        console.log('[NOT-DETECTED] No active game');
+        return;
+    }
+    
+    const dartsThrown = currentGame.currentTurn?.darts?.length || 0;
+    if (dartsThrown >= 3) {
+        console.log('[NOT-DETECTED] Already 3 darts this turn');
+        return;
+    }
+    
+    console.log('[NOT-DETECTED] Opening correction modal for undetected dart ' + (dartsThrown + 1));
+    
+    // Set up correction state for next dart index
+    correctionDartIndex = dartsThrown;  // 0, 1, or 2
+    correctionInput = '';
+    correctionMultiplier = 1;
+    
+    // Flag this as a "not detected" manual entry (not a correction of existing dart)
+    window._notDetectedMode = true;
+    
+    // Update modal title to indicate this is a manual entry
+    const modalTitle = document.querySelector('#dart-correction-modal .modal-title');
+    if (modalTitle) {
+        modalTitle.textContent = '🚫 Dart Not Detected - Enter Score';
+    }
+    
+    // Open the correction modal
+    const modal = document.getElementById('dart-correction-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        updateCorrectionDisplay();
+    }
+}
+
+// Override submitCorrection to handle not-detected mode
+const _originalSubmitCorrection = typeof submitCorrection === 'function' ? submitCorrection : null;
