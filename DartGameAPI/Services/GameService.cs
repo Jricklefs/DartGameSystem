@@ -48,32 +48,25 @@ public class GameService
         // Calculate legs to win (best of 5 = first to 3)
         int legsToWin = (bestOf / 2) + 1;
 
+        // Build centralized rules from game mode — all mode-specific config lives in GameRules.FromMode()
+        var rules = GameRules.FromMode(mode, requireDoubleOut);
+
         var game = new Game
         {
             BoardId = boardId,
             Mode = mode,
             State = GameState.InProgress,
             LegsToWin = legsToWin,
-            RequireDoubleOut = requireDoubleOut,
-            // Set max darts per turn based on game mode (extensible for future modes)
-            DartsPerTurn = mode switch
-            {
-                GameMode.Practice => 3,
-                GameMode.Game501 => 3,
-                GameMode.Game301 => 3,
-                GameMode.Cricket => 3,
-                _ => 3
-            },
+            Rules = rules,
+            // Keep legacy properties in sync during migration (TODO: remove once all code uses Rules.X)
+            RequireDoubleOut = rules.RequireDoubleOut,
+            DartsPerTurn = rules.DartsPerTurn,
             CurrentLeg = 1,
             Players = playerNames.Select(name => new Player
             {
                 Name = name,
-                Score = mode switch
-                {
-                    GameMode.Game501 => 501,
-                    GameMode.Game301 => 301,
-                    _ => 0
-                },
+                // Starting score now comes from rules instead of inline switch
+                Score = rules.StartingScore,
                 LegsWon = 0
             }).ToList()
         };
@@ -303,12 +296,8 @@ public class GameService
         // Reset player scores for new leg
         foreach (var player in game.Players)
         {
-            player.Score = game.Mode switch
-            {
-                GameMode.Game501 => 501,
-                GameMode.Game301 => 301,
-                _ => 0
-            };
+            // Reset score from rules (centralized config instead of inline switch)
+            player.Score = game.Rules.StartingScore;
             player.Turns.Clear();
         }
         
