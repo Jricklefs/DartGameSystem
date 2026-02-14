@@ -106,17 +106,26 @@ public class Game
     public int LegsToWin { get; set; } = 3;  // Best of 5 = first to 3
     
     // Checkout rules
-    public bool RequireDoubleOut { get; set; } = false;  // Default: straight out  // Must finish on a double
+    // TODO: migrate to Rules.RequireDoubleOut — kept in sync during migration
+    public bool RequireDoubleOut { get; set; } = false;  // Default: straight out
     public int CurrentLeg { get; set; } = 1;
     public string? LegWinnerId { get; set; }  // Who won the current/last leg
     
     // Round tracking (one round = each player throws once)
     public int CurrentRound { get; set; } = 1;
+
     /// <summary>
     /// Max darts per turn. Comes from game mode rules. Default 3.
-    /// When new game modes need different dart counts, update GameService.CreateGame().
+    /// TODO: migrate to Rules.DartsPerTurn — kept in sync during migration
     /// </summary>
     public int DartsPerTurn { get; set; } = 3;
+
+    /// <summary>
+    /// Centralized game rules built from GameMode at creation time.
+    /// Contains all mode-specific config (starting score, dart count, double-out, etc.)
+    /// New code should read from Rules instead of the individual properties above.
+    /// </summary>
+    public GameRules Rules { get; set; } = new();
     
     // Known dart positions on board (to detect new vs existing)
     public List<KnownDart> KnownDarts { get; set; } = new();
