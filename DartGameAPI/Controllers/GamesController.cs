@@ -630,9 +630,11 @@ public class GamesController : ControllerBase
         
         _gameService.ClearBoard(boardId);
         
-        // If turn was complete (3 darts), update context BEFORE signaling rebase
+        // If turn was complete (3 darts), advance to next player
         if (turnWasComplete && game != null)
         {
+            _gameService.NextTurn(game);
+
             // Update benchmark context with new round/player - MUST complete before rebase
             var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
             await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);

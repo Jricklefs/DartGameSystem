@@ -330,12 +330,8 @@ public class GameService
         {
             game.KnownDarts.Clear();
             
-            // If turn is complete (3 darts thrown), advance to next player
-            if (game.CurrentTurn?.IsComplete == true && game.State == GameState.InProgress)
-            {
-                _logger.LogInformation("Turn complete, advancing to next player on board clear");
-                EndTurn(game);
-            }
+            // NOTE: Don't auto-advance turn here. Let the caller (controller) handle
+            // turn advancement via NextTurn() to avoid double-incrementing rounds.
             
             _logger.LogInformation("Board {BoardId} cleared", boardId);
         }
@@ -382,7 +378,7 @@ public class GameService
                 player.Score = player.Score + oldDart.Score - newDart.Score;
                 
                 // Check for bust after correction
-                if (player.Score < 0 || (player.Score == 1))
+                if (player.Score < 0 || (player.Score == 1 && game.RequireDoubleOut))
                 {
                     // This would be a bust - but corrections shouldn't cause busts
                     // Just prevent going negative
@@ -393,7 +389,7 @@ public class GameService
                 }
                 
                 // Check for checkout
-                if (player.Score == 0 && newDart.Multiplier == 2)
+                if (player.Score == 0 && (!game.RequireDoubleOut || newDart.Multiplier == 2))
                 {
                     player.LegsWon++;
                     game.LegWinnerId = player.Id;
