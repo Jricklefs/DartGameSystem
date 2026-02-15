@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -123,6 +123,8 @@ public class GamesController : ControllerBase
         
         if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
         {
+            // Notify UI that motion was detected but no dart found
+            await _hubContext.SendDartNotFound(boardId);
             return Ok(new { message = "No darts detected", darts = new List<object>() });
         }
 
@@ -138,6 +140,8 @@ public class GamesController : ControllerBase
 
         if (newTip == null)
         {
+            // Notify UI that motion was detected but no new dart found
+            await _hubContext.SendDartNotFound(boardId);
             return Ok(new { message = "No new darts", darts = new List<object>() });
         }
 

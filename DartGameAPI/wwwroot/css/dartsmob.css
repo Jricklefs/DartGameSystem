@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    DartsMob - Mobile-First Redesign
    ========================================================================== */
 
@@ -2948,4 +2948,13 @@ html, body {
 }
 .btn-not-detected:active {
     transform: scale(0.95);
+}
+
+/* ===== Toast Notification Animation ===== */
+/* Used by the dart-not-found toast and showToast() helper */
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
 }
