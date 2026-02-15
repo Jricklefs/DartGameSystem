@@ -65,15 +65,6 @@ public class DartDetectClient
     /// Send images to DartDetect for dart tip detection and scoring.
     /// Includes calibration data with each camera (fully stateless).
     /// </summary>
-    /// <summary>
-    /// Send images to DartDetect using multipart/form-data (saves ~33% bandwidth).
-    /// 
-    /// Instead of base64-encoding images in JSON (which inflates data by ~33%),
-    /// we send raw JPEG bytes as file uploads. Metadata (board_id, dart_number,
-    /// calibrations) goes as a JSON form field.
-    /// 
-    /// Falls back to the old JSON endpoint if multipart fails.
-    /// </summary>
     public async Task<DetectResponse?> DetectAsync(List<CameraImageDto> images, string boardId = "default", int dartNumber = 1, List<CameraImageDto>? beforeImages = null, CancellationToken ct = default)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -83,118 +74,34 @@ public class DartDetectClient
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<DartsMobDbContext>();
             
-            // Build calibration map for metadata JSON
-            var calibrations = new Dictionary<string, object?>();
+            var camerasWithCalibration = new List<DetectCameraPayload>();
+            
             foreach (var img in images)
             {
                 var calibrationData = await GetCalibrationDataAsync(db, img.CameraId, ct);
-                calibrations[img.CameraId] = calibrationData;
+                
+                camerasWithCalibration.Add(new DetectCameraPayload
+                {
+                    CameraId = img.CameraId,
+                    Image = img.Image,
+                    Calibration = calibrationData
+                });
             }
             
             _logger.LogInformation("[TIMING] DB calibration fetch: {ElapsedMs}ms", sw.ElapsedMilliseconds);
             var httpStart = sw.ElapsedMilliseconds;
             
-            // === MULTIPART/FORM-DATA ===
-            // Send raw image bytes instead of base64 strings.
-            // This saves ~33% bandwidth since base64 inflates binary data.
-            using var formContent = new MultipartFormDataContent();
-            
-            // Metadata as JSON form field (board_id, dart_number, per-camera calibrations)
-            var metadata = new
-            {
-                board_id = boardId,
-                dart_number = dartNumber,
-                cameras = calibrations
-            };
-            var metadataJson = JsonSerializer.Serialize(metadata);
-            formContent.Add(new StringContent(metadataJson, System.Text.Encoding.UTF8, "application/json"), "metadata");
-            
-            // Camera images as raw byte file uploads (field name: camera_<cameraId>)
-            long totalRawBytes = 0;
-            long totalBase64Bytes = 0;
-            foreach (var img in images)
-            {
-                // Decode base64 to raw bytes — DartSensor sends base64, we convert to raw for wire savings
-                var rawBytes = Convert.FromBase64String(img.Image);
-                totalRawBytes += rawBytes.Length;
-                totalBase64Bytes += img.Image.Length;
-                
-                var fileContent = new ByteArrayContent(rawBytes);
-                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
-                formContent.Add(fileContent, $"camera_{img.CameraId}", $"{img.CameraId}.jpg");
-            }
-            
-            // Before images as raw byte file uploads (field name: before_<cameraId>)
+            // Build before images payload if provided
+            List<BeforeImagePayload>? beforePayload = null;
             if (beforeImages != null && beforeImages.Any())
             {
-                foreach (var img in beforeImages)
+                beforePayload = beforeImages.Select(i => new BeforeImagePayload
                 {
-                    var rawBytes = Convert.FromBase64String(img.Image);
-                    totalRawBytes += rawBytes.Length;
-                    totalBase64Bytes += img.Image.Length;
-                    
-                    var fileContent = new ByteArrayContent(rawBytes);
-                    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
-                    formContent.Add(fileContent, $"before_{img.CameraId}", $"before_{img.CameraId}.jpg");
-                }
-                _logger.LogInformation("[DETECT] Including {Count} before images for clean diff", beforeImages.Count);
+                    CameraId = i.CameraId,
+                    Image = i.Image
+                }).ToList();
+                _logger.LogInformation("[DETECT] Including {Count} before images for clean diff", beforePayload.Count);
             }
-            
-            var savedBytes = totalBase64Bytes - totalRawBytes;
-            _logger.LogInformation("[DETECT] Sending {Count} images via multipart to DartDetect (board={BoardId}, dart={DartNum}, saved {SavedKB}KB)", 
-                images.Count, boardId, dartNumber, savedBytes / 1024);
-            
-            var response = await _httpClient.PostAsync("/v1/detect/multipart", formContent, ct);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var result = await response.Content.ReadFromJsonAsync<DetectResponse>(cancellationToken: ct);
-                var httpTime = sw.ElapsedMilliseconds - httpStart;
-                _logger.LogInformation("[TIMING] HTTP multipart call to DartDetect: {HttpMs}ms, TOTAL: {TotalMs}ms", httpTime, sw.ElapsedMilliseconds);
-                _logger.LogInformation("[DETECT] DartDetect returned {Count} tips", result?.Tips?.Count ?? 0);
-                return result;
-            }
-            else
-            {
-                var error = await response.Content.ReadAsStringAsync(ct);
-                _logger.LogWarning("[DETECT] DartDetect multipart failed: {Status} - {Error}, falling back to JSON", response.StatusCode, error);
-                
-                // Fallback to old JSON endpoint for backward compatibility
-                return await DetectAsyncJsonFallback(images, calibrations, boardId, dartNumber, beforeImages, ct);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[DETECT] Failed to call DartDetect /v1/detect/multipart");
-            return null;
-        }
-    }
-    
-    /// <summary>
-    /// Fallback: send detection request via JSON+base64 (old method).
-    /// Used if the multipart endpoint is unavailable (e.g., older DartDetect version).
-    /// </summary>
-    private async Task<DetectResponse?> DetectAsyncJsonFallback(
-        List<CameraImageDto> images, 
-        Dictionary<string, object?> calibrations,
-        string boardId, int dartNumber,
-        List<CameraImageDto>? beforeImages,
-        CancellationToken ct)
-    {
-        try
-        {
-            var camerasWithCalibration = images.Select(img => new DetectCameraPayload
-            {
-                CameraId = img.CameraId,
-                Image = img.Image,
-                Calibration = calibrations.GetValueOrDefault(img.CameraId)
-            }).ToList();
-            
-            List<BeforeImagePayload>? beforePayload = beforeImages?.Select(i => new BeforeImagePayload
-            {
-                CameraId = i.CameraId,
-                Image = i.Image
-            }).ToList();
             
             var payload = new DetectRequestPayload
             {
@@ -204,23 +111,29 @@ public class DartDetectClient
                 DartNumber = dartNumber
             };
             
-            _logger.LogInformation("[DETECT] JSON fallback: sending {Count} images to /v1/detect", images.Count);
+            _logger.LogInformation("[DETECT] Sending {Count} images with calibration to DartDetect (board={BoardId}, dart={DartNum})", 
+                images.Count, boardId, dartNumber);
+            
             var response = await _httpClient.PostAsJsonAsync("/v1/detect", payload, ct);
             
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<DetectResponse>(cancellationToken: ct);
+                var result = await response.Content.ReadFromJsonAsync<DetectResponse>(cancellationToken: ct);
+                var httpTime = sw.ElapsedMilliseconds - httpStart;
+                _logger.LogInformation("[TIMING] HTTP call to DartDetect: {HttpMs}ms, TOTAL: {TotalMs}ms", httpTime, sw.ElapsedMilliseconds);
+                _logger.LogInformation("[DETECT] DartDetect returned {Count} tips", result?.Tips?.Count ?? 0);
+                return result;
             }
             else
             {
                 var error = await response.Content.ReadAsStringAsync(ct);
-                _logger.LogWarning("[DETECT] JSON fallback also failed: {Status} - {Error}", response.StatusCode, error);
+                _logger.LogWarning("[DETECT] DartDetect failed: {Status} - {Error}", response.StatusCode, error);
                 return null;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[DETECT] JSON fallback failed");
+            _logger.LogError(ex, "[DETECT] Failed to call DartDetect /v1/detect");
             return null;
         }
     }
