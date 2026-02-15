@@ -43,6 +43,14 @@ class DetectorConfig:
     drift_blend_alpha: float = 0.05       # How much to blend (0.05 = 5% new frame)
     idle_refresh_seconds: float = 60.0     # Hard refresh baseline after this idle time
     
+    # Motion detection resolution
+    # Autodarts uses separate resolutions: detectionResolution=1280x720, motionResolution=320x180
+    # Lower motion resolution = less noise in diff, faster processing.
+    # The full-res frames are still sent to DartDetect for actual scoring.
+    # Set to None to use full capture resolution for motion detection.
+    motion_width: Optional[int] = 640
+    motion_height: Optional[int] = 360
+    
     # Noise reduction
     blur_kernel_size: int = 5             # Gaussian blur kernel (odd number)
     min_contour_area: int = 500           # Minimum contour area to count as dart
@@ -113,8 +121,31 @@ class MultiCameraDartDetector:
         self.cameras[camera_id] = CameraState(camera_id=camera_id)
         logger.info(f"Added camera: {camera_id}")
     
+    def _downscale_for_motion(self, frame: np.ndarray) -> np.ndarray:
+        """
+        Downscale frame to motion detection resolution.
+        
+        Motion detection only needs to know IF something changed, not exactly where.
+        Lower resolution = less noise, fewer false positives from pixel-level jitter.
+        This mirrors Autodarts' approach: motionResolution=320x180, detectionResolution=1280x720.
+        
+        Full-res frames are still sent to DartDetect for actual tip detection/scoring.
+        """
+        mw = self.config.motion_width
+        mh = self.config.motion_height
+        if mw and mh and (frame.shape[1] != mw or frame.shape[0] != mh):
+            return cv2.resize(frame, (mw, mh), interpolation=cv2.INTER_AREA)
+        return frame
+    
     def _preprocess(self, frame: np.ndarray) -> np.ndarray:
-        """Convert to grayscale and blur for comparison."""
+        """Convert to grayscale and blur for motion comparison.
+        
+        Downscales to motion resolution first (if configured), then converts
+        to grayscale and blurs. This reduces noise for motion detection while
+        keeping full-res frames available for DartDetect.
+        """
+        # Downscale to motion resolution for cleaner diffs
+        frame = self._downscale_for_motion(frame)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(
             gray, 
@@ -167,9 +198,19 @@ class MultiCameraDartDetector:
         
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
+        # Scale contour area thresholds to motion resolution.
+        # Config thresholds are defined for 1280x720. If we're running at 640x360,
+        # areas are 1/4 as large (linear dimensions halved → area quartered).
+        scale = 1.0
+        if self.config.motion_width and self.config.motion_height:
+            # Reference resolution: 1280x720 (what the config thresholds assume)
+            scale = (self.config.motion_width * self.config.motion_height) / (1280 * 720)
+        min_area = self.config.min_contour_area * scale
+        max_area = self.config.max_contour_area * scale
+        
         valid_contours = [
             c for c in contours 
-            if self.config.min_contour_area <= cv2.contourArea(c) <= self.config.max_contour_area
+            if min_area <= cv2.contourArea(c) <= max_area
         ]
         
         return diff_pct, diff, valid_contours
