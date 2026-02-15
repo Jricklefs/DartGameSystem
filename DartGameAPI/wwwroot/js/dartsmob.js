@@ -1,4 +1,4 @@
-/**
+﻿/**
  * DartsMob - Main Game JavaScript
  * Mobile-first redesign
  */
@@ -156,6 +156,7 @@ async function initConnection() {
     connection.on('GameStarted', handleGameStarted);
     connection.on('GameEnded', handleGameEnded);
     connection.on('TurnEnded', handleTurnEnded);
+    connection.on('DartNotFound', handleDartNotFound);
 
     try {
         await connection.start();
@@ -2260,3 +2261,35 @@ function dartNotDetected() {
 
 // Override submitCorrection to handle not-detected mode
 const _originalSubmitCorrection = typeof submitCorrection === 'function' ? submitCorrection : null;
+
+// ===== Dart Not Found Toast =====
+// Shows a toast notification when DartSensor detects motion but DartDetect
+// can't find a dart. Prompts the user to use the manual entry button.
+function handleDartNotFound(data) {
+    console.log('Motion detected but no dart found');
+    showToast('Dart not scored \u2014 use \ud83d\udeab to enter manually', 'warning');
+}
+
+// ===== Toast Notification Helper =====
+// Creates a temporary floating notification that auto-dismisses after 3 seconds.
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        border-radius: 8px;
+        color: white;
+        font-weight: bold;
+        z-index: 10000;
+        animation: fadeInOut 3s ease-in-out;
+        background: ${type === 'warning' ? '#e67e22' : '#3498db'};
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}

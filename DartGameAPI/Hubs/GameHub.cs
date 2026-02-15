@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using DartGameAPI.Models;
 using System.Collections.Concurrent;
 
@@ -244,6 +244,15 @@ public static class GameHubExtensions
                 }
             }
         });
+    }
+
+    /// <summary>
+    /// Notify UI that motion was detected but no dart could be scored.
+    /// User should use the "Dart Not Detected" button to manually enter the score.
+    /// </summary>
+    public static async Task SendDartNotFound(this IHubContext<GameHub> hub, string boardId)
+    {
+        await hub.Clients.Group($"board:{boardId}").SendAsync("DartNotFound", new { boardId });
     }
 
     /// <summary>
