@@ -107,30 +107,38 @@ def save_debug_images(event_name: str, frames: dict, dart_num: int = None, extra
 
 
 # === SignalR Hub Connection ===
-def capture_sharpest_frames(cameras, num_frames: int = 5, delay_ms: int = 30) -> dict:
+def capture_best_diff_frames(cameras, reference_frames: dict = None, num_frames: int = 8, delay_ms: int = 35) -> dict:
     """
-    Capture multiple frames from each camera and pick the SHARPEST one.
+    Capture multiple frames and pick the one with the STRONGEST diff per camera.
     
-    Uses Laplacian variance as a sharpness metric — sharp images have high
-    variance (lots of edges), blurry/motion-blurred images have low variance.
-    This eliminates motion blur from dart vibration after impact.
+    WHY: Instead of picking the sharpest frame (which might be sharp but show the
+    dart at a bad angle or mid-vibration), we pick the frame where the dart is
+    MOST VISIBLE compared to the reference. This gives the strongest signal for
+    the AI model to detect the dart's position.
     
-    Cameras are read in parallel (threads) for each capture round to ensure
-    all cameras capture at the same instant.
+    For each frame, we compute cv2.absdiff against the reference (baseline or
+    previous state) and measure the total diff strength. The frame with the
+    highest diff has the dart in the most distinct position.
+    
+    Cameras are read in parallel (threads) for each capture round.
     
     Args:
         cameras: List of Camera objects
-        num_frames: Number of frames to capture per camera (default 5)
-        delay_ms: Delay between capture rounds in ms (default 30ms)
+        reference_frames: Dict of cam_id -> reference frame to diff against.
+                         If None, falls back to sharpness-based selection.
+        num_frames: Number of frames to capture per camera (default 8, ~280ms)
+        delay_ms: Delay between capture rounds in ms (default 35ms)
     
     Returns:
-        Dict of camera_id -> sharpest frame
+        Dict of camera_id -> best-diff frame
     """
     import time
     import concurrent.futures
     import numpy as np
     
-    # Collect frames with sharpness scores
+    DIFF_PIXEL_THRESHOLD = 16  # Pixels must differ by at least this to count
+    
+    # Collect frames with diff scores
     frame_lists = {f"cam{cam.index}": [] for cam in cameras}
     
     def _read_one(cam):
@@ -144,30 +152,46 @@ def capture_sharpest_frames(cameras, num_frames: int = 5, delay_ms: int = 30) ->
             for f in concurrent.futures.as_completed(futures):
                 cam, ret, frame = f.result()
                 if ret and frame is not None:
-                    # Compute sharpness: Laplacian variance
-                    # Higher = sharper, lower = more blur
-                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    sharpness = cv2.Laplacian(gray, cv2.CV_64F).var()
-                    frame_lists[f"cam{cam.index}"].append((frame.copy(), sharpness))
+                    cam_id = f"cam{cam.index}"
+                    
+                    # Compute diff score against reference frame
+                    ref = reference_frames.get(cam_id) if reference_frames else None
+                    if ref is not None:
+                        # Count pixels that differ significantly from reference
+                        # This measures how "visible" the dart is in this frame
+                        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        gray_ref = cv2.cvtColor(ref, cv2.COLOR_BGR2GRAY)
+                        diff = cv2.absdiff(gray_frame, gray_ref)
+                        # Count of pixels above threshold = dart visibility strength
+                        diff_score = int(np.count_nonzero(diff > DIFF_PIXEL_THRESHOLD))
+                    else:
+                        # No reference available, fall back to sharpness
+                        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        diff_score = cv2.Laplacian(gray, cv2.CV_64F).var()
+                    
+                    frame_lists[cam_id].append((frame.copy(), diff_score))
         if i < num_frames - 1:
             time.sleep(delay_ms / 1000.0)
     
-    # Pick sharpest frame per camera
-    sharpest_frames = {}
+    # Pick best-diff frame per camera
+    best_frames = {}
     for cam_id, frames_with_scores in frame_lists.items():
         if frames_with_scores:
-            # Sort by sharpness (highest first) and pick the best
             best_frame, best_score = max(frames_with_scores, key=lambda x: x[1])
-            sharpest_frames[cam_id] = best_frame
+            best_frames[cam_id] = best_frame
+            logger.info(f"[BEST-DIFF] {cam_id}: picked best of {len(frames_with_scores)} frames, score={best_score}")
     
-    return sharpest_frames
+    return best_frames
 
 
-# Keep old name as alias for compatibility
+def capture_sharpest_frames(cameras, num_frames: int = 5, delay_ms: int = 30) -> dict:
+    """Legacy wrapper — now uses best-diff selection (no reference = sharpness fallback)."""
+    return capture_best_diff_frames(cameras, reference_frames=None, num_frames=num_frames, delay_ms=delay_ms)
+
+
 def capture_averaged_frames(cameras, num_frames: int = 3, delay_ms: int = 50) -> dict:
-    """Legacy wrapper — now picks sharpest frame instead of averaging."""
-    return capture_sharpest_frames(cameras, num_frames=num_frames, delay_ms=delay_ms)
-
+    """Legacy wrapper — now uses best-diff selection."""
+    return capture_best_diff_frames(cameras, reference_frames=None, num_frames=num_frames, delay_ms=delay_ms)
 
 class HubConnection:
     """SignalR connection to DartGame API hub."""
@@ -442,6 +466,13 @@ class DartSensorUI:
         self.detected_darts: List[dict] = []
         self.log_messages: List[str] = []
         
+        # Stored baseline frames for dart 1 detection
+        # WHY: When dart 1 is thrown, we need a clean "empty board" reference.
+        # The regular previous frame might have the dart partially entering.
+        # By storing a known-clean baseline at round start, dart 1 gets a
+        # much cleaner diff signal, improving detection accuracy.
+        self._stored_baseline_frames: dict = {}  # cam_id -> clean empty board frame
+        
         # Window names
         self.main_window = "DartSensor Test UI"
         self.config_window = "Configuration"
@@ -514,14 +545,16 @@ class DartSensorUI:
         # No need for periodic warmup from DartSensor
         
         # Capture baseline for all cameras immediately
+        # Also store raw baseline frames for dart 1 best-diff selection
         for cam in self.cameras:
             if cam.last_frame is not None:
                 cam_id = f"cam{cam.index}"
                 self.detector.set_baseline(cam_id, cam.last_frame)
+                self._stored_baseline_frames[cam_id] = cam.last_frame.copy()
         
         self.clear_board()
         cfg = self.detector.config
-        print(f"[HUB] Baseline captured, detection ACTIVE")
+        print(f"[HUB] Baseline captured + stored for dart 1 diff, detection ACTIVE")
         print(f"[HUB] Thresholds: base={cfg.base_threshold_pct:.1f}%, dart={cfg.dart_threshold_pct:.1f}%, clear={cfg.clear_threshold_pct:.1f}%, clearing={cfg.clearing_start_pct:.1f}%")
     
     def _start_warmup_timer(self):
@@ -577,10 +610,11 @@ class DartSensorUI:
             if cam.last_frame is not None:
                 cam_id = f"cam{cam.index}"
                 self.detector.set_baseline(cam_id, cam.last_frame)
+                self._stored_baseline_frames[cam_id] = cam.last_frame.copy()
         
         self.detector.dart_count = 0
         self.clear_board()
-        print(f"[HUB] Rebase complete")
+        print(f"[HUB] Rebase complete + stored for dart 1 diff")
     
     def connect_to_hub(self):
         """Connect to SignalR hub."""
@@ -1038,15 +1072,33 @@ class DartSensorUI:
                                 # Save debug images for later analysis
                                 # save_debug_images("detected", all_frames, dart_num)  # Disabled for now
                                 
-                                # Send to DartGame API with dart number for differential detection
-                                # Capture 3 frames over 100ms and average for more stable detection
-                                # Capture 5 frames over ~120ms, pick sharpest per camera
-                                # Eliminates motion blur from dart vibration after impact
-                                # Parallel capture ensures all cameras read simultaneously
-                                frames_to_send = capture_sharpest_frames(self.cameras, num_frames=5, delay_ms=30)
-                                
-                                # Use "before" frames saved when motion was first detected
+                                # === BEST-DIFF FRAME SELECTION ===
+                                # Capture 8 frames over ~280ms, pick the frame where the dart
+                                # is MOST VISIBLE compared to a reference image. This is better
+                                # than sharpness-based selection because a sharp frame might show
+                                # the dart at a bad angle, while best-diff finds the frame where
+                                # the dart creates the strongest visual change.
                                 before_frames = getattr(self, '_before_frames_for_next_dart', {})
+                                
+                                # === STORED BASELINE FOR DART 1 ===
+                                # For dart 1, use the stored clean baseline (captured at game/round
+                                # start when the board is empty). This gives a MUCH cleaner diff
+                                # than using the regular previous frame, which might have the dart
+                                # partially entering or motion blur from the throw.
+                                if dart_num == 1 and self._stored_baseline_frames:
+                                    diff_reference = self._stored_baseline_frames
+                                    before_frames = self._stored_baseline_frames  # Send to DartDetect too
+                                    self.log("Dart 1: using stored baseline for diff reference")
+                                else:
+                                    diff_reference = before_frames if before_frames else None
+                                
+                                frames_to_send = capture_best_diff_frames(
+                                    self.cameras,
+                                    reference_frames=diff_reference,
+                                    num_frames=8,
+                                    delay_ms=35
+                                )
+                                
                                 if not before_frames:
                                     # Fallback: try frame buffer (less reliable)
                                     self.log("WARNING: No saved before_frames, using frame buffer fallback")
@@ -1255,15 +1307,16 @@ def start_game():
     _sensor_ui.game_started = True
     _sensor_ui.detector.dart_count = 0
     
-    # Capture baseline for all cameras
+    # Capture baseline for all cameras + store for dart 1 diff
     frames = {f"cam{cam.index}": cam.last_frame for cam in _sensor_ui.cameras if cam.last_frame is not None}
     for cam_id, frame in frames.items():
         if frame is not None:
             _sensor_ui.detector.set_baseline(cam_id, frame)
+            _sensor_ui._stored_baseline_frames[cam_id] = frame.copy()
     
     _sensor_ui.detector.clear_all_image1()
-    _sensor_ui.log("Game started - baseline captured")
-    print(f"[API] Baseline captured for {len(frames)} cameras")
+    _sensor_ui.log("Game started - baseline captured + stored for dart 1")
+    print(f"[API] Baseline captured + stored for {len(frames)} cameras")
     
     return jsonify({"status": "started", "cameras": len(frames)})
 
@@ -1290,11 +1343,12 @@ def rebase():
     for cam_id, frame in frames.items():
         if frame is not None:
             _sensor_ui.detector.set_baseline(cam_id, frame)
+            _sensor_ui._stored_baseline_frames[cam_id] = frame.copy()
     
     _sensor_ui.detector.dart_count = 0
     _sensor_ui.detector.clear_all_image1()
-    _sensor_ui.log("Rebase complete")
-    print(f"[API] Rebase complete for {len(frames)} cameras")
+    _sensor_ui.log("Rebase complete + stored for dart 1")
+    print(f"[API] Rebase complete + stored for {len(frames)} cameras")
     
     return jsonify({"status": "rebased", "cameras": len(frames)})
 
