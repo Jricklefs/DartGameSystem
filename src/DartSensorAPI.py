@@ -98,7 +98,7 @@ def save_debug_images(event_name: str, frames: dict, dart_num: int = None, extra
         
         for cam_id, frame in frames.items():
             if frame is not None:
-                img_path = folder_path / f"{cam_id}.jpg"
+                img_path = folder_path / f"{cam_id}.png"
                 cv2.imwrite(str(img_path), frame)
         
         logger.info(f"Saved debug images to {folder_path}")
@@ -107,45 +107,66 @@ def save_debug_images(event_name: str, frames: dict, dart_num: int = None, extra
 
 
 # === SignalR Hub Connection ===
-def capture_averaged_frames(cameras, num_frames: int = 3, delay_ms: int = 50) -> dict:
+def capture_sharpest_frames(cameras, num_frames: int = 5, delay_ms: int = 30) -> dict:
     """
-    Capture multiple frames from each camera and average them.
+    Capture multiple frames from each camera and pick the SHARPEST one.
     
-    This reduces noise and helps YOLO get more consistent tip positions.
+    Uses Laplacian variance as a sharpness metric — sharp images have high
+    variance (lots of edges), blurry/motion-blurred images have low variance.
+    This eliminates motion blur from dart vibration after impact.
+    
+    Cameras are read in parallel (threads) for each capture round to ensure
+    all cameras capture at the same instant.
     
     Args:
         cameras: List of Camera objects
-        num_frames: Number of frames to capture (default 3)
-        delay_ms: Delay between frames in ms (default 50ms)
+        num_frames: Number of frames to capture per camera (default 5)
+        delay_ms: Delay between capture rounds in ms (default 30ms)
     
     Returns:
-        Dict of camera_id -> averaged frame
+        Dict of camera_id -> sharpest frame
     """
     import time
+    import concurrent.futures
     import numpy as np
     
-    # Collect frames
+    # Collect frames with sharpness scores
     frame_lists = {f"cam{cam.index}": [] for cam in cameras}
     
-    for _ in range(num_frames):
-        for cam in cameras:
-            if cam.last_frame is not None:
-                frame_lists[f"cam{cam.index}"].append(cam.last_frame.copy())
-        time.sleep(delay_ms / 1000.0)
+    def _read_one(cam):
+        ret, frame = cam.cap.read()
+        return cam, ret, frame
     
-    # Average the frames
-    averaged_frames = {}
-    for cam_id, frames in frame_lists.items():
-        if len(frames) >= 2:
-            # Stack and average
-            stacked = np.stack(frames, axis=0).astype(np.float32)
-            avg = np.mean(stacked, axis=0).astype(np.uint8)
-            averaged_frames[cam_id] = avg
-        elif len(frames) == 1:
-            averaged_frames[cam_id] = frames[0]
-        # else: no frames for this camera
+    for i in range(num_frames):
+        # Read all cameras in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(cameras)) as executor:
+            futures = [executor.submit(_read_one, cam) for cam in cameras]
+            for f in concurrent.futures.as_completed(futures):
+                cam, ret, frame = f.result()
+                if ret and frame is not None:
+                    # Compute sharpness: Laplacian variance
+                    # Higher = sharper, lower = more blur
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    sharpness = cv2.Laplacian(gray, cv2.CV_64F).var()
+                    frame_lists[f"cam{cam.index}"].append((frame.copy(), sharpness))
+        if i < num_frames - 1:
+            time.sleep(delay_ms / 1000.0)
     
-    return averaged_frames
+    # Pick sharpest frame per camera
+    sharpest_frames = {}
+    for cam_id, frames_with_scores in frame_lists.items():
+        if frames_with_scores:
+            # Sort by sharpness (highest first) and pick the best
+            best_frame, best_score = max(frames_with_scores, key=lambda x: x[1])
+            sharpest_frames[cam_id] = best_frame
+    
+    return sharpest_frames
+
+
+# Keep old name as alias for compatibility
+def capture_averaged_frames(cameras, num_frames: int = 3, delay_ms: int = 50) -> dict:
+    """Legacy wrapper — now picks sharpest frame instead of averaging."""
+    return capture_sharpest_frames(cameras, num_frames=num_frames, delay_ms=delay_ms)
 
 
 class HubConnection:
@@ -280,8 +301,8 @@ class DartGameClient:
         self.session.headers["Content-Type"] = "application/json"
     
     def encode_image(self, frame: np.ndarray) -> str:
-        """Encode frame as base64 JPEG."""
-        _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        """Encode frame as base64 PNG."""
+        _, buffer = cv2.imencode('.png', frame)
         return base64.b64encode(buffer).decode('utf-8')
     
     def send_dart_images(self, frames: dict, dart_number: int = 1, before_frames: dict = None) -> dict:
@@ -591,7 +612,7 @@ class DartSensorUI:
         self.log(f"Initializing {len(indices)} camera(s) at {width}x{height} @ {fps}fps...")
         
         for i, idx in enumerate(indices):
-            time.sleep(1.5)  # Staggered init
+            # time.sleep(1.5)  # Staggered init - removed for faster startup
             cap = cv2.VideoCapture(idx, cv2.CAP_MSMF)
             
             if not cap.isOpened():
@@ -625,12 +646,26 @@ class DartSensorUI:
                 self.log(f"  Camera {idx} failed to open")
     
     def read_cameras(self):
-        """Read frames from all cameras."""
-        for cam in self.cameras:
+        """Read frames from all cameras in parallel using threads.
+        
+        Sequential reads add ~30ms per camera (90ms for 3). Parallel reads
+        capture all cameras simultaneously, reducing total time to ~30ms.
+        This matters for dart detection — we want all cameras to see the
+        dart at the same instant, not staggered by 60ms.
+        """
+        import concurrent.futures
+        
+        def _read_one(cam):
             ret, frame = cam.cap.read()
-            if ret:
-                cam.last_frame = frame
-                cam.frame_buffer.append(frame.copy())  # Rolling buffer for before/after
+            return cam, ret, frame
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.cameras)) as executor:
+            futures = [executor.submit(_read_one, cam) for cam in self.cameras]
+            for f in concurrent.futures.as_completed(futures):
+                cam, ret, frame = f.result()
+                if ret:
+                    cam.last_frame = frame
+                    cam.frame_buffer.append(frame.copy())  # Rolling buffer for before/after
     
     def get_primary_frame(self) -> Optional[np.ndarray]:
         """Get frame from selected camera."""
@@ -1005,9 +1040,10 @@ class DartSensorUI:
                                 
                                 # Send to DartGame API with dart number for differential detection
                                 # Capture 3 frames over 100ms and average for more stable detection
-                                # Performance: single frame capture (was 3 frames x 35ms)
-                                # Frame averaging adds ~105ms latency with minimal benefit for skeleton detection
-                                frames_to_send = capture_averaged_frames(self.cameras, num_frames=1, delay_ms=0)
+                                # Capture 5 frames over ~120ms, pick sharpest per camera
+                                # Eliminates motion blur from dart vibration after impact
+                                # Parallel capture ensures all cameras read simultaneously
+                                frames_to_send = capture_sharpest_frames(self.cameras, num_frames=5, delay_ms=30)
                                 
                                 # Use "before" frames saved when motion was first detected
                                 before_frames = getattr(self, '_before_frames_for_next_dart', {})
@@ -1340,8 +1376,8 @@ def get_camera_snapshot(cam_index):
     if camera.last_frame is None:
         return jsonify({"error": f"Camera {cam_index} has no frame"}), 503
     
-    # Encode frame as JPEG
-    _, buffer = cv2.imencode('.jpg', camera.last_frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    # Encode frame as PNG
+    _, buffer = cv2.imencode('.png', camera.last_frame)
     
     # Check if client wants raw image or JSON
     if request.args.get('raw') == 'true':
