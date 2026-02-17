@@ -62,7 +62,11 @@ class DetectorConfig:
     warmup_ms: int = 800                  # Initial warmup before detection (from DartDetector)
     
     # Multi-camera consensus
-    min_cameras_agree: int = 1            # Minimum cameras that must detect change
+    # Minimum cameras that must agree on a state change (new dart, clearing, etc).
+    # Set to 2 to require multi-camera consensus — prevents false triggers from
+    # single-camera lighting flicker, electrical noise, or dust settling.
+    # With 3 cameras, 2 is a safe majority. With 1 camera, falls back to 1.
+    min_cameras_agree: int = 2
     
     # ROI (Region of Interest) - set via calibration per camera
     roi_center: Optional[Tuple[int, int]] = None
