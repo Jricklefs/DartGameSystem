@@ -161,6 +161,9 @@ public class GamesController : ControllerBase
         _gameService.ApplyManualDart(game, dart);
         await _hubContext.SendDartThrown(game.BoardId, dart, game);
         
+        var totalMs = sw.ElapsedMilliseconds;
+        _logger.LogInformation("[TIMING][{RequestId}] DG: *** COMPLETE @ epoch={Epoch} | total={Total}ms (prep→DartDetect→score→SignalR) ***",
+            requestId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), totalMs);
         _logger.LogInformation("New dart scored: {Zone} {Segment}x{Mult} = {Score}", 
             dart.Zone, dart.Segment, dart.Multiplier, dart.Score);
 
