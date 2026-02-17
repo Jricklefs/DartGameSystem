@@ -1011,12 +1011,11 @@ class DartSensorUI:
                                         log_to_api("INFO", "Clearing", "Board cleared confirmed!", 
                                                   {"clearing_duration_sec": round(clearing_duration, 2)})
                                         print("[CLEAR] ========== BOARD CLEARED (CONFIRMED) ==========")
-                                        self.detector.dart_count = 0  # Reset dart count for next turn
-                                        self.clear_board()
-                                        threading.Thread(
-                                            target=self.api_client.notify_board_clear,
-                                            daemon=True
-                                        ).start()
+                                        # DON'T reset dart count or notify - wait for DartGame to send Rebase at end of turn
+                                        # self.detector.dart_count = 0
+                                        # self.clear_board()
+                                        # Sensor no longer initiates board clear - only responds to SignalR Rebase
+                                        self.log("Board appears clear but waiting for DartGame end-of-turn Rebase")
                                         # Reset clearing state
                                         del self._clearing_mode
                                         del self._clear_confirm_start

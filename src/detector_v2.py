@@ -421,17 +421,17 @@ class MultiCameraDartDetector:
                     message="Board cleared - consensus"
                 )
             
-            # Check for idle refresh
-            if (self._board_clear_since and 
-                now - self._board_clear_since > self.config.idle_refresh_seconds):
-                self.set_all_baselines(frames)
-                return DetectionResult(
-                    state=BoardState.CLEAR,
-                    cameras_detecting_change=0,
-                    cameras_matching_base=total_cameras,
-                    camera_results=camera_results,
-                    message="Baselines refreshed (idle)"
-                )
+            # Idle refresh REMOVED - rebase only at end of turn via SignalR
+            # if (self._board_clear_since and 
+            # now - self._board_clear_since > self.config.idle_refresh_seconds):
+            # self.set_all_baselines(frames)
+            # return DetectionResult(
+            # state=BoardState.CLEAR,
+            # cameras_detecting_change=0,
+            # cameras_matching_base=total_cameras,
+            # camera_results=camera_results,
+            # message="Baselines refreshed (idle)"
+            # )
             
             return DetectionResult(
                 state=BoardState.CLEAR,
