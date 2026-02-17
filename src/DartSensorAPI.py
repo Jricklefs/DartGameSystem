@@ -134,7 +134,7 @@ def capture_best_diff_frames(cameras, reference_frames: dict = None, num_frames:
     """
     import time
     import concurrent.futures
-    import numpy as np
+    # import numpy as np  # shadows global
     
     DIFF_PIXEL_THRESHOLD = 16  # Pixels must differ by at least this to count
     
@@ -388,6 +388,7 @@ class DartGameClient:
                 print(f"[DART] Response: {result}")
                 epoch_end = int(time.time() * 1000)
                 print(f"[TIMING][{request_id}] DS: Dart {dart_number} complete @ epoch={epoch_end} | encode={encode_time:.0f}ms, API={api_time:.0f}ms, TOTAL={total_time:.0f}ms")
+                print(f"[TIMING][{request_id}] *** END-TO-END: {total_time:.0f}ms (from send_dart_images entry to score received) ***")
                 log_to_api("INFO", "Timing", f"Dart {dart_number} pipeline complete",
                           {"dart_num": dart_number, "encode_ms": round(encode_time), 
                            "api_ms": round(api_time), "total_ms": round(total_time)})
@@ -1008,8 +1009,8 @@ class DartSensorUI:
                                         # Before confirming clear, verify against game-start baseline
                                         # If diff from clean baseline is still high, darts are still on board
                                         if self._stored_baseline_frames:
-                                            import cv2
-                                            import numpy as np
+                                            # import cv2  # shadows global
+                                            # import numpy as np  # shadows global
                                             diffs = []
                                             for cam in self.cameras:
                                                 cam_id = f"cam{cam.index}"
@@ -1087,8 +1088,9 @@ class DartSensorUI:
                                 self.detector.set_all_image1(all_frames)
                                 self.detector.mark_detection()
                                 dart_num = self.detector.dart_count
+                                detection_epoch_ms = int(time.time() * 1000)
                                 self.log(f"DART {dart_num} captured!")
-                                print(f"[DART] ========== DART {dart_num} DETECTED ==========")
+                                print(f"[TIMING] DART {dart_num} DETECTED @ {detection_epoch_ms}")
                                 log_to_api("INFO", "Detection", f"Dart {dart_num} detected by DartSensor",
                                           {"dart_num": dart_num, "settling_ms": self.detector.config.settling_ms})
                                 

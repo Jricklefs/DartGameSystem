@@ -1,4 +1,4 @@
-"""
+﻿"""
 DartSensor Detector v2 - Multi-Camera
 Dual-comparison logic with drift compensation and multi-camera consensus.
 Borrows hand-detection and clearing logic from DartDetector.
@@ -30,7 +30,7 @@ class DetectorConfig:
     """Configuration for the detector."""
     # Thresholds (scaled 20x for readability - dart shows ~15-25%)
     base_threshold_pct: float = 5.0       # % diff to consider "changed" from base (was 10.0)
-    dart_threshold_pct: float = 4.0       # % diff to detect new dart vs Image1 (was 8.0)
+    dart_threshold_pct: float = 4.0       # % diff to detect new dart vs Image1 (was 4.0, then 8.0)
     clear_threshold_pct: float = 3.0      # % diff to consider "matches baseline" (was 5.0)
     
     # Hand/clearing detection (from DartDetector, scaled)
@@ -63,10 +63,10 @@ class DetectorConfig:
     
     # Multi-camera consensus
     # Minimum cameras that must agree on a state change (new dart, clearing, etc).
-    # Set to 2 to require multi-camera consensus — prevents false triggers from
+    # Set to 2 to require multi-camera consensus â€” prevents false triggers from
     # single-camera lighting flicker, electrical noise, or dust settling.
     # With 3 cameras, 2 is a safe majority. With 1 camera, falls back to 1.
-    min_cameras_agree: int = 2
+    min_cameras_agree: int = 1
     
     # ROI (Region of Interest) - set via calibration per camera
     roi_center: Optional[Tuple[int, int]] = None
@@ -204,7 +204,7 @@ class MultiCameraDartDetector:
         
         # Scale contour area thresholds to motion resolution.
         # Config thresholds are defined for 1280x720. If we're running at 640x360,
-        # areas are 1/4 as large (linear dimensions halved → area quartered).
+        # areas are 1/4 as large (linear dimensions halved â†’ area quartered).
         scale = 1.0
         if self.config.motion_width and self.config.motion_height:
             # Reference resolution: 1280x720 (what the config thresholds assume)
@@ -361,6 +361,10 @@ class MultiCameraDartDetector:
             has_change_from_base = diff_base_pct > self.config.base_threshold_pct
             has_change_from_img1 = diff_img1_pct > self.config.dart_threshold_pct
             
+            # Log notable diffs for debugging missed detections (DISABLED)
+            # if diff_img1_pct > 1.0 or diff_base_pct > 2.0:
+            #     logger.info(f"[DIFF] ...")
+            
             if matches_base:
                 cameras_matching_base += 1
                 state = 'clear'
@@ -446,6 +450,10 @@ class MultiCameraDartDetector:
             )
         
         # New dart: enough cameras agree
+        if cameras_with_new_dart > 0:
+            logger.info(f"[VOTE] new_dart={cameras_with_new_dart}/{total_cameras} "
+                       f"clear={cameras_matching_base} hand={cameras_with_hand} "
+                       f"clearing={cameras_clearing} need={self.config.min_cameras_agree}")
         if cameras_with_new_dart >= self.config.min_cameras_agree:
             if self.can_detect():
                 centroid = self._get_centroid(all_contours) if all_contours else None
@@ -458,26 +466,9 @@ class MultiCameraDartDetector:
                     message=f"New dart! ({cameras_with_new_dart}/{total_cameras} cameras agree)"
                 )
         
-        # Outlier re-sync: if only one camera sees change but others don't,
-        # that camera is probably drifting (dust, lighting) — re-base it
-        if cameras_with_new_dart > 0 and cameras_with_new_dart < self.config.min_cameras_agree:
-            for camera_id, result in camera_results.items():
-                if result.get('state') == 'new_dart':
-                    cam = self.cameras[camera_id]
-                    frame = frames.get(camera_id)
-                    if frame is not None:
-                        processed = self._preprocess(frame)
-                        if cam.image1 is not None:
-                            # Re-sync Image1 (has darts on board)
-                            cam.image1 = processed
-                            cam.image1_raw = frame.copy()
-                            logger.info(f"Outlier re-sync: {camera_id} Image1 updated (dust/drift)")
-                        else:
-                            # Re-sync baseline (board clear)
-                            cam.base_image = processed
-                            cam.base_image_raw = frame.copy()
-                            logger.info(f"Outlier re-sync: {camera_id} baseline updated (dust/drift)")
-                        camera_results[camera_id]['state'] = 'resynced'
+        # Outlier re-sync REMOVED â€” was absorbing valid dart detections when only
+        # 1 camera crossed the threshold. Single-camera detections should be ignored
+        # (not detected), NOT used to re-sync baselines/Image1.
         
         # Default: has darts, stable
         return DetectionResult(
@@ -588,3 +579,6 @@ class DartDetectorV2(MultiCameraDartDetector):
     def image1(self) -> Optional[np.ndarray]:
         cam = self.cameras.get(self._default_camera)
         return cam.image1_raw if cam else None
+
+
+
