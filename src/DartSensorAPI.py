@@ -1005,7 +1005,28 @@ class DartSensorUI:
                                 else:
                                     elapsed = time.time() - self._clear_confirm_start
                                     if elapsed >= 1.0:
-                                        # Confirmed cleared after 1 second
+                                        # Before confirming clear, verify against game-start baseline
+                                        # If diff from clean baseline is still high, darts are still on board
+                                        if self._stored_baseline_frames:
+                                            import cv2
+                                            import numpy as np
+                                            diffs = []
+                                            for cam in self.cameras:
+                                                cam_id = f"cam{cam.index}"
+                                                if cam_id in self._stored_baseline_frames and cam.last_frame is not None:
+                                                    clean = self._stored_baseline_frames[cam_id]
+                                                    current = cam.last_frame
+                                                    if clean.shape == current.shape:
+                                                        diff = cv2.absdiff(clean, current)
+                                                        diff_pct = (np.count_nonzero(cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY) > 25) / diff[:,:,0].size) * 100
+                                                        diffs.append(diff_pct)
+                                            if diffs:
+                                                avg_diff = sum(diffs) / len(diffs)
+                                                if avg_diff > 2.0:  # More than 2% diff from clean = darts still there
+                                                    self.log(f"Clear rejected - still {avg_diff:.1f}% diff from clean baseline")
+                                                    del self._clear_confirm_start
+                                                    continue
+                                        # Confirmed cleared
                                         clearing_duration = time.time() - self._clearing_start if hasattr(self, '_clearing_start') else 0
                                         self.log("Board cleared confirmed!")
                                         log_to_api("INFO", "Clearing", "Board cleared confirmed!", 
