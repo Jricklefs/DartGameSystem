@@ -117,6 +117,9 @@ class MultiCameraDartDetector:
         self._last_detection_time: float = 0
         self._board_clear_since: Optional[float] = None
         
+        # Drift control
+        self.pause_drift: bool = False  # Pause drift correction during settling
+        
         # Stats
         self.dart_count: int = 0
     
@@ -369,7 +372,7 @@ class MultiCameraDartDetector:
                 cameras_matching_base += 1
                 state = 'clear'
                 # Drift correction on baseline
-                if self.config.enable_drift_correction and cam.image1 is None:
+                if self.config.enable_drift_correction and cam.image1 is None and not self.pause_drift:
                     cam.base_image = self._blend_image(cam.base_image, processed)
             elif cam.image1 is not None and has_change_from_img1:
                 cameras_detecting_change += 1
@@ -384,7 +387,7 @@ class MultiCameraDartDetector:
             else:
                 state = 'stable'
                 # Drift correction on Image1
-                if self.config.enable_drift_correction and cam.image1 is not None:
+                if self.config.enable_drift_correction and cam.image1 is not None and not self.pause_drift:
                     cam.image1 = self._blend_image(cam.image1, processed)
             
             camera_results[camera_id] = {

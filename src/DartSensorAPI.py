@@ -934,6 +934,7 @@ class DartSensorUI:
         self.log("UI ready - waiting for game start via SignalR (or press SPACE for manual)")
         
         settling_start = None
+        self.detector.pause_drift = False
         
         try:
             while True:
@@ -978,6 +979,7 @@ class DartSensorUI:
                         # Hand in frame = someone reaching in, start clearing mode
                         if result.state == BoardState.HAND_IN_FRAME:
                             settling_start = None
+                            self.detector.pause_drift = False
                             if self.detector.dart_count > 0 and not in_clearing_mode:
                                 self.log("Hand detected - entering clearing mode")
                                 log_to_api("INFO", "Clearing", "Hand detected - entering clearing mode", 
@@ -988,6 +990,7 @@ class DartSensorUI:
                         # Clearing = pulling darts, stay in clearing mode
                         elif result.state == BoardState.CLEARING:
                             settling_start = None
+                            self.detector.pause_drift = False
                             if self.detector.dart_count > 0 and not in_clearing_mode:
                                 self.log("Clearing detected - entering clearing mode")
                                 log_to_api("INFO", "Clearing", "Clearing detected - entering clearing mode",
@@ -998,6 +1001,7 @@ class DartSensorUI:
                         # Board cleared - if we were in clearing mode, start confirmation timer
                         elif result.state == BoardState.BOARD_CLEARED or result.state == BoardState.CLEAR:
                             settling_start = None
+                            self.detector.pause_drift = False
                             if in_clearing_mode:
                                 if not hasattr(self, '_clear_confirm_start'):
                                     self.log("Board appears clear - waiting 1s to confirm...")
@@ -1053,6 +1057,7 @@ class DartSensorUI:
                         # HAS_DARTS state - reset clear confirmation if we see darts again
                         elif result.state == BoardState.HAS_DARTS:
                             settling_start = None
+                            self.detector.pause_drift = False
                             if hasattr(self, '_clear_confirm_start'):
                                 self.log("Clear confirmation cancelled - darts detected")
                                 log_to_api("WARN", "Clearing", "Clear confirmation cancelled - darts still detected")
@@ -1069,9 +1074,11 @@ class DartSensorUI:
                                 self._clearing_mode = True
                                 self._clearing_start = time.time()
                                 settling_start = None
+                                self.detector.pause_drift = False
                             elif settling_start is None:
                                 settling_start = time.time()
-                                self.log(f"Motion detected, settling...")
+                                self.detector.pause_drift = True
+                                self.log(f"Motion detected, settling... (drift paused)")
                                 # IMPORTANT: Save "before" frames NOW, when motion is first detected
                                 # This captures the board state BEFORE the dart landed
                                 self._before_frames_for_next_dart = {}
@@ -1141,10 +1148,12 @@ class DartSensorUI:
                                 ).start()
                                 
                                 settling_start = None
+                                self.detector.pause_drift = False
                         
                         # Any other state while in clearing mode - check for timeout
                         elif in_clearing_mode:
                             settling_start = None
+                            self.detector.pause_drift = False
                             # If we've been clearing for more than 10 seconds, something's wrong - reset
                             if hasattr(self, '_clearing_start') and (time.time() - self._clearing_start) > 10.0:
                                 self.log("Clearing timeout - resetting")
@@ -1158,6 +1167,7 @@ class DartSensorUI:
                                 del self._clearing_start
                         else:
                             settling_start = None
+                            self.detector.pause_drift = False
                 
                 # Build display - use selected camera
                 selected_cam_id = f"cam{self.cameras[self.selected_camera].index}" if self.cameras else "cam0"
