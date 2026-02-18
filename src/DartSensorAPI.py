@@ -624,7 +624,7 @@ class DartSensorUI:
         else:
             self.log("SignalR not available - manual mode only")
     
-    def find_cameras(self, max_check: int = 10) -> List[int]:
+    def find_cameras(self, max_check: int = 4) -> List[int]:
         """Scan for available cameras."""
         available = []
         self.log(f"Scanning for cameras (0-{max_check-1})...")
