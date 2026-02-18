@@ -226,7 +226,14 @@ public class GamesController : ControllerBase
         // Clear detection cache
         _dartDetect.ClearBoard(boardId);
         
-        if (game != null && isBustConfirmed)
+        if (game != null && game.State == GameState.Finished)
+        {
+            // Game is over — just rebase sensor, don't advance turn or clear the winning display
+            await _hubContext.SendRebase(boardId);
+            await _hubContext.SendBoardCleared(boardId);
+            _logger.LogInformation("Board cleared after game finished - no turn advance");
+        }
+        else if (game != null && isBustConfirmed)
         {
             // Board cleared after confirmed bust — advance turn, resume sensor, rebase
             _gameService.NextTurn(game);
