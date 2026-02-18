@@ -71,7 +71,7 @@ public class BenchmarkService
                     try
                     {
                         var bytes = Convert.FromBase64String(img.Image);
-                        var path = Path.Combine(folder, $"{img.CameraId}_previous.png");
+                        var path = Path.Combine(folder, $"{img.CameraId}_previous.jpg");
                         await File.WriteAllBytesAsync(path, bytes);
                     }
                     catch (Exception ex)
@@ -89,7 +89,7 @@ public class BenchmarkService
                     try
                     {
                         var bytes = Convert.FromBase64String(img.Image);
-                        var path = Path.Combine(folder, $"{img.CameraId}_raw.png");
+                        var path = Path.Combine(folder, $"{img.CameraId}_raw.jpg");
                         await File.WriteAllBytesAsync(path, bytes);
                     }
                     catch (Exception ex)

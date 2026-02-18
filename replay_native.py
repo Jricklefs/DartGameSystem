@@ -36,8 +36,12 @@ def replay_game(game_id):
             images = []
             before_images = []
             for cam_id in ["cam0", "cam1", "cam2"]:
-                raw = os.path.join(dart_dir, f"{cam_id}_raw.png")
-                prev = os.path.join(dart_dir, f"{cam_id}_previous.png")
+                raw = os.path.join(dart_dir, f"{cam_id}_raw.jpg")
+                if not os.path.exists(raw):
+                    raw = os.path.join(dart_dir, f"{cam_id}_raw.png")
+                prev = os.path.join(dart_dir, f"{cam_id}_previous.jpg")
+                if not os.path.exists(prev):
+                    prev = os.path.join(dart_dir, f"{cam_id}_previous.png")
                 if os.path.exists(raw):
                     images.append({"cameraId": cam_id, "image": load_image_b64(raw)})
                 if os.path.exists(prev):
