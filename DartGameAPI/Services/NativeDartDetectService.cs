@@ -181,13 +181,14 @@ public class NativeDartDetectService : IDartDetectService
 
     private static string FormatZone(int segment, int multiplier)
     {
-        if (segment == 25) return multiplier == 2 ? "D-BULL" : "BULL";
+        if (segment == 25) return multiplier == 2 ? "inner_bull" : "outer_bull";
+        if (segment == 0 && multiplier == 0) return "miss";
         return multiplier switch
         {
-            1 => $"S{segment}",
-            2 => $"D{segment}",
-            3 => $"T{segment}",
-            _ => $"{segment}"
+            1 => "single",
+            2 => "double",
+            3 => "triple",
+            _ => "single"
         };
     }
 }

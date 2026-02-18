@@ -10,7 +10,7 @@ public class GameService
     private readonly Dictionary<string, Board> _boards = new();
     private readonly Dictionary<string, Game> _games = new();
     private readonly ILogger<GameService> _logger;
-    
+
     // Distance threshold to consider two tips as same dart (mm)
     private const double POSITION_TOLERANCE_MM = 20.0;
 
@@ -32,7 +32,7 @@ public class GameService
     }
 
     public Board? GetBoard(string id) => _boards.GetValueOrDefault(id);
-    
+
     public IEnumerable<Board> GetAllBoards() => _boards.Values;
 
     #endregion
@@ -48,7 +48,7 @@ public class GameService
         // Calculate legs to win (best of 5 = first to 3)
         int legsToWin = (bestOf / 2) + 1;
 
-        // Build centralized rules from game mode — all mode-specific config lives in GameRules.FromMode()
+        // Build centralized rules from game mode - all mode-specific config lives in GameRules.FromMode()
         var rules = GameRules.FromMode(mode, requireDoubleOut);
 
         var game = new Game
@@ -83,8 +83,8 @@ public class GameService
 
         _games[game.Id] = game;
         board.CurrentGameId = game.Id;
-        
-        _logger.LogInformation("Created game {GameId} on board {BoardId}, mode {Mode}", 
+
+        _logger.LogInformation("Created game {GameId} on board {BoardId}, mode {Mode}",
             game.Id, boardId, mode);
 
         return game;
@@ -105,7 +105,7 @@ public class GameService
         {
             game.State = GameState.Finished;
             game.EndedAt = DateTime.UtcNow;
-            
+
             var board = GetBoard(game.BoardId);
             if (board != null) board.CurrentGameId = null;
         }
@@ -143,33 +143,33 @@ public class GameService
             case GameMode.Game501:
             case GameMode.Game301:
                 var newScore = player.Score - dart.Score;
-                
+
                 _logger.LogInformation("X01 scoring: player={Name}, current={Current}, dart={Dart}, newScore={New}, multiplier={Mult}",
                     player.Name, player.Score, dart.Score, newScore, dart.Multiplier);
-                
+
                 // Bust check: negative, exactly 1 (can't checkout), or 0 without double (if RequireDoubleOut)
-                bool isBust = newScore < 0 || 
+                bool isBust = newScore < 0 ||
                               (newScore == 1 && game.RequireDoubleOut) ||  // Can't checkout from 1 with double-out
                               (newScore == 0 && game.RequireDoubleOut && dart.Multiplier != 2);
                 if (isBust)
                 {
                     _logger.LogInformation("BUST detected: newScore={New}, multiplier={Mult}", newScore, dart.Multiplier);
-                    
+
                     // Store the score at the START of this turn (before any darts this turn)
                     // This is what we revert to on bust
                     var scoreAtTurnStart = player.Score + game.CurrentTurn.Darts.Sum(d => d.Score);
                     game.CurrentTurn.ScoreBeforeBust = scoreAtTurnStart;
-                    
+
                     // Revert player score to start of turn
                     player.Score = scoreAtTurnStart;
-                    
+
                     // Add the bust dart to the record
                     game.CurrentTurn.Darts.Add(dart);
-                    
+
                     // Mark as busted - UI will show "BUSTED" screen and allow corrections
                     // Turn will end when UI calls ConfirmBust or after correction
                     game.CurrentTurn.IsBusted = true;
-                    
+
                     // DON'T call EndTurn here - wait for UI confirmation
                     _logger.LogInformation("Bust state set - score reverted to {Score}, waiting for UI confirmation", player.Score);
                 }
@@ -177,17 +177,17 @@ public class GameService
                 {
                     game.CurrentTurn.Darts.Add(dart);
                     player.Score = newScore;
-                    
+
                     if (newScore == 0)
                     {
                         // Leg won!
                         _logger.LogInformation("CHECKOUT! Player {Name} checked out with double {Seg}!", player.Name, dart.Segment);
                         player.LegsWon++;
                         game.LegWinnerId = player.Id;
-                        
-                        _logger.LogInformation("Player {Name} won leg {Leg}! ({LegsWon}/{LegsToWin})", 
+
+                        _logger.LogInformation("Player {Name} won leg {Leg}! ({LegsWon}/{LegsToWin})",
                             player.Name, game.CurrentLeg, player.LegsWon, game.LegsToWin);
-                        
+
                         if (player.LegsWon >= game.LegsToWin)
                         {
                             // Match won!
@@ -225,7 +225,7 @@ public class GameService
         // Next player
         var prevIndex = game.CurrentPlayerIndex;
         game.CurrentPlayerIndex = (game.CurrentPlayerIndex + 1) % game.Players.Count;
-        
+
         // Track rounds - a round completes when we wrap back to player 0
         // For single player: prevIndex == 0, so we just check if we wrapped
         if (game.CurrentPlayerIndex == 0)
@@ -238,28 +238,28 @@ public class GameService
                 _logger.LogInformation("Round {Round} starting", game.CurrentRound);
             }
         }
-        
+
         game.CurrentTurn = new Turn
         {
             TurnNumber = game.CurrentPlayer?.Turns.Count + 1 ?? 1,
             PlayerId = game.CurrentPlayer?.Id ?? ""
         };
     }
-    
+
     /// <summary>
     /// Manually advance to next player's turn (for "Next" button)
     /// </summary>
     public void NextTurn(Game game)
     {
         if (game == null || game.State != GameState.InProgress) return;
-        
+
         // Clear known darts (player pulled their darts)
         game.KnownDarts.Clear();
-        
+
         // End current turn and move to next player
         EndTurn(game);
-        
-        _logger.LogInformation("Manual next turn - now player {Index}: {Name}", 
+
+        _logger.LogInformation("Manual next turn - now player {Index}: {Name}",
             game.CurrentPlayerIndex, game.CurrentPlayer?.Name);
     }
 
@@ -269,20 +269,18 @@ public class GameService
     public void ConfirmBust(Game game)
     {
         if (game == null || game.CurrentTurn == null) return;
-        
+
         if (!game.CurrentTurn.IsBusted)
         {
             _logger.LogWarning("ConfirmBust called but turn is not busted");
             return;
         }
-        
-        _logger.LogInformation("Bust confirmed by UI - ending turn");
-        
-        // Clear known darts (player pulled their darts)
-        game.KnownDarts.Clear();
-        
-        // Now end the turn
-        EndTurn(game);
+
+        // Mark bust as confirmed — turn stays active (IsBusted=true) until board is cleared.
+        // Score was already reverted when bust was detected.
+        // Turn will end when EventBoardClear fires.
+        game.CurrentTurn.BustConfirmed = true;
+        _logger.LogInformation("Bust confirmed by UI - waiting for board clear to advance turn");
     }
 
     /// <summary>
@@ -292,7 +290,7 @@ public class GameService
     {
         game.CurrentLeg++;
         game.LegWinnerId = null;  // Clear for next leg
-        
+
         // Reset player scores for new leg
         foreach (var player in game.Players)
         {
@@ -300,20 +298,20 @@ public class GameService
             player.Score = game.Rules.StartingScore;
             player.Turns.Clear();
         }
-        
+
         // Rotate starting player (loser of previous leg starts, or just rotate)
         game.CurrentPlayerIndex = (game.CurrentPlayerIndex + 1) % game.Players.Count;
-        
+
         // Clear board
         game.KnownDarts.Clear();
-        
+
         // Start new turn
         game.CurrentTurn = new Turn
         {
             TurnNumber = 1,
             PlayerId = game.CurrentPlayer?.Id ?? ""
         };
-        
+
         _logger.LogInformation("Starting leg {Leg} of {TotalLegs}", game.CurrentLeg, game.TotalLegs);
     }
 
@@ -327,10 +325,10 @@ public class GameService
         if (game != null)
         {
             game.KnownDarts.Clear();
-            
+
             // NOTE: Don't auto-advance turn here. Let the caller (controller) handle
             // turn advancement via NextTurn() to avoid double-incrementing rounds.
-            
+
             _logger.LogInformation("Board {BoardId} cleared", boardId);
         }
     }
@@ -374,7 +372,7 @@ public class GameService
                 // For X01 games, we subtract scores, so add the old and subtract the new
                 // oldScore was subtracted, newScore needs to be subtracted instead
                 player.Score = player.Score + oldDart.Score - newDart.Score;
-                
+
                 // Check for bust after correction
                 if (player.Score < 0 || (player.Score == 1 && game.RequireDoubleOut))
                 {
@@ -385,13 +383,13 @@ public class GameService
                     _logger.LogWarning("Correction would cause bust, reverting");
                     return;
                 }
-                
+
                 // Check for checkout
                 if (player.Score == 0 && (!game.RequireDoubleOut || newDart.Multiplier == 2))
                 {
                     player.LegsWon++;
                     game.LegWinnerId = player.Id;
-                    
+
                     if (player.LegsWon >= game.LegsToWin)
                     {
                         game.State = GameState.Finished;
@@ -403,7 +401,7 @@ public class GameService
                         StartNextLeg(game);
                     }
                 }
-                
+
                 // Check if correction clears a bust state
                 if (game.CurrentTurn.IsBusted && player.Score > 1)
                 {
@@ -413,7 +411,7 @@ public class GameService
                 break;
         }
 
-        _logger.LogInformation("Corrected dart {Index}: {OldScore} -> {NewScore}, player score now {PlayerScore}", 
+        _logger.LogInformation("Corrected dart {Index}: {OldScore} -> {NewScore}, player score now {PlayerScore}",
             dartIndex, oldDart.Score, newDart.Score, player.Score);
     }
 
@@ -450,7 +448,7 @@ public class GameService
             game.CurrentTurn.Darts[i].Index = i;
         }
 
-        _logger.LogInformation("Removed false dart {Index}: {Zone}={Score}, player score now {PlayerScore}", 
+        _logger.LogInformation("Removed false dart {Index}: {Zone}={Score}, player score now {PlayerScore}",
             dartIndex, removedDart.Zone, removedDart.Score, player.Score);
 
         return removedDart;

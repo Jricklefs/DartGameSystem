@@ -219,31 +219,36 @@ public class GamesController : ControllerBase
         var game = _gameService.GetGameForBoard(boardId);
         var previousTurn = game?.CurrentTurn ?? new Turn();
         var dartCount = previousTurn.Darts?.Count ?? 0;
-        var isBusted = previousTurn.IsBusted;
+        var isBustConfirmed = previousTurn.IsBusted && previousTurn.BustConfirmed;
         
         _gameService.ClearBoard(boardId);
         
         // Clear detection cache
         _dartDetect.ClearBoard(boardId);
         
-        // NOTE: Don't SendRebase here — SendTurnEnded already sends rebase.
-        // Double rebase was causing the sensor to miss the first dart of the next turn.
-        
-        // Always advance turn when board is cleared (player pulled their darts)
-        // Exception: if busted, wait for bust confirmation from UI
-        if (game != null && !isBusted)
+        if (game != null && isBustConfirmed)
         {
+            // Board cleared after confirmed bust — advance turn, resume sensor, rebase
+            _gameService.NextTurn(game);
+            await _hubContext.SendResumeDetection(boardId);
+            var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
+            await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
+            await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+            _logger.LogInformation("Board cleared after bust - turn advanced, sensor resumed");
+        }
+        else if (game != null && !previousTurn.IsBusted)
+        {
+            // Normal board clear — advance turn (SendTurnEnded sends rebase)
             _gameService.NextTurn(game);
             await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
             _logger.LogInformation("Board cleared - {DartCount} darts thrown, advancing to next player", dartCount);
         }
-        else if (game != null && isBusted)
+        else if (game != null)
         {
-            // Board cleared after bust — resume detection + rebase
-            await _hubContext.SendResumeDetection(boardId);
+            // Busted but NOT confirmed yet — just notify board cleared
             await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
-            _logger.LogInformation("Board cleared after bust - sensor resumed + rebased");
+            _logger.LogInformation("Board cleared but bust not confirmed yet");
         }
         else
         {
@@ -251,7 +256,7 @@ public class GamesController : ControllerBase
             await _hubContext.SendBoardCleared(boardId);
         }
         
-        return Ok(new { message = "Board cleared", turnAdvanced = game != null && !isBusted, dartCount });
+        return Ok(new { message = "Board cleared", turnAdvanced = game != null && (isBustConfirmed || !previousTurn.IsBusted), dartCount });
     }
 
     /// <summary>
@@ -640,20 +645,11 @@ public class GamesController : ControllerBase
         if (game.CurrentTurn == null || !game.CurrentTurn.IsBusted)
             return BadRequest(new { error = "Current turn is not busted" });
         
-        var previousTurn = game.CurrentTurn;
-        
         _gameService.ConfirmBust(game);
-        
-        // Update benchmark context with new round/player
-        var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
-        _ = UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
         
         // Pause sensor detection — player is about to pull darts, don't detect that as new darts.
         // Detection resumes when board is cleared (EventBoardClear).
         await _hubContext.SendPauseDetection(game.BoardId);
-        
-        // Notify connected clients that turn ended (but DON'T rebase — wait for board clear)
-        await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn, skipRebase: true);
         _logger.LogInformation("Bust confirmed on board {BoardId}, sensor paused until board clear", game.BoardId);
         
         return Ok(new { game = game });
@@ -968,13 +964,14 @@ public class GamesController : ControllerBase
 
     private static string GetZoneName(int segment, int multiplier)
     {
-        if (segment == 25) return multiplier == 2 ? "D-BULL" : "BULL";
+        if (segment == 25) return multiplier == 2 ? "inner_bull" : "outer_bull";
+        if (segment == 0 && multiplier == 0) return "miss";
         return multiplier switch
         {
-            1 => $"S{segment}",
-            2 => $"D{segment}",
-            3 => $"T{segment}",
-            _ => $"{segment}"
+            1 => "single",
+            2 => "double",
+            3 => "triple",
+            _ => "single"
         };
     }
 }

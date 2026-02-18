@@ -22,9 +22,16 @@ def replay_game(game_id):
             if not os.path.exists(meta_path): continue
             
             meta = json.load(open(meta_path))
-            final = meta.get("final_result", {})
-            exp_seg = final.get("segment", 0)
-            exp_mult = final.get("multiplier", 0)
+            correction = meta.get("correction")
+            if correction and correction.get("corrected"):
+                # Use the human-corrected score as ground truth
+                truth = correction["corrected"]
+                truth_source = "CORRECTED"
+            else:
+                truth = meta.get("final_result", {})
+                truth_source = "detected"
+            exp_seg = truth.get("segment", 0)
+            exp_mult = truth.get("multiplier", 0)
             
             images = []
             before_images = []
@@ -64,9 +71,10 @@ def replay_game(game_id):
             total += 1
             if match: correct += 1
             
-            exp_zone = final.get("zone", "?")
+            exp_zone = truth.get("zone", "?")
             mark = "OK" if match else "XX"
-            print(f"  [{mark}] {round_name}/{dart_name}: native={n_zone} S{n_seg}x{n_mult}  |  python={exp_zone} S{exp_seg}x{exp_mult}  [{elapsed_ms}ms]")
+            src = f" [{truth_source}]" if truth_source == "CORRECTED" else ""
+            print(f"  [{mark}] {round_name}/{dart_name}: native={n_zone} S{n_seg}x{n_mult}  |  expected={exp_zone} S{exp_seg}x{exp_mult}{src}  [{elapsed_ms}ms]")
     
     print(f"\n{'='*60}")
     pct = 100*correct/total if total else 0
@@ -76,7 +84,7 @@ def replay_game(game_id):
     print(f"{'='*60}")
 
 if __name__ == "__main__":
-    game_id = sys.argv[1] if len(sys.argv) > 1 else "270e98f9-73e4-4c31-bcb0-9a8fedc4753c"
+    game_id = sys.argv[1] if len(sys.argv) > 1 else "203ab090-68ec-4401-9a66-01249a39833b"
     print(f"Replaying game {game_id} through DartsMob API (native C++ detection)")
     print(f"{'='*60}")
     replay_game(game_id)
