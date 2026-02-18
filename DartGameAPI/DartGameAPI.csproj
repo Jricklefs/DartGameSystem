@@ -17,4 +17,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
+  <!-- Copy native DartDetectLib + OpenCV DLLs to output on build -->
+  <ItemGroup>
+    <None Include="..\DartDetectLib\build\bin\Release\DartDetectLib.dll" CopyToOutputDirectory="PreserveNewest" Link="DartDetectLib.dll" />
+    <None Include="..\..\opencv\build\x64\vc16\bin\opencv_world4110.dll" CopyToOutputDirectory="PreserveNewest" Link="opencv_world4110.dll" />
+  </ItemGroup>
+
 </Project>

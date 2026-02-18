@@ -14,7 +14,7 @@ namespace DartGameAPI.Services;
 /// DartGame API is the HUB. DartSensor sends images here,
 /// we include calibration data and forward to DartDetect for scoring.
 /// </summary>
-public class DartDetectClient
+public class DartDetectClient : IDartDetectService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<DartDetectClient> _logger;
@@ -59,6 +59,32 @@ public class DartDetectClient
                 _logger.LogWarning("[KEEPALIVE] DartDetect ping failed: {Error}", ex.Message);
             }
         }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30));
+    }
+
+    /// <summary>
+    /// Initialize - loads calibration into DartDetect via HTTP (no-op, DartDetect loads its own).
+    /// </summary>
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    /// <summary>
+    /// Initialize board cache in DartDetect.
+    /// </summary>
+    public void InitBoard(string boardId) { /* DartDetect manages its own cache */ }
+
+    /// <summary>
+    /// Clear board cache in DartDetect.
+    /// </summary>
+    public void ClearBoard(string boardId)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+                await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/clear", new { board_id = boardId });
+            }
+            catch { }
+        });
     }
 
     /// <summary>

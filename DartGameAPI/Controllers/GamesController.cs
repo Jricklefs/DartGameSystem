@@ -14,26 +14,29 @@ namespace DartGameAPI.Controllers;
 public class GamesController : ControllerBase
 {
     private readonly GameService _gameService;
-    private readonly DartDetectClient _dartDetectClient;
+    private readonly IDartDetectService _dartDetect;
     private readonly IHubContext<GameHub> _hubContext;
     private readonly DartsMobDbContext _db;
     private readonly ILogger<GamesController> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly BenchmarkService _benchmark;
 
     public GamesController(
         GameService gameService, 
-        DartDetectClient dartDetectClient,
+        IDartDetectService dartDetect,
         IHubContext<GameHub> hubContext, 
         DartsMobDbContext db, 
         ILogger<GamesController> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        BenchmarkService benchmark)
     {
         _gameService = gameService;
-        _dartDetectClient = dartDetectClient;
+        _dartDetect = dartDetect;
         _hubContext = hubContext;
         _db = db;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _benchmark = benchmark;
     }
 
     // ===== HUB ENDPOINT - Receives images from DartSensor =====
@@ -115,7 +118,7 @@ public class GamesController : ControllerBase
         var ddStartEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         _logger.LogInformation("[TIMING][{RequestId}] DG: Calling DartDetect @ epoch={Epoch} (prep={Prep}ms)", 
             requestId, ddStartEpoch, sw.ElapsedMilliseconds);
-        var detectResult = await _dartDetectClient.DetectAsync(images, boardId, dartNumber, beforeImages);
+        var detectResult = await _dartDetect.DetectAsync(images, boardId, dartNumber, beforeImages);
         var ddEndEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var ddDuration = ddEndEpoch - ddStartEpoch;
         _logger.LogInformation("[TIMING][{RequestId}] DG: DartDetect returned @ epoch={Epoch} (took={Took}ms)", 
@@ -160,6 +163,18 @@ public class GamesController : ControllerBase
 
         _gameService.ApplyManualDart(game, dart);
         await _hubContext.SendDartThrown(game.BoardId, dart, game);
+
+        // Save benchmark data (fire and forget)
+        if (_benchmark.IsEnabled)
+        {
+            var bmPlayer = player?.Name ?? "player";
+            var bmRound = game.CurrentRound;
+            var bmImages = request.Images;
+            var bmBeforeImages = request.BeforeImages;
+            _ = Task.Run(() => _benchmark.SaveBenchmarkDataAsync(
+                requestId, dartNumber, boardId, game.Id, bmRound, bmPlayer,
+                bmImages, bmBeforeImages, newTip, detectResult));
+        }
         
         var totalMs = sw.ElapsedMilliseconds;
         _logger.LogInformation("[TIMING][{RequestId}] DG: *** COMPLETE @ epoch={Epoch} | total={Total}ms (prep→DartDetect→score→SignalR) ***",
@@ -208,21 +223,11 @@ public class GamesController : ControllerBase
         
         _gameService.ClearBoard(boardId);
         
-        // Clear DartDetect cache for clean differential detection
-        try 
-        {
-            using var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(2);
-            await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/clear", new { board_id = boardId });
-            _logger.LogDebug("DartDetect cache cleared for board {BoardId}", boardId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to clear DartDetect cache: {Error}", ex.Message);
-        }
+        // Clear detection cache
+        _dartDetect.ClearBoard(boardId);
         
-        // Tell sensor to rebase via SignalR
-        await _hubContext.SendRebase(boardId);
+        // NOTE: Don't SendRebase here — SendTurnEnded already sends rebase.
+        // Double rebase was causing the sensor to miss the first dart of the next turn.
         
         // Always advance turn when board is cleared (player pulled their darts)
         // Exception: if busted, wait for bust confirmation from UI
@@ -234,12 +239,15 @@ public class GamesController : ControllerBase
         }
         else if (game != null && isBusted)
         {
-            // Busted - just notify board cleared, wait for bust confirmation
+            // Board cleared after bust — resume detection + rebase
+            await _hubContext.SendResumeDetection(boardId);
+            await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
-            _logger.LogInformation("Board cleared but player busted - waiting for bust confirmation");
+            _logger.LogInformation("Board cleared after bust - sensor resumed + rebased");
         }
         else
         {
+            await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
         }
         
@@ -537,6 +545,7 @@ public class GamesController : ControllerBase
             }
             
             // 5. All checks passed - create the game
+            _dartDetect.InitBoard(boardId);
             var game = _gameService.CreateGame(boardId, request.Mode, request.PlayerNames, request.BestOf, request.RequireDoubleOut);
             
             // 6. Notify connected clients AND sensor via SignalR
@@ -639,9 +648,13 @@ public class GamesController : ControllerBase
         var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
         _ = UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
         
-        // Notify connected clients that turn ended
-        await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
-        _logger.LogInformation("Bust confirmed on board {BoardId}, turn ended", game.BoardId);
+        // Pause sensor detection — player is about to pull darts, don't detect that as new darts.
+        // Detection resumes when board is cleared (EventBoardClear).
+        await _hubContext.SendPauseDetection(game.BoardId);
+        
+        // Notify connected clients that turn ended (but DON'T rebase — wait for board clear)
+        await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn, skipRebase: true);
+        _logger.LogInformation("Bust confirmed on board {BoardId}, sensor paused until board clear", game.BoardId);
         
         return Ok(new { game = game });
     }
@@ -764,6 +777,16 @@ public class GamesController : ControllerBase
 
         // Record correction for benchmark analysis (fire and forget)
         _ = RecordBenchmarkCorrection(game, request.DartIndex, oldDart, newDart);
+
+        // Save correction to local benchmark files
+        if (_benchmark.IsEnabled)
+        {
+            var corrPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex)?.Name ?? "player";
+            var corrRound = game.CurrentRound;
+            var corrDartNum = request.DartIndex + 1;
+            _ = Task.Run(() => _benchmark.SaveCorrectionAsync(
+                game.BoardId, game.Id, corrRound, corrPlayer, corrDartNum, oldDart, newDart));
+        }
 
         await _hubContext.SendDartThrown(game.BoardId, newDart, game);
         
@@ -891,6 +914,54 @@ public class GamesController : ControllerBase
         await _hubContext.SendDartRemoved(game.BoardId, removedDart, game);
 
         return Ok(new RemoveDartResult { RemovedDart = removedDart, Game = game });
+    }
+
+    /// <summary>
+    /// Benchmark detect endpoint - runs detection without requiring an active game.
+    /// Used for replay testing against the native C++ detection library.
+    /// </summary>
+    [HttpPost("benchmark/detect")]
+    public async Task<ActionResult> BenchmarkDetect([FromBody] DetectRequest request)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var requestId = request.RequestId ?? Guid.NewGuid().ToString()[..8];
+
+        var images = request.Images?.Select(i => new CameraImageDto
+        {
+            CameraId = i.CameraId,
+            Image = i.Image
+        }).ToList() ?? new List<CameraImageDto>();
+
+        var beforeImages = request.BeforeImages?.Select(i => new CameraImageDto
+        {
+            CameraId = i.CameraId,
+            Image = i.Image
+        }).ToList();
+
+        var boardId = request.BoardId ?? "default";
+        var detectResult = await _dartDetect.DetectAsync(images, boardId, 1, beforeImages);
+
+        var totalMs = sw.ElapsedMilliseconds;
+
+        if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
+        {
+            return Ok(new { 
+                message = "No darts detected", 
+                darts = new List<object>(),
+                processingMs = totalMs,
+                requestId
+            });
+        }
+
+        var tip = detectResult.Tips.OrderByDescending(t => t.Confidence).First();
+
+        return Ok(new {
+            message = "Dart detected",
+            darts = new[] { new { tip.Zone, tip.Score, tip.Segment, tip.Multiplier, tip.Confidence } },
+            processingMs = totalMs,
+            requestId,
+            isNative = _dartDetect is NativeDartDetectService
+        });
     }
 
     // === Private helpers ===
