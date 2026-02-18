@@ -14,8 +14,7 @@ namespace DartGameAPI.Controllers;
 public class GamesController : ControllerBase
 {
     private readonly GameService _gameService;
-    private readonly DartDetectService _dartDetectService;
-    private readonly DartDetectClient _dartDetectClient;
+    private readonly IDartDetectService _dartDetect;
     private readonly IHubContext<GameHub> _hubContext;
     private readonly DartsMobDbContext _db;
     private readonly ILogger<GamesController> _logger;
@@ -23,16 +22,14 @@ public class GamesController : ControllerBase
 
     public GamesController(
         GameService gameService, 
-        DartDetectService dartDetectService,
-        DartDetectClient dartDetectClient,
+        IDartDetectService dartDetect,
         IHubContext<GameHub> hubContext, 
         DartsMobDbContext db, 
         ILogger<GamesController> logger,
         IHttpClientFactory httpClientFactory)
     {
         _gameService = gameService;
-        _dartDetectService = dartDetectService;
-        _dartDetectClient = dartDetectClient;
+        _dartDetect = dartDetect;
         _hubContext = hubContext;
         _db = db;
         _logger = logger;
@@ -118,7 +115,7 @@ public class GamesController : ControllerBase
         var ddStartEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         _logger.LogInformation("[TIMING][{RequestId}] DG: Calling DartDetect @ epoch={Epoch} (prep={Prep}ms)", 
             requestId, ddStartEpoch, sw.ElapsedMilliseconds);
-        var detectResult = await _dartDetectService.DetectAsync(images, boardId, dartNumber, beforeImages);
+        var detectResult = await _dartDetect.DetectAsync(images, boardId, dartNumber, beforeImages);
         var ddEndEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var ddDuration = ddEndEpoch - ddStartEpoch;
         _logger.LogInformation("[TIMING][{RequestId}] DG: DartDetect returned @ epoch={Epoch} (took={Took}ms)", 
@@ -211,21 +208,8 @@ public class GamesController : ControllerBase
         
         _gameService.ClearBoard(boardId);
         
-        // Clear native detection cache
-        _dartDetectService.ClearBoard(boardId);
-        
-        // Clear DartDetect HTTP cache (fallback)
-        try 
-        {
-            using var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(2);
-            await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/clear", new { board_id = boardId });
-            _logger.LogDebug("DartDetect cache cleared for board {BoardId}", boardId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to clear DartDetect cache: {Error}", ex.Message);
-        }
+        // Clear detection cache
+        _dartDetect.ClearBoard(boardId);
         
         // Tell sensor to rebase via SignalR
         await _hubContext.SendRebase(boardId);
@@ -543,7 +527,7 @@ public class GamesController : ControllerBase
             }
             
             // 5. All checks passed - create the game
-            _dartDetectService.InitBoard(boardId);
+            _dartDetect.InitBoard(boardId);
             var game = _gameService.CreateGame(boardId, request.Mode, request.PlayerNames, request.BestOf, request.RequireDoubleOut);
             
             // 6. Notify connected clients AND sensor via SignalR

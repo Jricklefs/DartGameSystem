@@ -6,69 +6,38 @@ using DartGameAPI.Models;
 namespace DartGameAPI.Services;
 
 /// <summary>
-/// Service that wraps DartDetectNative (C++ library) for in-process dart detection.
-/// Replaces HTTP calls to the Python DartDetect API.
-/// Falls back to DartDetectClient (HTTP) if native lib is unavailable.
+/// Native C++ implementation of IDartDetectService.
+/// Calls DartDetectLib.dll via P/Invoke for in-process detection.
 /// </summary>
-public class DartDetectService
+public class NativeDartDetectService : IDartDetectService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<DartDetectService> _logger;
-    private readonly DartDetectClient _httpClient;
-    private bool _nativeAvailable;
+    private readonly ILogger<NativeDartDetectService> _logger;
     private bool _initialized;
-    private readonly object _initLock = new();
 
-    public DartDetectService(
+    public NativeDartDetectService(
         IServiceProvider serviceProvider,
-        ILogger<DartDetectService> logger,
-        DartDetectClient httpClient)
+        ILogger<NativeDartDetectService> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
-        _httpClient = httpClient;
 
-        // Try to load native lib
-        try
-        {
-            var version = DartDetectNative.GetVersion();
-            _nativeAvailable = true;
-            _logger.LogInformation("DartDetectLib native loaded: {Version}", version);
-        }
-        catch (DllNotFoundException)
-        {
-            _nativeAvailable = false;
-            _logger.LogWarning("DartDetectLib.dll not found - falling back to HTTP DartDetect API");
-        }
-        catch (Exception ex)
-        {
-            _nativeAvailable = false;
-            _logger.LogWarning(ex, "Failed to load DartDetectLib - falling back to HTTP");
-        }
+        var version = DartDetectNative.GetVersion();
+        _logger.LogInformation("DartDetectLib native loaded: {Version}", version);
     }
 
-    public bool IsNativeAvailable => _nativeAvailable;
-
-    /// <summary>
-    /// Initialize native library with calibration data from DB.
-    /// Call on startup and when calibrations change.
-    /// </summary>
     public async Task InitializeAsync()
     {
-        if (!_nativeAvailable) return;
-
         try
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<DartsMobDbContext>();
 
-            // Load all camera calibrations
             var calibrations = await db.Calibrations
                 .GroupBy(c => c.CameraId)
                 .Select(g => g.OrderByDescending(c => c.CreatedAt).First())
                 .ToListAsync();
 
-            // Build calibration JSON: { "cam0": {...}, "cam1": {...}, "cam2": {...} }
             var calDict = new Dictionary<string, object?>();
             foreach (var cal in calibrations)
             {
@@ -96,42 +65,29 @@ public class DartDetectService
             }
             else
             {
-                _logger.LogError("DartDetectLib initialization failed - falling back to HTTP");
-                _nativeAvailable = false;
+                throw new InvalidOperationException("dd_init returned failure");
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to initialize DartDetectLib");
-            _nativeAvailable = false;
+            throw;
         }
     }
 
-    /// <summary>
-    /// Detect a dart using native C++ library or HTTP fallback.
-    /// </summary>
-    public async Task<DetectResponse?> DetectAsync(
+    public Task<DetectResponse?> DetectAsync(
         List<CameraImageDto> images,
         string boardId = "default",
         int dartNumber = 1,
         List<CameraImageDto>? beforeImages = null,
         CancellationToken ct = default)
     {
-        if (_nativeAvailable && _initialized)
+        if (!_initialized)
         {
-            return await DetectNativeAsync(images, boardId, dartNumber, beforeImages);
+            _logger.LogWarning("Native detection called before initialization");
+            return Task.FromResult<DetectResponse?>(null);
         }
 
-        // Fallback to HTTP
-        return await _httpClient.DetectAsync(images, boardId, dartNumber, beforeImages, ct);
-    }
-
-    private Task<DetectResponse?> DetectNativeAsync(
-        List<CameraImageDto> images,
-        string boardId,
-        int dartNumber,
-        List<CameraImageDto>? beforeImages)
-    {
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
         try
@@ -149,11 +105,10 @@ public class DartDetectService
             }
 
             var decodeMs = sw.ElapsedMilliseconds;
-
             var result = DartDetectNative.Detect(dartNumber, boardId, currentBytes, beforeBytes);
-
             var totalMs = sw.ElapsedMilliseconds;
-            _logger.LogInformation("[TIMING] Native detect: decode={DecodeMs}ms, total={TotalMs}ms", decodeMs, totalMs);
+
+            _logger.LogInformation("[TIMING] Native detect: b64decode={DecodeMs}ms, total={TotalMs}ms", decodeMs, totalMs);
 
             if (result == null || result.Error != null)
             {
@@ -161,7 +116,6 @@ public class DartDetectService
                 return Task.FromResult<DetectResponse?>(null);
             }
 
-            // Convert native DetectionResult to DetectResponse (Tips format)
             var tip = new DetectedTip
             {
                 Segment = result.Segment,
@@ -169,7 +123,7 @@ public class DartDetectService
                 Score = result.Score,
                 Zone = FormatZone(result.Segment, result.Multiplier),
                 Confidence = result.Confidence,
-                XMm = 0, // Native lib doesn't return mm coords yet
+                XMm = 0,
                 YMm = 0,
                 CamerasSeen = result.PerCamera?.Keys.ToList() ?? new List<string>()
             };
@@ -200,24 +154,18 @@ public class DartDetectService
         }
     }
 
-    /// <summary>
-    /// Initialize board cache for a new game.
-    /// </summary>
     public void InitBoard(string boardId)
     {
-        if (_nativeAvailable && _initialized)
+        if (_initialized)
         {
             DartDetectNative.InitBoard(boardId);
             _logger.LogDebug("Native board cache initialized: {BoardId}", boardId);
         }
     }
 
-    /// <summary>
-    /// Clear board cache (end of game or board cleared).
-    /// </summary>
     public void ClearBoard(string boardId)
     {
-        if (_nativeAvailable && _initialized)
+        if (_initialized)
         {
             DartDetectNative.ClearBoard(boardId);
             _logger.LogDebug("Native board cache cleared: {BoardId}", boardId);

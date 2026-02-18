@@ -45,11 +45,19 @@ builder.Services.AddCors(options =>
     });
 });
 
-// DartDetect API client - HTTP fallback for scoring
+// DartDetect - try native C++ first, fall back to HTTP
 builder.Services.AddHttpClient<DartDetectClient>();
-
-// DartDetect native C++ library - in-process detection (preferred)
-builder.Services.AddSingleton<DartDetectService>();
+try
+{
+    var version = DartDetectNative.GetVersion();
+    Console.WriteLine($"DartDetectLib native available: {version}");
+    builder.Services.AddSingleton<IDartDetectService, NativeDartDetectService>();
+}
+catch (DllNotFoundException)
+{
+    Console.WriteLine("DartDetectLib.dll not found - using HTTP DartDetect API");
+    builder.Services.AddSingleton<IDartDetectService>(sp => sp.GetRequiredService<DartDetectClient>());
+}
 
 // NOTE: DartSensorClient removed - sensor communication now via SignalR
 // Sensor connects to GameHub and receives StartGame/StopGame/Rebase events
@@ -88,8 +96,8 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Initialize native dart detection library with calibration data
-var dartDetectService = app.Services.GetRequiredService<DartDetectService>();
+// Initialize dart detection (loads calibration for native, no-op for HTTP)
+var dartDetectService = app.Services.GetRequiredService<IDartDetectService>();
 await dartDetectService.InitializeAsync();
 
 // Configure pipeline
