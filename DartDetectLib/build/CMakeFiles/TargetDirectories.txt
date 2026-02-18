@@ -1,4 +1,0 @@
-C:/Users/clawd/DartGameSystem/DartDetectLib/build/CMakeFiles/DartDetectLib.dir
-C:/Users/clawd/DartGameSystem/DartDetectLib/build/CMakeFiles/test_detect.dir
-C:/Users/clawd/DartGameSystem/DartDetectLib/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/clawd/DartGameSystem/DartDetectLib/build/CMakeFiles/ZERO_CHECK.dir
