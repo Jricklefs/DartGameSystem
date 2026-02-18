@@ -1,0 +1,10 @@
+^C:\USERS\CLAWD\DARTGAMESYSTEM\DARTDETECTLIB\BUILD\CMAKEFILES\A9A22730640891DF325E6FA6BD8801E7\GENERATE.STAMP.RULE
+setlocal
+C:\Users\clawd\cmake\cmake-3.31.6-windows-x86_64\bin\cmake.exe -SC:/Users/clawd/DartGameSystem/DartDetectLib -BC:/Users/clawd/DartGameSystem/DartDetectLib/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/clawd/DartGameSystem/DartDetectLib/build/DartDetectLib.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
