@@ -1,4 +1,4 @@
-using DartGameAPI.Services;
+﻿using DartGameAPI.Services;
 using DartGameAPI.Hubs;
 using DartGameAPI.Data;
 using Microsoft.EntityFrameworkCore;
@@ -50,17 +50,23 @@ builder.Services.AddHttpClient<DartDetectClient>();
 try
 {
     var version = DartDetectNative.GetVersion();
-    Console.WriteLine($"✓ DartDetectLib native loaded: {version}");
+    Console.WriteLine($"âœ“ DartDetectLib native loaded: {version}");
     builder.Services.AddSingleton<IDartDetectService, NativeDartDetectService>();
 }
 catch (DllNotFoundException)
 {
-    Console.WriteLine("✗ DartDetectLib.dll not found — falling back to HTTP DartDetect API");
+    Console.WriteLine("âœ— DartDetectLib.dll not found â€” falling back to HTTP DartDetect API");
     builder.Services.AddSingleton<IDartDetectService>(sp => sp.GetRequiredService<DartDetectClient>());
 }
 
 // NOTE: DartSensorClient removed - sensor communication now via SignalR
 // Sensor connects to GameHub and receives StartGame/StopGame/Rebase events
+
+// Benchmark service\nvar benchmarkSettings = new BenchmarkSettings();\nbuilder.Configuration.GetSection(Benchmark).Bind(benchmarkSettings);\nbuilder.Services.AddSingleton(benchmarkSettings);\nbuilder.Services.AddSingleton<BenchmarkService>();\n\n// Benchmark service
+var benchmarkSettings = new BenchmarkSettings();
+builder.Configuration.GetSection("Benchmark").Bind(benchmarkSettings);
+builder.Services.AddSingleton(benchmarkSettings);
+builder.Services.AddSingleton<BenchmarkService>();
 
 // Game service (singleton - holds all state)
 builder.Services.AddSingleton<GameService>();
@@ -83,16 +89,16 @@ using (var scope = app.Services.CreateScope())
         var canConnect = await db.Database.CanConnectAsync();
         if (canConnect)
         {
-            app.Logger.LogInformation("✓ Connected to DartsMobDB");
+            app.Logger.LogInformation("âœ“ Connected to DartsMobDB");
         }
         else
         {
-            app.Logger.LogError("✗ Cannot connect to DartsMobDB");
+            app.Logger.LogError("âœ— Cannot connect to DartsMobDB");
         }
     }
     catch (Exception ex)
     {
-        app.Logger.LogError(ex, "✗ Database connection failed");
+        app.Logger.LogError(ex, "âœ— Database connection failed");
     }
 }
 
@@ -144,3 +150,4 @@ app.MapGet("/health", () => new { status = "healthy", timestamp = DateTime.UtcNo
 app.MapGet("/", () => Results.Redirect("/index.html"));
 
 app.Run();
+

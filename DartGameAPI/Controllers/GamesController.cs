@@ -19,6 +19,7 @@ public class GamesController : ControllerBase
     private readonly DartsMobDbContext _db;
     private readonly ILogger<GamesController> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly BenchmarkService _benchmark;
 
     public GamesController(
         GameService gameService, 
@@ -26,7 +27,8 @@ public class GamesController : ControllerBase
         IHubContext<GameHub> hubContext, 
         DartsMobDbContext db, 
         ILogger<GamesController> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        BenchmarkService benchmark)
     {
         _gameService = gameService;
         _dartDetect = dartDetect;
@@ -34,6 +36,7 @@ public class GamesController : ControllerBase
         _db = db;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _benchmark = benchmark;
     }
 
     // ===== HUB ENDPOINT - Receives images from DartSensor =====
@@ -160,6 +163,18 @@ public class GamesController : ControllerBase
 
         _gameService.ApplyManualDart(game, dart);
         await _hubContext.SendDartThrown(game.BoardId, dart, game);
+
+        // Save benchmark data (fire and forget)
+        if (_benchmark.IsEnabled)
+        {
+            var bmPlayer = player?.Name ?? "player";
+            var bmRound = game.CurrentRound;
+            var bmImages = request.Images;
+            var bmBeforeImages = request.BeforeImages;
+            _ = Task.Run(() => _benchmark.SaveBenchmarkDataAsync(
+                requestId, dartNumber, boardId, game.Id, bmRound, bmPlayer,
+                bmImages, bmBeforeImages, newTip, detectResult));
+        }
         
         var totalMs = sw.ElapsedMilliseconds;
         _logger.LogInformation("[TIMING][{RequestId}] DG: *** COMPLETE @ epoch={Epoch} | total={Total}ms (prep→DartDetect→score→SignalR) ***",
@@ -756,6 +771,16 @@ public class GamesController : ControllerBase
         // Record correction for benchmark analysis (fire and forget)
         _ = RecordBenchmarkCorrection(game, request.DartIndex, oldDart, newDart);
 
+        // Save correction to local benchmark files
+        if (_benchmark.IsEnabled)
+        {
+            var corrPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex)?.Name ?? "player";
+            var corrRound = game.CurrentRound;
+            var corrDartNum = request.DartIndex + 1;
+            _ = Task.Run(() => _benchmark.SaveCorrectionAsync(
+                game.BoardId, game.Id, corrRound, corrPlayer, corrDartNum, oldDart, newDart));
+        }
+
         await _hubContext.SendDartThrown(game.BoardId, newDart, game);
         
         if (game.State == GameState.Finished)
@@ -882,6 +907,54 @@ public class GamesController : ControllerBase
         await _hubContext.SendDartRemoved(game.BoardId, removedDart, game);
 
         return Ok(new RemoveDartResult { RemovedDart = removedDart, Game = game });
+    }
+
+    /// <summary>
+    /// Benchmark detect endpoint - runs detection without requiring an active game.
+    /// Used for replay testing against the native C++ detection library.
+    /// </summary>
+    [HttpPost("benchmark/detect")]
+    public async Task<ActionResult> BenchmarkDetect([FromBody] DetectRequest request)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var requestId = request.RequestId ?? Guid.NewGuid().ToString()[..8];
+
+        var images = request.Images?.Select(i => new CameraImageDto
+        {
+            CameraId = i.CameraId,
+            Image = i.Image
+        }).ToList() ?? new List<CameraImageDto>();
+
+        var beforeImages = request.BeforeImages?.Select(i => new CameraImageDto
+        {
+            CameraId = i.CameraId,
+            Image = i.Image
+        }).ToList();
+
+        var boardId = request.BoardId ?? "default";
+        var detectResult = await _dartDetect.DetectAsync(images, boardId, 1, beforeImages);
+
+        var totalMs = sw.ElapsedMilliseconds;
+
+        if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
+        {
+            return Ok(new { 
+                message = "No darts detected", 
+                darts = new List<object>(),
+                processingMs = totalMs,
+                requestId
+            });
+        }
+
+        var tip = detectResult.Tips.OrderByDescending(t => t.Confidence).First();
+
+        return Ok(new {
+            message = "Dart detected",
+            darts = new[] { new { tip.Zone, tip.Score, tip.Segment, tip.Multiplier, tip.Confidence } },
+            processingMs = totalMs,
+            requestId,
+            isNative = _dartDetect is NativeDartDetectService
+        });
     }
 
     // === Private helpers ===
