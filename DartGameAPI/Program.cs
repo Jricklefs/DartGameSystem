@@ -45,8 +45,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-// DartDetect API client - forwards images for scoring
+// DartDetect API client - HTTP fallback for scoring
 builder.Services.AddHttpClient<DartDetectClient>();
+
+// DartDetect native C++ library - in-process detection (preferred)
+builder.Services.AddSingleton<DartDetectService>();
 
 // NOTE: DartSensorClient removed - sensor communication now via SignalR
 // Sensor connects to GameHub and receives StartGame/StopGame/Rebase events
@@ -84,6 +87,10 @@ using (var scope = app.Services.CreateScope())
         app.Logger.LogError(ex, "✗ Database connection failed");
     }
 }
+
+// Initialize native dart detection library with calibration data
+var dartDetectService = app.Services.GetRequiredService<DartDetectService>();
+await dartDetectService.InitializeAsync();
 
 // Configure pipeline
 app.UseSwagger();
