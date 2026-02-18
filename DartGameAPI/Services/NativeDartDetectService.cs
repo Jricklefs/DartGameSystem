@@ -62,6 +62,13 @@ public class NativeDartDetectService : IDartDetectService
             {
                 _initialized = true;
                 _logger.LogInformation("DartDetectLib initialized with {Count} camera calibrations", calDict.Count);
+
+                // Warmup: JIT-compile the P/Invoke path so first real dart has no delay
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                var dummyImg = new byte[][] { new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 } }; // minimal bytes
+                try { DartDetectNative.Detect(1, "warmup", dummyImg, dummyImg); } catch { }
+                DartDetectNative.ClearBoard("warmup");
+                _logger.LogInformation("DartDetectLib P/Invoke warmup complete ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             }
             else
             {
