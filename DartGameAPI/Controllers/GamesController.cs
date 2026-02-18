@@ -226,8 +226,8 @@ public class GamesController : ControllerBase
         // Clear detection cache
         _dartDetect.ClearBoard(boardId);
         
-        // Tell sensor to rebase via SignalR
-        await _hubContext.SendRebase(boardId);
+        // NOTE: Don't SendRebase here — SendTurnEnded already sends rebase.
+        // Double rebase was causing the sensor to miss the first dart of the next turn.
         
         // Always advance turn when board is cleared (player pulled their darts)
         // Exception: if busted, wait for bust confirmation from UI
@@ -240,11 +240,13 @@ public class GamesController : ControllerBase
         else if (game != null && isBusted)
         {
             // Busted - just notify board cleared, wait for bust confirmation
+            await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
             _logger.LogInformation("Board cleared but player busted - waiting for bust confirmation");
         }
         else
         {
+            await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
         }
         
