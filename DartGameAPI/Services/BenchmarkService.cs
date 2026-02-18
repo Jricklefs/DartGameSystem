@@ -63,25 +63,7 @@ public class BenchmarkService
             var folder = GetDartFolder(boardId, gameId, round, playerName, dartNumber);
             Directory.CreateDirectory(folder);
 
-            // Save current frames
-            if (images != null)
-            {
-                foreach (var img in images)
-                {
-                    try
-                    {
-                        var bytes = Convert.FromBase64String(img.Image);
-                        var path = Path.Combine(folder, $"{img.CameraId}_raw.png");
-                        await File.WriteAllBytesAsync(path, bytes);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning("Failed to save raw image for {CameraId}: {Error}", img.CameraId, ex.Message);
-                    }
-                }
-            }
-
-            // Save before/previous frames
+            // Save before/previous frames (board state BEFORE this dart)
             if (beforeImages != null)
             {
                 foreach (var img in beforeImages)
@@ -95,6 +77,24 @@ public class BenchmarkService
                     catch (Exception ex)
                     {
                         _logger.LogWarning("Failed to save previous image for {CameraId}: {Error}", img.CameraId, ex.Message);
+                    }
+                }
+            }
+
+            // Save current frames (board state WITH this dart)
+            if (images != null)
+            {
+                foreach (var img in images)
+                {
+                    try
+                    {
+                        var bytes = Convert.FromBase64String(img.Image);
+                        var path = Path.Combine(folder, $"{img.CameraId}_raw.png");
+                        await File.WriteAllBytesAsync(path, bytes);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning("Failed to save raw image for {CameraId}: {Error}", img.CameraId, ex.Message);
                     }
                 }
             }
