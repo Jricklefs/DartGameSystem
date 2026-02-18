@@ -50,6 +50,11 @@ public class Turn
     /// Score before bust (so we can revert if bust is corrected)
     /// </summary>
     public int ScoreBeforeBust { get; set; }
+
+    /// <summary>
+    /// True after UI confirms bust — waiting for board clear to advance turn
+    /// </summary>
+    public bool BustConfirmed { get; set; } = false;
 }
 
 /// <summary>
