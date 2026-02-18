@@ -50,12 +50,12 @@ builder.Services.AddHttpClient<DartDetectClient>();
 try
 {
     var version = DartDetectNative.GetVersion();
-    Console.WriteLine($"DartDetectLib native available: {version}");
+    Console.WriteLine($"✓ DartDetectLib native loaded: {version}");
     builder.Services.AddSingleton<IDartDetectService, NativeDartDetectService>();
 }
 catch (DllNotFoundException)
 {
-    Console.WriteLine("DartDetectLib.dll not found - using HTTP DartDetect API");
+    Console.WriteLine("✗ DartDetectLib.dll not found — falling back to HTTP DartDetect API");
     builder.Services.AddSingleton<IDartDetectService>(sp => sp.GetRequiredService<DartDetectClient>());
 }
 
