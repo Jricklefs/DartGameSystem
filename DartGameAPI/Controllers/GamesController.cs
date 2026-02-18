@@ -239,10 +239,11 @@ public class GamesController : ControllerBase
         }
         else if (game != null && isBusted)
         {
-            // Busted - just notify board cleared, wait for bust confirmation
+            // Board cleared after bust — resume detection + rebase
+            await _hubContext.SendResumeDetection(boardId);
             await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
-            _logger.LogInformation("Board cleared but player busted - waiting for bust confirmation");
+            _logger.LogInformation("Board cleared after bust - sensor resumed + rebased");
         }
         else
         {
@@ -647,9 +648,13 @@ public class GamesController : ControllerBase
         var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
         _ = UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
         
-        // Notify connected clients that turn ended
-        await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
-        _logger.LogInformation("Bust confirmed on board {BoardId}, turn ended", game.BoardId);
+        // Pause sensor detection — player is about to pull darts, don't detect that as new darts.
+        // Detection resumes when board is cleared (EventBoardClear).
+        await _hubContext.SendPauseDetection(game.BoardId);
+        
+        // Notify connected clients that turn ended (but DON'T rebase — wait for board clear)
+        await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn, skipRebase: true);
+        _logger.LogInformation("Bust confirmed on board {BoardId}, sensor paused until board clear", game.BoardId);
         
         return Ok(new { game = game });
     }
