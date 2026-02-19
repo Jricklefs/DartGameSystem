@@ -290,7 +290,8 @@ public class GameService
     private void StartNextLeg(Game game)
     {
         game.CurrentLeg++;
-        game.LegWinnerId = null;  // Clear for next leg
+        // NOTE: Don't clear LegWinnerId here - controller needs it for SendLegWon event
+        // It gets cleared at the start of the next ApplyManualDart call
 
         // Reset player scores for new leg
         foreach (var player in game.Players)
@@ -340,6 +341,7 @@ public class GameService
     /// </summary>
     public void ApplyManualDart(Game game, DartThrow dart)
     {
+        game.LegWinnerId = null;  // Clear previous leg winner before processing new dart
         ApplyDartToGame(game, dart);
         _logger.LogInformation("Dart applied: {Zone} = {Score} pts", dart.Zone, dart.Score);
     }
