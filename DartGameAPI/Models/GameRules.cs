@@ -56,6 +56,14 @@ public class GameRules
                 RequireDoubleOut = requireDoubleOut ?? false,
                 DisplayName = "301"
             },
+            GameMode.Debug20 => new GameRules
+            {
+                DartsPerTurn = 3,
+                StartingScore = 20,
+                Direction = ScoringDirection.CountDown,
+                RequireDoubleOut = false,
+                DisplayName = "Debug 20"
+            },
             GameMode.Cricket => new GameRules
             {
                 DartsPerTurn = 3,

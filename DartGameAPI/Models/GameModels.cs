@@ -78,6 +78,7 @@ public enum GameMode
     Practice,   // No rules, just scoring
     Game501,    // Start at 501, get to exactly 0 with double out
     Game301,    // Start at 301
+    Debug20,    // Start at 20, for fast testing
     Cricket     // Hit 15-20 and bulls
 }
 

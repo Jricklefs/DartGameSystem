@@ -142,6 +142,7 @@ public class GameService
 
             case GameMode.Game501:
             case GameMode.Game301:
+            case GameMode.Debug20:
                 var newScore = player.Score - dart.Score;
 
                 _logger.LogInformation("X01 scoring: player={Name}, current={Current}, dart={Dart}, newScore={New}, multiplier={Mult}",
@@ -369,6 +370,7 @@ public class GameService
 
             case GameMode.Game501:
             case GameMode.Game301:
+            case GameMode.Debug20:
                 // For X01 games, we subtract scores, so add the old and subtract the new
                 // oldScore was subtracted, newScore needs to be subtracted instead
                 player.Score = player.Score + oldDart.Score - newDart.Score;
@@ -434,6 +436,7 @@ public class GameService
 
             case GameMode.Game501:
             case GameMode.Game301:
+            case GameMode.Debug20:
                 // X01: scores were subtracted, so add it back
                 player.Score += removedDart.Score;
                 break;
