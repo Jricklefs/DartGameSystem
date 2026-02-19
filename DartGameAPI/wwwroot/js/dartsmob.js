@@ -157,6 +157,7 @@ async function initConnection() {
     connection.on('GameEnded', handleGameEnded);
     connection.on('TurnEnded', handleTurnEnded);
     connection.on('DartNotFound', handleDartNotFound);
+    connection.on('LegWon', handleLegWon);
 
     try {
         await connection.start();
@@ -628,6 +629,56 @@ function openCorrectionForDart(dartIndex) {
     if (correctionModal) {
         correctionModal.classList.remove('hidden');
         updateCorrectionPreview();
+    }
+}
+
+function handleLegWon(data) {
+    console.log('🎯 Leg won!', data);
+    
+    // Update player leg counts in local state
+    if (currentGame && data.game?.Players) {
+        data.game.Players.forEach(p => {
+            const local = currentGame.players?.find(lp => lp.id === p.Id);
+            if (local) local.legsWon = p.LegsWon;
+        });
+    }
+    
+    showLegWonModal(data.winnerName, data.legsWon, data.legsToWin, data.game?.Players || []);
+}
+
+function showLegWonModal(winnerName, legsWon, legsToWin, players) {
+    let modal = document.getElementById('leg-won-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'leg-won-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content winner-content">
+                <h2 class="winner-title">🎯 LEG WON! 🎯</h2>
+                <div class="winner-name"></div>
+                <div class="leg-standings"></div>
+                <button class="btn btn-primary" id="leg-won-ok" style="margin-top: 20px;">Continue</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        document.getElementById('leg-won-ok').addEventListener('click', () => {
+            modal.classList.remove('show');
+        });
+    }
+    
+    modal.querySelector('.winner-name').textContent = winnerName;
+    
+    // Build standings
+    const standings = players.map(p => 
+        `${p.Name}: ${p.LegsWon} / ${legsToWin}`
+    ).join('  •  ');
+    modal.querySelector('.leg-standings').textContent = standings;
+    
+    modal.classList.add('show');
+    
+    if (audioSettings.mode === 'tts') {
+        dartAudio.speak(`${winnerName} wins the leg! ${legsWon} of ${legsToWin}.`);
     }
 }
 
