@@ -303,10 +303,11 @@ function toggleNsfwMode(enabled) {
         selectedBackgrounds = [...DEFAULT_BACKGROUNDS];
     }
     
-    // Apply first background
+    // Apply random background
     if (selectedBackgrounds.length > 0) {
+        const randomBg = selectedBackgrounds[Math.floor(Math.random() * selectedBackgrounds.length)];
         document.getElementById('background-layer').style.backgroundImage = 
-            `url('${selectedBackgrounds[0]}')`;
+            `url('${randomBg}')`;
     }
     
     // Refresh background grid
@@ -392,8 +393,9 @@ function initBackground() {
     });
     
     if (selectedBackgrounds.length > 0) {
+        const randomBg = selectedBackgrounds[Math.floor(Math.random() * selectedBackgrounds.length)];
         document.getElementById('background-layer').style.backgroundImage = 
-            `url('${selectedBackgrounds[0]}')`;
+            `url('${randomBg}')`;
     }
     
     const opacity = theme.overlayOpacity ?? 70;

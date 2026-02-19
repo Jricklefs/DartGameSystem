@@ -104,14 +104,16 @@ function initTheme() {
     ];
     
     if (backgrounds.length > 0) {
-        setBackground(backgrounds[0]);
+        // Shuffle backgrounds randomly
+        const shuffled = [...backgrounds].sort(() => Math.random() - 0.5);
+        setBackground(shuffled[0]);
         
         // Start slideshow if enabled
-        if (theme.slideshow !== false && backgrounds.length > 1) {
+        if (theme.slideshow !== false && shuffled.length > 1) {
             let idx = 0;
             setInterval(() => {
-                idx = (idx + 1) % backgrounds.length;
-                setBackground(backgrounds[idx]);
+                idx = (idx + 1) % shuffled.length;
+                setBackground(shuffled[idx]);
             }, theme.slideshowSpeed || 30000);
         }
     }
