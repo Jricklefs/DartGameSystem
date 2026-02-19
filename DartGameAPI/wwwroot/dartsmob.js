@@ -805,17 +805,10 @@ function updateRoundDisplay() {
 
 // Game definitions with category-specific options
 const gameConfig = {
-    debug: {
-        label: '🐛 Debug',
-        variants: [
-            { value: '20', label: 'Debug 20' }
-        ],
-        defaultVariant: '20',
-        rules: []
-    },
     x01: {
         label: '🔢 X01',
         variants: [
+            { value: '20', label: '🐛 Debug 20' },
             { value: '301', label: '301' },
             { value: '501', label: '501' },
             { value: '701', label: '701' },
@@ -993,8 +986,8 @@ function getSelectedGameMode() {
     // Use variant if selected, otherwise default
     const gameVariant = variant || config?.defaultVariant || '501';
     
-    if (category === 'debug') return 'Debug20';
     if (category === 'x01') {
+        if (gameVariant === '20') return 'Debug20';
         return `Game${gameVariant}`;
     } else {
         return gameVariant;
