@@ -46,12 +46,12 @@ MotionMaskResult compute_motion_mask(
     cv::threshold(diff, mask_low, std::max(5, threshold / 3), 255, cv::THRESH_BINARY);
     
     // Aggressive close on low mask to bridge flight-shaft gaps
-    cv::Mat close_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7));
+    cv::Mat close_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
     cv::morphologyEx(mask_low, mask_low, cv::MORPH_CLOSE, close_kernel);
     
     // Hysteresis: grow high-threshold seeds into connected low-threshold pixels
     cv::Mat seed = mask_high.clone();
-    cv::Mat dilate_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7));
+    cv::Mat dilate_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
     for (int iter = 0; iter < 50; ++iter) {
         cv::Mat expanded;
         cv::dilate(seed, expanded, dilate_kernel, cv::Point(-1, -1), 1);
@@ -66,7 +66,7 @@ MotionMaskResult compute_motion_mask(
     }
     
     // Morphological opening to trim noise
-    cv::Mat open_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
+    cv::Mat open_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
     cv::morphologyEx(seed, seed, cv::MORPH_OPEN, open_kernel);
     
     result.mask = seed;
@@ -130,11 +130,11 @@ PixelSegmentation compute_pixel_segmentation(
     cv::threshold(diff, mask_high, threshold, 255, cv::THRESH_BINARY);
     cv::threshold(diff, mask_low, std::max(5, threshold / 3), 255, cv::THRESH_BINARY);
     
-    cv::Mat close_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7));
+    cv::Mat close_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
     cv::morphologyEx(mask_low, mask_low, cv::MORPH_CLOSE, close_kern);
     
     cv::Mat seed = mask_high.clone();
-    cv::Mat dil_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7));
+    cv::Mat dil_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
     for (int i = 0; i < 50; ++i) {
         cv::Mat expanded, new_pixels;
         cv::dilate(seed, expanded, dil_kern);
@@ -145,7 +145,7 @@ PixelSegmentation compute_pixel_segmentation(
         seed = new_pixels;
     }
     
-    cv::Mat open_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
+    cv::Mat open_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
     cv::morphologyEx(seed, seg.full_motion_mask, cv::MORPH_OPEN, open_kern);
     
     int h = seg.full_motion_mask.rows;

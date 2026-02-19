@@ -44,7 +44,7 @@ static const double DOUBLE_OUTER_NORM = 1.0;
 
 // Detection parameters
 static const int BLOB_CHAIN_DIST = 150;
-static const int MORPH_CLOSE_KERNEL_SIZE = 15;
+static const int MORPH_CLOSE_KERNEL_SIZE = 7;
 static const int LINE_ABSORB_PERP_DIST = 20;
 static const int LINE_ABSORB_EXTEND_LIMIT = 80;
 static const int PCA_GAP_TOLERANCE = 120;
