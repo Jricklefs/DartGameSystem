@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DartsMob - Main Game JavaScript
  * Mobile-first redesign
  */
@@ -8,9 +8,7 @@
 // ==========================================================================
 
 const DETECT_API = 'http://192.168.0.158:8000';
-let boardId = 'default';
-// Fetch actual board ID from API
-fetch('/api/boards/current').then(r => r.json()).then(b => { boardId = b.id; console.log('Board:', b.name, b.id); }).catch(() => {});
+const boardId = 'default';
 
 // ==========================================================================
 // Centralized Logging
@@ -53,6 +51,7 @@ let currentGame = null;
 let selectedMode = 'Practice';
 let selectedBestOf = 5;
 let lookingForMatch = false;  // Looking for match toggle state
+let bustAcknowledged = false; // True when user clicked Continue on bust, waiting for board clear
 
 // ==========================================================================
 // Initialization
@@ -156,7 +155,6 @@ async function initConnection() {
     connection.on('GameStarted', handleGameStarted);
     connection.on('GameEnded', handleGameEnded);
     connection.on('TurnEnded', handleTurnEnded);
-    connection.on('DartNotFound', handleDartNotFound);
 
     try {
         await connection.start();
@@ -256,22 +254,18 @@ function speakDartScore(dart) {
     
     const zone = dart.zone?.toLowerCase() || '';
     const segment = dart.segment || 0;
-    const multiplier = dart.multiplier || 0;
     let audioFile = '';
     let ttsText = '';
     
-    // Check for bull first (segment 0 or 25 with multiplier > 0)
-    if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull' || 
-        (segment === 0 && multiplier === 2) || (segment === 25 && multiplier === 2)) {
-        audioFile = 'double-bullseye';
-        ttsText = 'Double Bullseye';
-    } else if (zone === 'outer_bull' || zone === 'bull' || 
-               (segment === 0 && multiplier === 1) || (segment === 25 && multiplier === 1)) {
-        audioFile = 'bullseye';
-        ttsText = 'Bullseye';
-    } else if (zone === 'miss' || (segment === 0 && multiplier === 0)) {
+    if (zone === 'miss' || segment === 0) {
         audioFile = 'miss';
         ttsText = 'Miss';
+    } else if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull') {
+        audioFile = 'double-bullseye';
+        ttsText = 'Double Bullseye';
+    } else if (zone === 'outer_bull' || zone === 'bull') {
+        audioFile = 'bullseye';
+        ttsText = 'Bullseye';
     } else if (zone === 'double' || zone === 'double_ring') {
         audioFile = `double-${segment}`;
         ttsText = `Double ${segment}`;
@@ -319,7 +313,7 @@ function handleDartThrown(data) {
     updateCurrentTurn();
     
     // Check for bust - show bust popup instead of normal dart popup
-    if (data.game?.currentTurn?.busted) {
+    if (data.game?.currentTurn?.isBusted) {
         showBustPopup(data.dart);
         setTimeout(() => speakBust(), 300);
     } else {
@@ -327,18 +321,21 @@ function handleDartThrown(data) {
         speakDartScore(data.dart);
     }
     
-    // Check for winner - game state Finished = 2
-    if (data.game?.state === 2 || data.game?.state === 'Finished') {
-        const winnerName = data.game.winnerName || 
-                          data.game.players?.find(p => p.id === data.game.winnerId)?.name ||
-                          'Winner';
-        console.log('🏆 Game finished via dart! Winner:', winnerName);
-        setTimeout(() => showWinnerModal(winnerName), 1000);
+    // Check for winner
+    if (data.game?.isComplete && data.game?.winner) {
+        setTimeout(() => showWinnerModal(data.game.winner), 1000);
     }
 }
 
 function handleBoardCleared(data) {
     console.log('Board cleared - PPD stays visible until Next Player');
+    
+    // If bust was acknowledged, finalize the bust now that darts are pulled
+    if (bustAcknowledged) {
+        finalizeBust();
+        return;
+    }
+    
     // Do NOT clear PPD boxes here - player just removed darts
     // PPD and turn total stay visible until Next Player is pressed
 }
@@ -355,35 +352,21 @@ function handleDartRemoved(data) {
 function handleGameStarted(data) {
     console.log('Game started:', data);
     currentGame = data;
+    bustAcknowledged = false;  // Reset bust state
     showScreen('game-screen');
     updateScoreboard();
     updateCurrentTurn();
 }
 
 function handleGameEnded(data) {
-    console.log('🏆 Game ended! Full data:', JSON.stringify(data));
-    
-    // Update game state
-    if (data.game) {
-        currentGame = data.game;
-        updateScoreboard();
-    }
-    
-    // Find winner name from various possible properties
-    const winnerName = data.winnerName || data.WinnerName || data.winner || 
-                       (data.players?.find(p => p.id === data.winnerId)?.name) ||
-                       'Winner';
-    
-    console.log('🏆 Showing winner modal for:', winnerName);
-    
-    // Small delay to let any dart animations finish
-    setTimeout(() => {
-        showWinnerModal(winnerName);
-    }, 500);
+    console.log('Game ended:', data);
+    // Show winner modal instead of separate screen
+    showWinnerModal(data.winnerName || data.winner || 'Winner');
 }
 
 function handleTurnEnded(data) {
     console.log('Turn ended:', data);
+    bustAcknowledged = false;  // Reset bust state for new turn
     // Update game state with new turn info (round may have increased)
     if (data.game) {
         currentGame = data.game;
@@ -520,114 +503,120 @@ function showThrowPopup(dart) {
 }
 
 function showBustPopup(dart) {
-    // Show the bust modal instead of just a popup
-    showBustModal();
-}
-
-function showBustModal() {
-    // Remove existing modal if any
-    document.getElementById('bust-modal')?.remove();
+    const popup = document.getElementById('throw-popup');
+    if (!popup) return;
     
-    const turn = currentGame?.currentTurn;
-    const darts = turn?.darts || [];
-    const player = currentGame?.players?.[currentGame.currentPlayerIndex];
-    
-    // Build darts list HTML
-    let dartsHtml = '';
-    darts.forEach((d, i) => {
-        const dartText = formatDartShort(d);
-        dartsHtml += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #222; border-radius: 8px; margin-bottom: 8px;">
-                <span style="font-size: 1.3rem; color: var(--paper);">Dart ${i + 1}: <strong>${dartText}</strong> (${d.score})</span>
-                <button onclick="openCorrectionForDart(${i})" style="background: #d4af37; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">✏️ Correct</button>
-            </div>
-        `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.id = 'bust-modal';
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.95); z-index: 1000;
-        display: flex; align-items: center; justify-content: center;
-        padding: 20px;
-    `;
-    modal.innerHTML = `
-        <div style="background: linear-gradient(180deg, #2a1a1a 0%, #1a0a0a 100%); border: 3px solid #ff4444; border-radius: 16px; padding: 30px; max-width: 500px; width: 100%; text-align: center;">
-            <h1 style="color: #ff4444; font-size: 3rem; margin: 0 0 10px 0; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em; text-shadow: 0 0 20px rgba(255,68,68,0.5);">💥 BUSTED! 💥</h1>
-            <p style="color: var(--paper-muted); margin: 0 0 20px 0;">${player?.name || 'Player'} - Score reverted to ${turn?.scoreBeforeBust || player?.score}</p>
-            
-            <div style="margin-bottom: 20px; text-align: left;">
-                ${dartsHtml || '<p style="color: var(--paper-muted);">No darts recorded</p>'}
-            </div>
-            
-            <p style="color: #ffaa00; margin-bottom: 20px; font-size: 0.95rem;">
-                🎯 Remove your darts from the board.<br>
-                You can correct any dart before confirming.
-            </p>
-            
-            <button id="confirm-bust-btn" onclick="confirmBust()" style="background: linear-gradient(180deg, #ff5555 0%, #cc3333 100%); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-size: 1.3rem; font-weight: bold; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em;">
-                ✓ CONFIRM BUST
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
-
-function formatDartShort(dart) {
+    // Build the dart score text for top line
+    let prefix = '';
     const zone = dart?.zone?.toLowerCase() || '';
     const segment = dart?.segment || 0;
     
-    if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull') return 'BULL';
-    if (zone === 'outer_bull') return 'S-BULL';
-    if (zone === 'miss' || segment === 0) return 'MISS';
-    if (zone === 'double' || zone === 'double_ring') return `D${segment}`;
-    if (zone === 'triple' || zone === 'triple_ring') return `T${segment}`;
-    return `S${segment}`;
+    if (zone === 'double' || zone === 'double_ring') {
+        prefix = 'D';
+    } else if (zone === 'triple' || zone === 'triple_ring') {
+        prefix = 'T';
+    } else if (zone === 'inner_bull' || zone === 'bullseye') {
+        prefix = 'BULL';
+    } else if (zone === 'outer_bull') {
+        prefix = 'BULL';
+    } else if (zone === 'miss' || segment === 0) {
+        prefix = 'MISS';
+    } else {
+        prefix = 'S';
+    }
+    
+    const topText = (prefix === 'BULL' || prefix === 'MISS') ? prefix : `${prefix}${segment}`;
+    
+    // Top line: Score, Bottom line: BUST with buttons
+    popup.querySelector('.throw-zone').textContent = topText;
+    popup.querySelector('.throw-value').textContent = 'BUST';
+    popup.querySelector('.throw-value').style.color = '#ff4444';
+    
+    // Add bust action buttons if not already present
+    let bustActions = popup.querySelector('.bust-actions');
+    if (!bustActions) {
+        bustActions = document.createElement('div');
+        bustActions.className = 'bust-actions';
+        bustActions.innerHTML = `
+            <button class="bust-btn bust-correct" onclick="showBustCorrectionPopup()">Correct Score</button>
+            <button class="bust-btn bust-confirm" onclick="confirmBust()">Continue</button>
+        `;
+        popup.appendChild(bustActions);
+    }
+    bustActions.classList.remove('hidden');
+    
+    popup.classList.remove('hidden', 'show');
+    void popup.offsetWidth;
+    popup.classList.add('show');
+    
+    // Don't auto-dismiss bust popup - wait for user action
 }
 
 async function confirmBust() {
-    const btn = document.getElementById('confirm-bust-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = '⏳ Confirming...';
-    }
-    
-    try {
-        // Call API to confirm the bust and end turn
-        const resp = await fetch(`/api/games/${currentGame.id}/confirm-bust`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
+    const popup = document.getElementById('throw-popup');
+    if (popup) {
+        const bustActions = popup.querySelector('.bust-actions');
+        if (bustActions) bustActions.classList.add('hidden');
         
-        if (resp.ok) {
-            const data = await resp.json();
-            currentGame = data.game || data;
-            updateScoreboard();
-            updateCurrentTurn();
-        }
-    } catch (err) {
-        console.error('Error confirming bust:', err);
+        // Show "Pull your darts" message instead of hiding
+        popup.querySelector('.throw-zone').textContent = 'BUSTED';
+        popup.querySelector('.throw-value').textContent = 'Pull your darts';
+        popup.querySelector('.throw-value').style.color = '#ffaa00';
+        popup.querySelector('.throw-value').style.fontSize = '1.2rem';
     }
     
-    // Close modal
-    document.getElementById('bust-modal')?.remove();
+    // Set flag - actual turn end happens when board is cleared
+    bustAcknowledged = true;
+    console.log('Bust acknowledged - waiting for board clear');
 }
 
-function openCorrectionForDart(dartIndex) {
-    // Close bust modal temporarily
-    document.getElementById('bust-modal')?.remove();
+async function finalizeBust() {
+    // Called when board is cleared after bust was acknowledged
+    if (!currentGame?.id) return;
     
-    // Open the correction modal for this dart
-    correctionDartIndex = dartIndex;
-    correctionSegment = 20;
-    correctionMultiplier = 1;
+    try {
+        const response = await fetch(`${GAME_API_URL}/games/${currentGame.id}/confirm-bust`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            const data = await response.json();
+            currentGame = data.game;
+            updateScoreboard();
+            updateCurrentTurn();
+            console.log('Bust finalized, turn ended');
+        }
+    } catch (error) {
+        console.error('Error confirming bust:', error);
+    }
     
-    const correctionModal = document.getElementById('correction-modal');
-    if (correctionModal) {
-        correctionModal.classList.remove('hidden');
-        updateCorrectionPreview();
+    // Hide the popup now
+    const popup = document.getElementById('throw-popup');
+    if (popup) {
+        popup.classList.add('hidden');
+        popup.classList.remove('show');
+        popup.querySelector('.throw-value').style.color = '';
+        popup.querySelector('.throw-value').style.fontSize = '';
+    }
+    
+    bustAcknowledged = false;
+}
+
+function showBustCorrectionPopup() {
+    // Reset bust acknowledgment since they're correcting
+    bustAcknowledged = false;
+    
+    // Hide the bust popup first
+    const popup = document.getElementById('throw-popup');
+    if (popup) {
+        popup.classList.add('hidden');
+        popup.classList.remove('show');
+    }
+    
+    // Show the correction popup for the last dart
+    const turn = currentGame?.currentTurn;
+    if (turn?.darts?.length > 0) {
+        const lastDartIndex = turn.darts.length - 1;
+        showCorrectionPopup(lastDartIndex);
     }
 }
 
@@ -705,7 +694,6 @@ async function startGame() {
                 mode: gameMode,
                 playerNames: players,
                 bestOf: selectedBestOf,
-                requireDoubleOut: rules['double-out'] ?? false,
                 rules: rules
             })
         });
@@ -749,10 +737,9 @@ function showStartGameError(error) {
         // Create modal if it doesn't exist
         modal = document.createElement('div');
         modal.id = 'start-error-modal';
-        modal.className = 'modal';
+        modal.className = 'modal-overlay';
         modal.innerHTML = `
-            <div class="modal-backdrop" onclick="document.getElementById('start-error-modal').classList.add('hidden')"></div>
-            <div class="modal-content art-deco-card" style="max-width: 400px; text-align: center;">
+            <div class="modal art-deco-card" style="max-width: 400px; text-align: center;">
                 <h2 style="color: var(--gold); margin-bottom: 1rem;">⚠️ Cannot Start Game</h2>
                 <p id="start-error-message" style="margin-bottom: 1.5rem; color: #ccc;"></p>
                 <button class="btn-gold" onclick="document.getElementById('start-error-modal').classList.add('hidden')">OK</button>
@@ -821,6 +808,7 @@ const gameConfig = {
     x01: {
         label: '🔢 X01',
         variants: [
+            { value: '20', label: '🐛 Debug 20' },
             { value: '301', label: '301' },
             { value: '501', label: '501' },
             { value: '701', label: '701' },
@@ -829,7 +817,7 @@ const gameConfig = {
         defaultVariant: '501',
         rules: [
             { id: 'double-in', label: 'Double In', default: false },
-            { id: 'double-out', label: 'Double Out', default: false }
+            { id: 'double-out', label: 'Double Out', default: true }
         ]
     },
     cricket: {
@@ -999,6 +987,7 @@ function getSelectedGameMode() {
     const gameVariant = variant || config?.defaultVariant || '501';
     
     if (category === 'x01') {
+        if (gameVariant === '20') return 'Debug20';
         return `Game${gameVariant}`;
     } else {
         return gameVariant;
@@ -1074,6 +1063,9 @@ function formatMode(mode) {
         mode = String(mode || '');
     }
     
+    // Handle Debug mode
+    if (mode === 'Debug20') return '🐛 Debug 20';
+    
     // Handle X01 games
     const x01Match = mode.match(/^Game(\d+)$/);
     if (x01Match) return x01Match[1];
@@ -1094,32 +1086,6 @@ function formatMode(mode) {
 }
 
 // ==========================================================================
-
-// Remove a false dart (e.g. phantom detection during clearing)
-async function removeDart(dartIndex) {
-    if (!currentGame?.id) return;
-    
-    if (!confirm(`Remove dart ${dartIndex + 1}? (Use for false detections)`)) return;
-    
-    try {
-        const resp = await fetch(`/api/games/${currentGame.id}/remove-dart`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dartIndex: dartIndex })
-        });
-        if (!resp.ok) {
-            const err = await resp.json();
-            console.error('Failed to remove dart:', err);
-            return;
-        }
-        const result = await resp.json();
-        console.log('Dart removed:', result);
-        // UI updates via SignalR DartRemoved event
-    } catch (e) {
-        console.error('Error removing dart:', e);
-    }
-}
-
 // Dart Correction
 // ==========================================================================
 
@@ -1178,9 +1144,6 @@ function initDartCorrection() {
     
     // Cancel button
     document.getElementById('correction-cancel')?.addEventListener('click', closeCorrectionModal);
-    
-    // Bounce Out button - mark dart as excluded from benchmark (bounced out, can't correct)
-    document.getElementById('correction-bounceout')?.addEventListener('click', markBounceOut);
     
     // False button - remove this dart entirely (phantom detection)
     document.getElementById('correction-false')?.addEventListener('click', removeFalseDart);
@@ -1279,53 +1242,6 @@ function closeCorrectionModal() {
 }
 
 async function submitCorrection() {
-    // Handle "Not Detected" mode - submit as manual throw instead of correction
-    if (window._notDetectedMode) {
-        window._notDetectedMode = false;
-        
-        // Reset modal title
-        const modalTitle = document.querySelector('#dart-correction-modal .modal-title');
-        if (modalTitle) modalTitle.textContent = 'Correct Dart';
-        
-        let segment, multiplier;
-        if (correctionInput === 'miss') {
-            segment = 0;
-            multiplier = 0;
-        } else if (correctionInput === 'bull') {
-            segment = 25;
-            multiplier = correctionMultiplier;  // 1=outer bull (25), 2=inner bull (50)
-        } else {
-            segment = parseInt(correctionInput);
-            multiplier = correctionMultiplier || 1;
-        }
-        
-        if (isNaN(segment) && correctionInput !== 'miss') {
-            console.log('[NOT-DETECTED] Invalid input:', correctionInput);
-            return;
-        }
-        
-        console.log('[NOT-DETECTED] Submitting manual dart: S' + segment + 'x' + multiplier);
-        
-        // Submit as manual throw
-        fetch('/api/games/' + currentGame.id + '/manual', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ segment: segment, multiplier: multiplier })
-        })
-        .then(r => r.json())
-        .then(data => {
-            console.log('[NOT-DETECTED] Manual dart submitted:', data);
-            closeCorrectionModal();
-        })
-        .catch(err => {
-            console.error('[NOT-DETECTED] Failed:', err);
-            closeCorrectionModal();
-        });
-        
-        return;  // Don't fall through to normal correction logic
-    }
-    
-    // Original correction logic follows...
     const { segment, score, display } = getSegmentAndScore();
     
     if (correctionDartIndex === null || !currentGame) {
@@ -1340,27 +1256,6 @@ async function submitCorrection() {
     
     // Get the original dart for logging
     const originalDart = currentGame.currentTurn?.darts?.[correctionDartIndex];
-
-        // If no dart at this index, use manual entry instead of correct
-        if (!originalDart) {
-            const { segment, score, display } = getSegmentAndScore();
-            if (segment === 0 && correctionInput === '') return;
-            try {
-                const resp = await fetch(`/api/games/${currentGame.id}/manual`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ segment: segment, multiplier: correctionMultiplier })
-                });
-                if (resp.ok) {
-                    const result = await resp.json();
-                    currentGame = result.game;
-                    updateScoreboard();
-                    updateCurrentTurn();
-                }
-            } catch (e) { console.error('Manual dart failed:', e); }
-            closeCorrectionModal();
-            return;
-        }
     const originalSegment = originalDart?.segment || 0;
     const originalMultiplier = originalDart?.multiplier || 1;
     const originalScore = originalDart?.score || 0;
@@ -1407,6 +1302,25 @@ async function submitCorrection() {
         
         // Log to centralized system
         log.info('Correction', `Corrected dart ${correctionDartIndex}: ${correctionLog.original.zone} ${correctionLog.original.segment} → ${correctionLog.corrected.display}`, correctionLog);
+        
+        // Send correction to DartDetect benchmark system
+        try {
+            await fetch(`${DETECT_API}/v1/benchmark/correction`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    game_id: currentGame.id,
+                    dart_number: correctionDartIndex + 1,  // 1-indexed for API
+                    original_segment: originalSegment,
+                    original_multiplier: originalMultiplier,
+                    corrected_segment: segment,
+                    corrected_multiplier: correctionMultiplier
+                })
+            });
+            console.log(`[BENCHMARK] Correction sent to DartDetect`);
+        } catch (e) {
+            console.warn('[BENCHMARK] Failed to send correction to DartDetect:', e);
+        }
         
         // Store corrections in localStorage for later export
         try {
@@ -1495,58 +1409,6 @@ async function removeFalseDart() {
         console.error('Remove dart error:', e);
         log.error('FalseDart', 'Remove failed', { error: e.message });
         alert('Failed to remove dart');
-    }
-}
-
-async function markBounceOut() {
-    // Mark this dart as "bounce out" - excluded from benchmark training data
-    // The dart still happened (scores as 0/miss) but shouldn't be used for detection training
-    if (correctionDartIndex === null || !currentGame) {
-        return;
-    }
-    
-    const dart = currentGame.currentTurn?.darts?.[correctionDartIndex];
-    
-    try {
-        // Call benchmark API to mark as excluded
-        await fetch(`${DETECT_API}/v1/benchmark/exclude-dart`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                game_id: currentGame.id,
-                dart_index: correctionDartIndex,
-                reason: 'bounce_out'
-            })
-        }).catch(() => {}); // Don't fail if DartDetect is down
-        
-        // Also correct the dart to MISS (score 0) since it bounced out
-        const response = await fetch(`/api/games/${currentGame.id}/correct`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                dartIndex: correctionDartIndex,
-                segment: 0,
-                multiplier: 1
-            })
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            currentGame = result.game;
-        }
-        
-        log.info('BounceOut', `Marked dart ${correctionDartIndex} as bounce out - excluded from benchmark`, { 
-            dart, gameId: currentGame.id 
-        });
-        
-        updateScoreboard();
-        updateCurrentTurn();
-        closeCorrectionModal();
-        
-    } catch (e) {
-        console.error('Bounce out error:', e);
-        log.error('BounceOut', 'Failed to mark bounce out', { error: e.message });
-        alert('Failed to mark dart as bounce out');
     }
 }
 
@@ -2212,84 +2074,3 @@ function getCorrections() {
 window.exportCorrections = exportCorrections;
 window.clearCorrections = clearCorrections;
 window.getCorrections = getCorrections;
-
-
-
-// ==========================================================================
-// Dart Not Detected
-// ==========================================================================
-// When a dart is thrown but the cameras don't detect it, this button
-// opens the correction modal so the player can manually enter the score.
-// The dart is submitted as a manual throw to keep dart count in sync.
-// This preserves benchmark data integrity - we know a dart was missed.
-
-function dartNotDetected() {
-    if (!currentGame || currentGame.state !== 1) {
-        console.log('[NOT-DETECTED] No active game');
-        return;
-    }
-    
-    const dartsThrown = currentGame.currentTurn?.darts?.length || 0;
-    if (dartsThrown >= 3) {
-        console.log('[NOT-DETECTED] Already 3 darts this turn');
-        return;
-    }
-    
-    console.log('[NOT-DETECTED] Opening correction modal for undetected dart ' + (dartsThrown + 1));
-    
-    // Set up correction state for next dart index
-    correctionDartIndex = dartsThrown;  // 0, 1, or 2
-    correctionInput = '';
-    correctionMultiplier = 1;
-    
-    // Flag this as a "not detected" manual entry (not a correction of existing dart)
-    window._notDetectedMode = true;
-    
-    // Update modal title to indicate this is a manual entry
-    const modalTitle = document.querySelector('#dart-correction-modal .modal-title');
-    if (modalTitle) {
-        modalTitle.textContent = '🚫 Dart Not Detected - Enter Score';
-    }
-    
-    // Open the correction modal
-    const modal = document.getElementById('dart-correction-modal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        updateCorrectionDisplay();
-    }
-}
-
-// Override submitCorrection to handle not-detected mode
-const _originalSubmitCorrection = typeof submitCorrection === 'function' ? submitCorrection : null;
-
-// ===== Dart Not Found Toast =====
-// Shows a toast notification when DartSensor detects motion but DartDetect
-// can't find a dart. Prompts the user to use the manual entry button.
-function handleDartNotFound(data) {
-    console.log('Motion detected but no dart found');
-    showToast('Dart not scored \u2014 use \ud83d\udeab to enter manually', 'warning');
-}
-
-// ===== Toast Notification Helper =====
-// Creates a temporary floating notification that auto-dismisses after 3 seconds.
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 12px 24px;
-        border-radius: 8px;
-        color: white;
-        font-weight: bold;
-        z-index: 10000;
-        animation: fadeInOut 3s ease-in-out;
-        background: ${type === 'warning' ? '#e67e22' : '#3498db'};
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
