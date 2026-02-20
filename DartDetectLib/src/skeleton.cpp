@@ -143,37 +143,72 @@ static std::optional<FlightBlob> find_flight_blob(const cv::Mat& mask, int min_a
 // ============================================================================
 // Helper: Sub-pixel tip refinement
 // ============================================================================
-static Point2f refine_tip_subpixel(Point2f tip, const cv::Mat& gray, const cv::Mat& mask, int roi_size = 10)
+// Bilinear interpolation helper for subpixel gradient sampling
+static double bilinear_sample(const cv::Mat& gray, double px, double py) {
+    int x0 = (int)std::floor(px), y0 = (int)std::floor(py);
+    int x1 = x0 + 1, y1 = y0 + 1;
+    if (x0 < 0 || y0 < 0 || x1 >= gray.cols || y1 >= gray.rows) return 0.0;
+    double fx = px - x0, fy = py - y0;
+    double v00 = gray.at<uchar>(y0, x0);
+    double v10 = gray.at<uchar>(y0, x1);
+    double v01 = gray.at<uchar>(y1, x0);
+    double v11 = gray.at<uchar>(y1, x1);
+    return v00*(1-fx)*(1-fy) + v10*fx*(1-fy) + v01*(1-fx)*fy + v11*fx*fy;
+}
+
+// Direction-constrained tip refinement (Phase 2, Feb 20 2026)
+// Walks along barrel direction to find strongest gradient (true tip edge),
+// instead of snapping to nearest Canny edge (which often hits lateral barrel edge).
+// When barrel direction (vx,vy) is available, searches only along that axis.
+// Returns true subpixel Point2f via bilinear gradient interpolation.
+static Point2f refine_tip_subpixel(Point2f tip, const cv::Mat& gray, const cv::Mat& mask, int roi_size = 10,
+                                    double barrel_vx = 0.0, double barrel_vy = 0.0)
 {
-    int tx = (int)tip.x, ty = (int)tip.y;
+    (void)mask; (void)roi_size; // kept for signature compatibility
     int h = gray.rows, w = gray.cols;
-    int x1 = std::max(0, tx - roi_size), y1 = std::max(0, ty - roi_size);
-    int x2 = std::min(w, tx + roi_size), y2 = std::min(h, ty + roi_size);
-    if (x2 - x1 < 5 || y2 - y1 < 5) return tip;
-    
-    cv::Mat roi_gray = gray(cv::Range(y1, y2), cv::Range(x1, x2));
-    cv::Mat roi_mask = mask(cv::Range(y1, y2), cv::Range(x1, x2));
-    
-    cv::Mat edges;
-    cv::Canny(roi_gray, edges, 30, 100);
-    cv::bitwise_and(edges, roi_mask, edges);
-    
-    std::vector<cv::Point> pts;
-    cv::findNonZero(edges, pts);
-    if ((int)pts.size() < 3) return tip;
-    
-    double min_dist = 1e9;
-    cv::Point best = pts[0];
-    for (const auto& p : pts) {
-        double dx = (p.x + x1) - tip.x;
-        double dy = (p.y + y1) - tip.y;
-        double d = std::sqrt(dx * dx + dy * dy);
-        if (d < min_dist) { min_dist = d; best = p; }
+    int walk_px = 20;
+    double best_grad = 0.0;
+    Point2f best_pt = tip;
+
+    double blen = std::sqrt(barrel_vx*barrel_vx + barrel_vy*barrel_vy);
+    if (blen > 0.1) {
+        // Normalize barrel direction
+        double dvx = barrel_vx / blen;
+        double dvy = barrel_vy / blen;
+        // Walk along barrel direction +/- walk_px from tip
+        for (int step = -walk_px; step <= walk_px; ++step) {
+            double px = tip.x + dvx * step;
+            double py = tip.y + dvy * step;
+            if (px < 2 || py < 2 || px >= w-2 || py >= h-2) continue;
+            double gx = bilinear_sample(gray, px+1, py) - bilinear_sample(gray, px-1, py);
+            double gy = bilinear_sample(gray, px, py+1) - bilinear_sample(gray, px, py-1);
+            double grad = gx*gx + gy*gy;
+            if (grad > best_grad) { best_grad = grad; best_pt = Point2f(px, py); }
+        }
+    } else {
+        // No barrel direction available — search cross pattern
+        for (int step = -walk_px; step <= walk_px; ++step) {
+            for (int perp = -2; perp <= 2; ++perp) {
+                // Horizontal walk
+                double px_h = tip.x + step, py_h = tip.y + perp;
+                if (px_h >= 2 && py_h >= 2 && px_h < w-2 && py_h < h-2) {
+                    double gx = bilinear_sample(gray, px_h+1, py_h) - bilinear_sample(gray, px_h-1, py_h);
+                    double gy = bilinear_sample(gray, px_h, py_h+1) - bilinear_sample(gray, px_h, py_h-1);
+                    double grad = gx*gx + gy*gy;
+                    if (grad > best_grad) { best_grad = grad; best_pt = Point2f(px_h, py_h); }
+                }
+                // Vertical walk
+                double px_v = tip.x + perp, py_v = tip.y + step;
+                if (px_v >= 2 && py_v >= 2 && px_v < w-2 && py_v < h-2) {
+                    double gx = bilinear_sample(gray, px_v+1, py_v) - bilinear_sample(gray, px_v-1, py_v);
+                    double gy = bilinear_sample(gray, px_v, py_v+1) - bilinear_sample(gray, px_v, py_v-1);
+                    double grad = gx*gx + gy*gy;
+                    if (grad > best_grad) { best_grad = grad; best_pt = Point2f(px_v, py_v); }
+                }
+            }
+        }
     }
-    
-    if (min_dist < roi_size)
-        return Point2f(best.x + x1, best.y + y1);
-    return tip;
+    return best_pt;
 }
 
 // ============================================================================
@@ -197,7 +232,7 @@ DetectionResult detect_dart(
     // Step 2: Pixel segmentation for dart 2+
     if (!prev_dart_masks.empty()) {
         auto seg = compute_pixel_segmentation(
-            current_frame, previous_frame, prev_dart_masks, diff_threshold, 5);
+            current_frame, previous_frame, prev_dart_masks, diff_threshold, 5, &mmr);
         motion_mask = seg.new_mask;
         cv::bitwise_and(positive_mask, motion_mask, positive_mask);
         
@@ -483,7 +518,7 @@ DetectionResult detect_dart(
                     double dx = barrel_pts[i2].x - barrel_pts[i1].x;
                     double dy = barrel_pts[i2].y - barrel_pts[i1].y;
                     double len = std::sqrt(dx*dx + dy*dy);
-                    if (len < 5) continue;
+                    if (len < 20) continue;  // Phase 2: wider pair distance for better angle constraint
 
                     double nx = -dy / len, ny = dx / len; // normal
 
@@ -512,6 +547,36 @@ DetectionResult detect_dart(
                             cv::fitLine(inlier_pts, lp, cv::DIST_HUBER, 0, 0.01, 0.01);
                             best_vx = lp[0]; best_vy = lp[1];
                             best_cx = lp[2]; best_cy = lp[3];
+                        }
+                    }
+                }
+
+                // lo-RANSAC: final refit-rescore on all inliers from best model (Phase 2)
+                if (best_inliers > 5) {
+                    double fnx = -best_vy, fny = best_vx;
+                    std::vector<cv::Point2f> final_inliers;
+                    for (const auto& p : barrel_pts) {
+                        double d = std::abs(fnx * (p.x - best_cx) + fny * (p.y - best_cy));
+                        if (d <= threshold) final_inliers.push_back(cv::Point2f(p.x, p.y));
+                    }
+                    if ((int)final_inliers.size() > 5) {
+                        cv::Vec4f lp;
+                        cv::fitLine(final_inliers, lp, cv::DIST_HUBER, 0, 0.01, 0.01);
+                        double re_vx = lp[0], re_vy = lp[1], re_cx = lp[2], re_cy = lp[3];
+                        // Rescore with refitted model
+                        double re_nx = -re_vy, re_ny = re_vx;
+                        double re_cost = 0;
+                        int re_inliers = 0;
+                        for (const auto& p : barrel_pts) {
+                            double d = std::abs(re_nx * (p.x - re_cx) + re_ny * (p.y - re_cy));
+                            re_cost += std::min(d * d, T2);
+                            if (d <= threshold) re_inliers++;
+                        }
+                        if (re_cost <= best_cost) {
+                            best_vx = re_vx; best_vy = re_vy;
+                            best_cx = re_cx; best_cy = re_cy;
+                            best_cost = re_cost;
+                            best_inliers = re_inliers;
                         }
                     }
                 }
@@ -1024,7 +1089,12 @@ DetectionResult detect_dart(
     if (current_frame.channels() == 3)
         cv::cvtColor(current_frame, gray, cv::COLOR_BGR2GRAY);
     else gray = current_frame;
-    *tip = refine_tip_subpixel(*tip, gray, motion_mask);
+    // Pass barrel direction for direction-constrained tip refinement
+    if (pca_line) {
+        *tip = refine_tip_subpixel(*tip, gray, motion_mask, 10, pca_line->vx, pca_line->vy);
+    } else {
+        *tip = refine_tip_subpixel(*tip, gray, motion_mask);
+    }
     
     // Compute line and quality
     double view_quality = 0.3;

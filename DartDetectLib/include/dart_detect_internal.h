@@ -205,7 +205,8 @@ PixelSegmentation compute_pixel_segmentation(
     const cv::Mat& previous,
     const std::vector<cv::Mat>& prev_dart_masks,
     int threshold = 16,
-    int blur_size = 5
+    int blur_size = 5,
+    const MotionMaskResult* precomputed_mmr = nullptr
 );
 
 cv::Mat shape_filter(const cv::Mat& mask, double min_aspect = 2.0, int min_area = 100);

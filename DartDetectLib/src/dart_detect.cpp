@@ -11,6 +11,7 @@
 #include <string>
 #include <map>
 #include <mutex>
+#include <future>
 #include <sstream>
 #include <cstring>
 
@@ -221,8 +222,8 @@ DD_API const char* dd_detect(
     const unsigned char** before_images,
     const int* before_sizes)
 {
-    std::lock_guard<std::mutex> lock(g_mutex);
-    
+    // Phase 2: Only lock for reading shared calibration state, not full detection
+    // g_calibrations is read-only after init, BoardCache has its own mutex
     if (!g_initialized || num_cameras <= 0) {
         char* err = new char[64];
         std::strcpy(err, "{\"error\":\"not initialized\"}");
@@ -237,10 +238,14 @@ DD_API const char* dd_detect(
     std::string bid(board_id ? board_id : "default");
     auto& cache = g_board_caches[bid];
     
-    // Detect per camera
-    std::map<std::string, DetectionResult> camera_results;
-    std::map<std::string, CameraCalibration> active_cals;
-    
+    // Detect per camera — PARALLEL (Phase 2, Feb 20 2026)
+    // Each detect_dart() is independent; only triangulation needs all results.
+    struct CameraTask {
+        std::string cam_id;
+        int index;
+        CameraCalibration cal;
+    };
+    std::vector<CameraTask> tasks;
     for (int i = 0; i < num_cameras && i < 3; ++i) {
         std::string cam_id;
         if (camera_ids && camera_ids[i] && camera_ids[i][0] != '\0') {
@@ -248,27 +253,50 @@ DD_API const char* dd_detect(
         } else {
             cam_id = "cam" + std::to_string(i);
         }
-        
         auto cal_it = g_calibrations.find(cam_id);
         if (cal_it == g_calibrations.end()) continue;
+        tasks.push_back({cam_id, i, cal_it->second});
+    }
 
-        // Get previous dart masks for this specific camera only.
-        std::vector<cv::Mat> prev_masks;
-        if (dart_number > 1) {
-            prev_masks = cache.get_masks(cam_id);
-        }
-        
-        cv::Mat current = decode_image(current_images[i], current_sizes[i]);
-        cv::Mat before = decode_image(before_images[i], before_sizes[i]);
-        
-        if (current.empty() || before.empty()) continue;
-        
-        DetectionResult det = detect_dart(
-            current, before, cal_it->second.center, prev_masks, 15);
-        
-        if (det.tip) {
-            camera_results[cam_id] = det;
-            active_cals[cam_id] = cal_it->second;
+    // Launch all camera detections concurrently
+    struct CameraResult {
+        std::string cam_id;
+        DetectionResult det;
+        CameraCalibration cal;
+    };
+    std::vector<std::future<std::optional<CameraResult>>> futures;
+    for (const auto& task : tasks) {
+        futures.push_back(std::async(std::launch::async,
+            [&, task]() -> std::optional<CameraResult> {
+                // Decode images (per-thread, no shared state)
+                cv::Mat current = decode_image(current_images[task.index], current_sizes[task.index]);
+                cv::Mat before = decode_image(before_images[task.index], before_sizes[task.index]);
+                if (current.empty() || before.empty()) return std::nullopt;
+
+                // Get previous dart masks (BoardCache has its own mutex)
+                std::vector<cv::Mat> prev_masks;
+                if (dart_number > 1) {
+                    prev_masks = cache.get_masks(task.cam_id);
+                }
+
+                DetectionResult det = detect_dart(
+                    current, before, task.cal.center, prev_masks, 15);
+
+                if (det.tip) {
+                    return CameraResult{task.cam_id, det, task.cal};
+                }
+                return std::nullopt;
+            }));
+    }
+
+    // Collect results (sequential barrier)
+    std::map<std::string, DetectionResult> camera_results;
+    std::map<std::string, CameraCalibration> active_cals;
+    for (auto& f : futures) {
+        auto result = f.get();
+        if (result) {
+            camera_results[result->cam_id] = result->det;
+            active_cals[result->cam_id] = result->cal;
         }
     }
     
