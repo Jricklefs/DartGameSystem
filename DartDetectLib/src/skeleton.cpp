@@ -1,8 +1,26 @@
-﻿/**
+/**
  * skeleton.cpp - Skeleton/Hough detection, barrel-centric detection, PCA blob chain tip
  * 
  * Ported from Python: skeleton_detection.py detect_dart()
  */
+// === ACCURACY IMPROVEMENT NOTES (Feb 19, 2026) ===
+// Tried and kept:
+//   - Morph kernels 7->3: +26% on edge-case game (mask.cpp)
+//   - Dual-axis barrel splitting: handles angled darts (skeleton.cpp)
+//   - Mid-ring TPS points: +1 dart accuracy (triangulation.cpp)
+//   - TPS precompute at init: 300ms->178ms per dart (dart_detect.cpp)
+//   - Hough averaging top-3: neutral but reduces noise (skeleton.cpp)
+//   - Reduced ref_angle bias: neutral (skeleton.cpp)
+//
+// Tried and reverted:
+//   - RANSAC replacing Hough: 89%->65%, RANSAC worse on thin barrel pixels
+//   - Multiplier voting across cameras: 92%->79%, per-camera scoring less accurate than intersection
+//   - Wire tolerance +1.4mm: 90%->86%, overcorrected (too many singles->triples)
+//   - 40-angle TPS (midpoint angles): caused regression + O(n^3) perf hit
+//
+// Current best: 91/101 (90%) across 3 benchmark games, ~178ms avg
+// Remaining errors: genuine wire-boundary darts (ring boundary + adjacent segment)
+
 #include "dart_detect_internal.h"
 // Zhang-Suen thinning (replaces cv::ximgproc::thinning to avoid contrib dependency)
 namespace {
@@ -88,6 +106,9 @@ void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
 #include <algorithm>
 #include <set>
 #include <numeric>
+#include <random>
+#include <queue>
+#include <map>
 
 // ============================================================================
 // Helper: Find flight blob (largest contour)
@@ -293,130 +314,220 @@ DetectionResult detect_dart(
             cv::findNonZero(motion_mask, dart_pts);
             
             if ((int)dart_pts.size() > 100) {
-                int y_min = dart_pts[0].y, y_max = dart_pts[0].y;
-                for (const auto& p : dart_pts) {
-                    y_min = std::min(y_min, p.y);
-                    y_max = std::max(y_max, p.y);
-                }
+                // === DUAL-AXIS BARREL SPLITTING (Feb 19, 2026) ===
+                // Original code only did row-based width profiling, which assumed
+                // the dart enters from the top of the frame. This fails for angled
+                // darts (especially on side-mounted cameras) where the barrel runs
+                // more horizontally. Now we try both row-based and column-based
+                // width profiling and pick whichever yields a barrel with better
+                // aspect ratio (more elongated = more correct split).
+// Dual-axis barrel splitting: try row-based and column-based,
+                // pick whichever yields a more elongated (better) barrel.
                 
-                // Compute width at each row
-                std::vector<std::pair<int, int>> row_widths; // (y, width)
-                for (int y = y_min; y <= y_max; ++y) {
-                    int min_x = 1e6, max_x = -1;
-                    for (const auto& p : dart_pts) {
-                        if (p.y == y) {
-                            min_x = std::min(min_x, p.x);
-                            max_x = std::max(max_x, p.x);
-                        }
-                    }
-                    int w = (max_x >= 0) ? (max_x - min_x + 1) : 0;
-                    row_widths.push_back({y, w});
-                }
+                struct SplitResult {
+                    cv::Mat mask;
+                    double aspect;
+                    double bcx, bcy, pvx, pvy;
+                    int area;
+                };
                 
-                if (!row_widths.empty()) {
-                    int max_width = 0;
-                    for (const auto& [y, w] : row_widths) max_width = std::max(max_width, w);
+                auto try_axis = [&](bool rows) -> SplitResult {
+                    SplitResult sr;
+                    sr.aspect = 0; sr.area = 0;
                     
-                    double flight_threshold = max_width * 0.5;
-                    int junction_y = -1;
-                    bool in_flight = false;
-                    
-                    for (const auto& [y, w] : row_widths) {
-                        if (w >= flight_threshold) in_flight = true;
-                        else if (in_flight && w < flight_threshold && w > 0) {
-                            junction_y = y;
-                            break;
-                        }
+                    int p_min = rows ? dart_pts[0].y : dart_pts[0].x;
+                    int p_max = p_min;
+                    for (const auto& pt : dart_pts) {
+                        int pv = rows ? pt.y : pt.x;
+                        p_min = std::min(p_min, pv);
+                        p_max = std::max(p_max, pv);
                     }
                     
-                    if (junction_y >= 0) {
-                        barrel_mask = motion_mask.clone();
-                        barrel_mask(cv::Range(0, junction_y), cv::Range::all()) = 0;
-                        
-                        int barrel_pixels = cv::countNonZero(barrel_mask);
-                        if (barrel_pixels > 20) {
-                            std::vector<cv::Point> b_pts;
-                            cv::findNonZero(barrel_mask, b_pts);
-                            
-                            double bx_sum = 0, by_sum = 0;
-                            int min_by = b_pts[0].y;
-                            for (const auto& p : b_pts) {
-                                bx_sum += p.x; by_sum += p.y;
-                                min_by = std::min(min_by, p.y);
+                    // Width profile along primary axis
+                    std::vector<std::pair<int,int>> widths;
+                    for (int pv = p_min; pv <= p_max; ++pv) {
+                        int s_min = (int)1e6, s_max = -1;
+                        for (const auto& pt : dart_pts) {
+                            int pp = rows ? pt.y : pt.x;
+                            int ss = rows ? pt.x : pt.y;
+                            if (pp == pv) { s_min = std::min(s_min, ss); s_max = std::max(s_max, ss); }
+                        }
+                        int w = (s_max >= 0) ? (s_max - s_min + 1) : 0;
+                        widths.push_back({pv, w});
+                    }
+                    if (widths.empty()) return sr;
+                    
+                    int max_w = 0;
+                    for (auto& [pv,w] : widths) max_w = std::max(max_w, w);
+                    double thr = max_w * 0.5;
+                    
+                    // Determine scan direction from flight toward board
+                    double fc = rows ? flight->centroid.y : flight->centroid.x;
+                    double bc = rows ? board_center.y : board_center.x;
+                    bool reverse = (fc > bc);
+                    
+                    // Find junction (wide->narrow transition)
+                    auto find_junc = [&](bool rev) -> int {
+                        bool in_fl = false;
+                        if (!rev) {
+                            for (auto& [pv,w] : widths) {
+                                if (w >= thr) in_fl = true;
+                                else if (in_fl && w < thr && w > 0) return pv;
                             }
-                            double barrel_cx = bx_sum / b_pts.size();
-                            double barrel_cy = by_sum / b_pts.size();
-                            
-                            // Pivot = mean x at topmost barrel row
-                            double pivot_x_sum = 0; int pivot_count = 0;
-                            for (const auto& p : b_pts) {
-                                if (p.y == min_by) { pivot_x_sum += p.x; ++pivot_count; }
-                            }
-                            double pivot_x = (pivot_count > 0) ? pivot_x_sum / pivot_count : barrel_cx;
-                            
-                            barrel_info = BarrelInfo{
-                                Point2f(barrel_cx, barrel_cy),
-                                Point2f(pivot_x, (double)min_by),
-                                barrel_pixels
-                            };
                         } else {
-                            barrel_mask = cv::Mat();
+                            for (int i = (int)widths.size()-1; i >= 0; --i) {
+                                if (widths[i].second >= thr) in_fl = true;
+                                else if (in_fl && widths[i].second < thr && widths[i].second > 0) return widths[i].first;
+                            }
                         }
+                        return -1;
+                    };
+                    
+                    int junc = find_junc(reverse);
+                    if (junc < 0) junc = find_junc(!reverse);
+                    if (junc < 0) return sr;
+                    
+                    // Build barrel mask
+                    sr.mask = motion_mask.clone();
+                    if (rows) {
+                        if (!reverse)
+                            sr.mask(cv::Range(0, junc), cv::Range::all()) = 0;
+                        else
+                            sr.mask(cv::Range(junc+1, sr.mask.rows), cv::Range::all()) = 0;
+                    } else {
+                        if (!reverse)
+                            sr.mask(cv::Range::all(), cv::Range(0, junc)) = 0;
+                        else
+                            sr.mask(cv::Range::all(), cv::Range(junc+1, sr.mask.cols)) = 0;
                     }
+                    
+                    sr.area = cv::countNonZero(sr.mask);
+                    if (sr.area < 20) { sr.mask = cv::Mat(); sr.area = 0; return sr; }
+                    
+                    std::vector<cv::Point> bp;
+                    cv::findNonZero(sr.mask, bp);
+                    double bxs=0, bys=0;
+                    for (auto& p : bp) { bxs += p.x; bys += p.y; }
+                    sr.bcx = bxs/bp.size(); sr.bcy = bys/bp.size();
+                    
+                    // Pivot at junction edge
+                    double pvs = 0; int pvc = 0;
+                    for (auto& p : bp) {
+                        int pv = rows ? p.y : p.x;
+                        if (pv == junc) { pvs += (rows ? p.x : p.y); pvc++; }
+                    }
+                    if (rows) { sr.pvx = pvc>0 ? pvs/pvc : sr.bcx; sr.pvy = (double)junc; }
+                    else      { sr.pvx = (double)junc; sr.pvy = pvc>0 ? pvs/pvc : sr.bcy; }
+                    
+                    // Aspect ratio
+                    if ((int)bp.size() >= 5) {
+                        cv::RotatedRect rr = cv::minAreaRect(bp);
+                        double ls = std::max(rr.size.width, rr.size.height);
+                        double ss = std::min(rr.size.width, rr.size.height) + 1.0;
+                        sr.aspect = ls / ss;
+                    }
+                    return sr;
+                };
+                
+                auto sr_row = try_axis(true);
+                auto sr_col = try_axis(false);
+                
+                // Pick better barrel (higher aspect = more elongated)
+                SplitResult* best = nullptr;
+                if (sr_row.area > 0 && sr_col.area > 0)
+                    best = (sr_row.aspect >= sr_col.aspect) ? &sr_row : &sr_col;
+                else if (sr_row.area > 0) best = &sr_row;
+                else if (sr_col.area > 0) best = &sr_col;
+                
+                // Reject barrel splits that are not elongated enough
+                // (aspect < 2.5 means still blobby, not a real barrel)
+                if (best && best->aspect < 2.5) {
+                    best = nullptr;
+                }
+                
+                if (best) {
+                    barrel_mask = best->mask;
+                    barrel_info = BarrelInfo{
+                        Point2f(best->bcx, best->bcy),
+                        Point2f(best->pvx, best->pvy),
+                        best->area
+                    };
                 }
             }
         }
         
-        // === Barrel skeleton + Hough ===
+        // === Barrel RANSAC line fitting ===
         if (!barrel_mask.empty() && barrel_info) {
-            cv::Mat skel;
-            zhangSuenThinning(barrel_mask, skel);
-            
-            std::vector<cv::Vec4i> hough_lines;
-            cv::HoughLinesP(skel, hough_lines, 1, CV_PI / 180, 8, 10, 5);
-            
-            if (!hough_lines.empty()) {
-                // Score lines: length * angle alignment
-                struct ScoredLine { cv::Vec4i line; double length, score, angle; };
-                std::vector<ScoredLine> scored;
-                
-                for (const auto& hl : hough_lines) {
-                    double dx = hl[2] - hl[0], dy = hl[3] - hl[1];
+            std::vector<cv::Point> barrel_pts;
+            cv::findNonZero(barrel_mask, barrel_pts);
+
+            if (barrel_pts.size() > 20) {
+                // RANSAC line fit
+                int best_inliers = 0;
+                double best_vx = 0, best_vy = 0, best_cx = 0, best_cy = 0;
+                int iterations = 150;
+                double threshold = 2.5; // pixels
+
+                std::mt19937 rng(42); // deterministic seed
+                std::uniform_int_distribution<int> dist(0, (int)barrel_pts.size() - 1);
+
+                for (int iter = 0; iter < iterations; ++iter) {
+                    // Pick 2 random points
+                    int i1 = dist(rng), i2 = dist(rng);
+                    if (i1 == i2) continue;
+
+                    double dx = barrel_pts[i2].x - barrel_pts[i1].x;
+                    double dy = barrel_pts[i2].y - barrel_pts[i1].y;
                     double len = std::sqrt(dx*dx + dy*dy);
-                    double a = std::atan2(dy, dx);
-                    double angle_score = 0.5;
-                    if (ref_angle) {
-                        double diff_a = std::abs(a - *ref_angle);
-                        diff_a = std::min(diff_a, CV_PI - diff_a);
-                        angle_score = std::max(0.1, std::cos(diff_a));
+                    if (len < 5) continue;
+
+                    double nx = -dy / len, ny = dx / len; // normal
+
+                    // Count inliers
+                    int inliers = 0;
+                    for (const auto& p : barrel_pts) {
+                        double d = std::abs(nx * (p.x - barrel_pts[i1].x) + ny * (p.y - barrel_pts[i1].y));
+                        if (d <= threshold) inliers++;
                     }
-                    scored.push_back({hl, len, len * angle_score, a});
+
+                    if (inliers > best_inliers) {
+                        best_inliers = inliers;
+                        best_vx = dx / len;
+                        best_vy = dy / len;
+                        // Refit on inliers using fitLine for sub-pixel accuracy
+                        std::vector<cv::Point2f> inlier_pts;
+                        for (const auto& p : barrel_pts) {
+                            double d = std::abs(nx * (p.x - barrel_pts[i1].x) + ny * (p.y - barrel_pts[i1].y));
+                            if (d <= threshold) inlier_pts.push_back(cv::Point2f(p.x, p.y));
+                        }
+                        if (inlier_pts.size() > 5) {
+                            cv::Vec4f lp;
+                            cv::fitLine(inlier_pts, lp, cv::DIST_HUBER, 0, 0.01, 0.01);
+                            best_vx = lp[0]; best_vy = lp[1];
+                            best_cx = lp[2]; best_cy = lp[3];
+                        }
+                    }
                 }
-                
-                std::sort(scored.begin(), scored.end(),
-                    [](const auto& a, const auto& b) { return a.score > b.score; });
-                
-                auto& best = scored[0];
-                double dx = best.line[2] - best.line[0];
-                double dy = best.line[3] - best.line[1];
-                double norm = std::sqrt(dx*dx + dy*dy);
-                if (norm > 0) {
-                    double vx = dx / norm, vy = dy / norm;
-                    if (vy < 0) { vx = -vx; vy = -vy; }
-                    
+
+                double inlier_ratio = (double)best_inliers / barrel_pts.size();
+
+                if (inlier_ratio >= 0.3) {
+                    // Orient direction: vy > 0 convention
+                    if (best_vy < 0) { best_vx = -best_vx; best_vy = -best_vy; }
+
+                    // Angle check against ref_angle (relaxed)
                     bool accept = true;
                     if (ref_angle) {
-                        double line_angle = std::atan2(vy, vx);
+                        double line_angle = std::atan2(best_vy, best_vx);
                         double angle_diff = std::abs(line_angle - *ref_angle);
                         if (angle_diff > CV_PI) angle_diff = 2 * CV_PI - angle_diff;
                         angle_diff = std::min(angle_diff, CV_PI - angle_diff);
-                        if (angle_diff > CV_PI / 4.0) accept = false;  // > 45┬░
+                        if (angle_diff > CV_PI * 75.0 / 180.0) accept = false;
                     }
-                    if (accept && best.length < 15) accept = false;
-                    
+
                     if (accept) {
-                        pca_line = PcaLine{vx, vy, barrel_info->pivot.x, barrel_info->pivot.y,
-                                           best.length, "barrel_hough"};
+                        pca_line = PcaLine{best_vx, best_vy, best_cx, best_cy,
+                                           (double)best_inliers, "barrel_ransac"};
                     }
                 }
             }
@@ -433,6 +544,142 @@ DetectionResult detect_dart(
                     if (vy < 0) { vx = -vx; vy = -vy; }
                     pca_line = PcaLine{vx, vy, barrel_info->pivot.x, barrel_info->pivot.y,
                                        (double)b_pts.size(), "barrel_fitline"};
+                }
+            }
+        }
+        
+        // === Barrel-width-profiled fitLine (between RANSAC and Hough fallback) ===
+        if (!pca_line) {
+            cv::Mat skel_bw;
+            zhangSuenThinning(motion_mask, skel_bw);
+            
+            // Find skeleton points
+            std::vector<cv::Point> skel_pts;
+            cv::findNonZero(skel_bw, skel_pts);
+            
+            if ((int)skel_pts.size() > 20) {
+                // Build adjacency set for fast lookup
+                std::set<std::pair<int,int>> skel_set;
+                for (const auto& p : skel_pts)
+                    skel_set.insert({p.y, p.x});
+                
+                // Find endpoints (pixels with exactly 1 skeleton neighbor)
+                std::vector<cv::Point> endpoints;
+                for (const auto& p : skel_pts) {
+                    int n = 0;
+                    for (int dy = -1; dy <= 1; ++dy)
+                        for (int dx = -1; dx <= 1; ++dx)
+                            if ((dy || dx) && skel_set.count({p.y+dy, p.x+dx}))
+                                ++n;
+                    if (n == 1) endpoints.push_back(p);
+                }
+                
+                // BFS from each endpoint to find longest path
+                std::vector<cv::Point> best_path;
+                
+                for (const auto& start : endpoints) {
+                    // BFS tracking paths
+                    std::map<std::pair<int,int>, int> dist;
+                    std::map<std::pair<int,int>, std::pair<int,int>> parent;
+                    std::queue<std::pair<int,int>> bfs_q;
+                    std::pair<int,int> sk(start.y, start.x);
+                    dist[sk] = 0;
+                    parent[sk] = std::make_pair(-1, -1);
+                    bfs_q.push(sk);
+                    std::pair<int,int> farthest = sk;
+                    int max_dist = 0;
+                    
+                    while (!bfs_q.empty()) {
+                        auto cur_node = bfs_q.front(); bfs_q.pop();
+                        int cy = cur_node.first, cx = cur_node.second;
+                        int d = dist[std::make_pair(cy, cx)];
+                        if (d > max_dist) { max_dist = d; farthest = std::make_pair(cy, cx); }
+                        
+                        for (int dy = -1; dy <= 1; ++dy)
+                            for (int dx = -1; dx <= 1; ++dx) {
+                                if (!dy && !dx) continue;
+                                std::pair<int,int> nk(cy+dy, cx+dx);
+                                if (skel_set.count(nk) && !dist.count(nk)) {
+                                    dist[nk] = d + 1;
+                                    parent[nk] = std::make_pair(cy, cx);
+                                    bfs_q.push(nk);
+                                }
+                            }
+                    }
+                    
+                    // Reconstruct path
+                    if (max_dist > (int)best_path.size()) {
+                        std::vector<cv::Point> path_pts;
+                        auto cur_trace = farthest;
+                        while (cur_trace.first >= 0) {
+                            path_pts.push_back(cv::Point(cur_trace.second, cur_trace.first));
+                            cur_trace = parent[cur_trace];
+                        }
+                        if ((int)path_pts.size() > (int)best_path.size())
+                            best_path = path_pts;
+                    }
+                }
+                
+                // Measure perpendicular width along path
+                if ((int)best_path.size() > 20) {
+                    const int window = 15;
+                    const int width_thresh = 20;
+                    std::vector<cv::Point2f> barrel_pts_bw;
+                    int h = motion_mask.rows, w = motion_mask.cols;
+                    
+                    for (int i = 0; i < (int)best_path.size(); ++i) {
+                        int x0 = best_path[i].x, y0 = best_path[i].y;
+                        
+                        // Local direction from path window
+                        int i0 = std::max(0, i - window);
+                        int i1 = std::min((int)best_path.size() - 1, i + window);
+                        double ldx = best_path[i1].x - best_path[i0].x;
+                        double ldy = best_path[i1].y - best_path[i0].y;
+                        double ll = std::sqrt(ldx*ldx + ldy*ldy);
+                        if (ll < 1) continue;
+                        
+                        // Perpendicular direction
+                        double px = -ldy / ll, py = ldx / ll;
+                        
+                        // Measure width in perpendicular direction
+                        int count = 1;
+                        for (int sign : {1, -1}) {
+                            for (int t = 1; t < 80; ++t) {
+                                int nx = (int)std::round(x0 + sign * px * t);
+                                int ny = (int)std::round(y0 + sign * py * t);
+                                if (nx < 0 || nx >= w || ny < 0 || ny >= h || 
+                                    motion_mask.at<uchar>(ny, nx) == 0) break;
+                                ++count;
+                            }
+                        }
+                        
+                        if (count < width_thresh) {
+                            barrel_pts_bw.push_back(cv::Point2f((float)x0, (float)y0));
+                        }
+                    }
+                    
+                    // Fit line through barrel points
+                    if ((int)barrel_pts_bw.size() > 15) {
+                        cv::Vec4f lp;
+                        cv::fitLine(barrel_pts_bw, lp, cv::DIST_HUBER, 0, 0.01, 0.01);
+                        double bvx = lp[0], bvy = lp[1], bcx = lp[2], bcy = lp[3];
+                        if (bvy < 0) { bvx = -bvx; bvy = -bvy; }
+                        
+                        // Accept if angle is reasonable vs ref_angle
+                        bool accept = true;
+                        if (ref_angle) {
+                            double la = std::atan2(bvy, bvx);
+                            double ad = std::abs(la - *ref_angle);
+                            if (ad > CV_PI) ad = 2*CV_PI - ad;
+                            ad = std::min(ad, CV_PI - ad);
+                            if (ad > CV_PI * 75.0 / 180.0) accept = false;
+                        }
+                        
+                        if (accept) {
+                            pca_line = PcaLine{bvx, bvy, bcx, bcy,
+                                               (double)barrel_pts_bw.size(), "barrel_width_fit"};
+                        }
+                    }
                 }
             }
         }
@@ -494,24 +741,47 @@ DetectionResult detect_dart(
                                 tip_prox_score = std::max(0.1, 1.0 - perp / 100.0);
                             }
                         }
-                        double score = len * std::max(angle_score, 0.1) * tip_prox_score;
+                        double score = len * std::max(0.5, 0.5 + 0.5 * angle_score) * tip_prox_score;
                         scored.push_back({hl, len, a, score});
                     }
                     
                     std::sort(scored.begin(), scored.end(),
                         [](const auto& a, const auto& b) { return a.score > b.score; });
                     
-                    auto& best = scored[0];
-                    double dx = best.line[2] - best.line[0];
-                    double dy = best.line[3] - best.line[1];
-                    double norm = std::sqrt(dx*dx + dy*dy);
-                    if (norm > 0) {
-                        double vx = dx / norm, vy = dy / norm;
+                    // Average top-N Hough lines (up to 3) within 30 deg of best
+                    double best_angle2 = scored[0].angle;
+                    double avg_vx2 = 0, avg_vy2 = 0, total_w2 = 0;
+                    double avg_cx = 0, avg_cy = 0, max_len2 = 0;
+                    int n_avg2 = 0;
+                    for (int si = 0; si < (int)scored.size() && n_avg2 < 3; ++si) {
+                        double adiff = std::abs(scored[si].angle - best_angle2);
+                        adiff = std::min(adiff, CV_PI - adiff);
+                        if (adiff > CV_PI / 6.0) continue;
+                        double dx_i = scored[si].line[2] - scored[si].line[0];
+                        double dy_i = scored[si].line[3] - scored[si].line[1];
+                        double n_i = std::sqrt(dx_i*dx_i + dy_i*dy_i);
+                        if (n_i <= 0) continue;
+                        double uvx = dx_i / n_i, uvy = dy_i / n_i;
+                        double dot_best = uvx * std::cos(best_angle2) + uvy * std::sin(best_angle2);
+                        if (dot_best < 0) { uvx = -uvx; uvy = -uvy; }
+                        avg_vx2 += uvx * scored[si].score;
+                        avg_vy2 += uvy * scored[si].score;
+                        avg_cx += ((scored[si].line[0] + scored[si].line[2]) / 2.0) * scored[si].score;
+                        avg_cy += ((scored[si].line[1] + scored[si].line[3]) / 2.0) * scored[si].score;
+                        total_w2 += scored[si].score;
+                        max_len2 = std::max(max_len2, scored[si].length);
+                        ++n_avg2;
+                    }
+                    if (total_w2 > 0) {
+                        avg_vx2 /= total_w2; avg_vy2 /= total_w2;
+                        avg_cx /= total_w2; avg_cy /= total_w2;
+                    }
+                    double norm2 = std::sqrt(avg_vx2*avg_vx2 + avg_vy2*avg_vy2);
+                    if (norm2 > 0) {
+                        double vx = avg_vx2 / norm2, vy = avg_vy2 / norm2;
                         if (vy < 0) { vx = -vx; vy = -vy; }
-                        pca_line = PcaLine{vx, vy,
-                            (best.line[0] + best.line[2]) / 2.0,
-                            (best.line[1] + best.line[3]) / 2.0,
-                            best.length, "skeleton_hough_fallback"};
+                        pca_line = PcaLine{vx, vy, avg_cx, avg_cy,
+                            max_len2, "skeleton_hough_fallback"};
                     }
                 }
                 

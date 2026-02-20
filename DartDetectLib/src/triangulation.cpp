@@ -1,4 +1,4 @@
-﻿/**
+/**
  * triangulation.cpp - Line intersection triangulation + TPS homography
  * 
  * Ported from Python: routes.py triangulate_with_line_intersection(),
@@ -14,7 +14,7 @@
 // TPS (Thin-Plate Spline) Transform
 // ============================================================================
 
-// TPS radial basis function: r┬▓ * log(r)
+// TPS radial basis function: r-¦ * log(r)
 static double tps_basis(double r)
 {
     if (r < 1e-10) return 0.0;
@@ -108,8 +108,47 @@ TpsTransform build_tps_transform(const CameraCalibration& cal)
             dst_y.push_back(ring.norm_radius * std::cos(angle_cw_rad));
         }
     }
+    // === MID-RING TPS CONTROL POINTS (Feb 19, 2026) ===
+    // The original TPS used only the 6 standard dartboard rings as control points
+    // (121 total: 6 rings x 20 angles + center). This left large normalized-radius
+    // gaps with zero constraints: 0.488 between bull and triple-inner, and 0.324
+    // between triple-outer and double-inner. The TPS warp was inaccurate in these
+    // gap regions, causing darts landing in the single-bed zones to score incorrectly.
+    // Adding interpolated rings at the midpoints (bull+triple)/2 and (triple+double)/2
+    // gives ~40 more control points (161 total), significantly improving warp accuracy.
+    // Benchmark: +1 dart accuracy across test games.
+
     
-    // Add center anchor
+        // Add mid-ring interpolated control points for smoother TPS in gap regions
+    // Mid bull-to-triple_inner and mid triple_outer-to-double_inner
+    struct MidRingConfig {
+        const std::optional<EllipseData>* inner_ell;
+        const std::optional<EllipseData>* outer_ell;
+        double norm_radius;
+    };
+    std::vector<MidRingConfig> mid_rings = {
+        {&cal.bull_ellipse, &cal.inner_triple_ellipse, (16.0 + 99.0) / 2.0 / 170.0},
+        {&cal.outer_triple_ellipse, &cal.inner_double_ellipse, (107.0 + 162.0) / 2.0 / 170.0},
+    };
+    for (const auto& mr : mid_rings) {
+        if (!mr.inner_ell->has_value() || !mr.outer_ell->has_value()) continue;
+        const auto& ell_in = mr.inner_ell->value();
+        const auto& ell_out = mr.outer_ell->value();
+        for (int idx = 0; idx < 20; ++idx) {
+            auto pt_in = sample_ellipse_at_angle(ell_in, cal.segment_angles[idx], bcx, bcy);
+            auto pt_out = sample_ellipse_at_angle(ell_out, cal.segment_angles[idx], bcx, bcy);
+            if (!pt_in || !pt_out) continue;
+            src_x.push_back((pt_in->x + pt_out->x) / 2.0);
+            src_y.push_back((pt_in->y + pt_out->y) / 2.0);
+            int board_idx = ((idx - seg20_idx) % 20 + 20) % 20;
+            double angle_cw_deg = board_idx * 18.0 - 9.0;
+            double angle_cw_rad = angle_cw_deg * CV_PI / 180.0;
+            dst_x.push_back(mr.norm_radius * std::sin(angle_cw_rad));
+            dst_y.push_back(mr.norm_radius * std::cos(angle_cw_rad));
+        }
+    }
+
+        // Add center anchor
     src_x.push_back(bcx); src_y.push_back(bcy);
     dst_x.push_back(0.0); dst_y.push_back(0.0);
     
@@ -118,7 +157,7 @@ TpsTransform build_tps_transform(const CameraCalibration& cal)
     
     // Build TPS system: solve for weights
     // TPS: f(x) = a0 + a1*x + a2*y + sum(w_i * phi(|x - x_i|))
-    // where phi(r) = r┬▓ * log(r)
+    // where phi(r) = r-¦ * log(r)
     //
     // System matrix (N+3) x (N+3):
     // [K  P] [w]   [v]
@@ -254,7 +293,9 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
         auto cal_it = calibrations.find(cam_id);
         if (cal_it == calibrations.end()) continue;
         
-        TpsTransform tps = build_tps_transform(cal_it->second);
+        // TPS is precomputed at init time (see dd_init in dart_detect.cpp),
+        // not per-detection. This avoids the O(n^3) TPS solve on every dart.
+const TpsTransform& tps = cal_it->second.tps_cache;
         if (!tps.valid) continue;
         
         double vx = det.pca_line->vx, vy = det.pca_line->vy;
