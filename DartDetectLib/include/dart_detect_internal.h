@@ -68,6 +68,7 @@ struct PcaLine {
     double x0, y0;      // origin point
     double elongation;
     std::string method;
+    double confidence = 1.0;
 };
 
 struct BarrelInfo {
