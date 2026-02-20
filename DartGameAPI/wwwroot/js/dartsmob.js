@@ -664,8 +664,17 @@ function showLegWonModal(winnerName, legsWon, legsToWin, players) {
         `;
         document.body.appendChild(modal);
         
-        document.getElementById('leg-won-ok').addEventListener('click', () => {
+        document.getElementById('leg-won-ok').addEventListener('click', async () => {
             modal.classList.remove('show');
+            // Refresh game state from server to get new leg
+            try {
+                const resp = await fetch('/api/games/board/' + boardId);
+                if (resp.ok) {
+                    currentGame = await resp.json();
+                    updateScoreboard();
+                    updateCurrentTurn();
+                }
+            } catch (e) { console.error('Failed to refresh game:', e); }
         });
     }
     
