@@ -20,6 +20,7 @@ public interface IDartDetectService
         string boardId = "default",
         int dartNumber = 1,
         List<CameraImageDto>? beforeImages = null,
+        List<List<CameraImageDto>>? multiFrameImages = null,
         CancellationToken ct = default);
 
     /// <summary>

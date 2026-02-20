@@ -87,6 +87,7 @@ public class NativeDartDetectService : IDartDetectService
         string boardId = "default",
         int dartNumber = 1,
         List<CameraImageDto>? beforeImages = null,
+        List<List<CameraImageDto>>? multiFrameImages = null,
         CancellationToken ct = default)
     {
         if (!_initialized)
@@ -202,7 +203,18 @@ public class NativeDartDetectService : IDartDetectService
             }
 
             var decodeMs = sw.ElapsedMilliseconds;
-            var result = DartDetectNative.Detect(dartNumber, boardId, cameraIds, currentBytes.ToArray(), beforeBytes.ToArray());
+
+            // === Phase 4B: Multi-frame detection averaging ===
+            DetectionResult? result;
+            if (multiFrameImages != null && multiFrameImages.Count > 1)
+            {
+                result = RunMultiFrameDetection(dartNumber, boardId, cameraIds, 
+                    currentBytes.ToArray(), beforeBytes.ToArray(), multiFrameImages);
+            }
+            else
+            {
+                result = DartDetectNative.Detect(dartNumber, boardId, cameraIds, currentBytes.ToArray(), beforeBytes.ToArray());
+            }
             var totalMs = sw.ElapsedMilliseconds;
 
             _logger.LogInformation("[TIMING] Native detect: b64decode={DecodeMs}ms, total={TotalMs}ms", decodeMs, totalMs);
@@ -267,6 +279,80 @@ public class NativeDartDetectService : IDartDetectService
             DartDetectNative.ClearBoard(boardId);
             _logger.LogDebug("Native board cache cleared: {BoardId}", boardId);
         }
+    }
+
+    /// <summary>
+    /// Phase 4B: Run detection on multiple frame sets and pick the best result.
+    /// Calls DLL once per frame set, then selects by majority vote + highest confidence.
+    /// </summary>
+    private DetectionResult? RunMultiFrameDetection(
+        int dartNumber, string boardId, List<string> cameraIds,
+        byte[][] primaryCurrent, byte[][] primaryBefore,
+        List<List<CameraImageDto>> multiFrameSets)
+    {
+        var results = new List<(DetectionResult result, int setIndex)>();
+
+        for (int i = 0; i < multiFrameSets.Count; i++)
+        {
+            try
+            {
+                var frameSet = multiFrameSets[i];
+                var setCameraIds = new List<string>();
+                var setCurrentBytes = new List<byte[]>();
+                var setBeforeBytes = new List<byte[]>();
+
+                foreach (var img in frameSet)
+                {
+                    if (string.IsNullOrWhiteSpace(img.CameraId)) continue;
+                    try
+                    {
+                        var current = Convert.FromBase64String(img.Image);
+                        setCameraIds.Add(img.CameraId);
+                        setCurrentBytes.Add(current);
+                        var camIdx = cameraIds.IndexOf(img.CameraId);
+                        setBeforeBytes.Add(camIdx >= 0 ? primaryBefore[camIdx] : current);
+                    }
+                    catch (FormatException) { continue; }
+                }
+
+                if (setCurrentBytes.Count == 0) continue;
+
+                var r = DartDetectNative.Detect(dartNumber, boardId, setCameraIds,
+                    setCurrentBytes.ToArray(), setBeforeBytes.ToArray());
+
+                if (r != null && r.Error == null && (r.Segment > 0 || r.Score >= 0))
+                {
+                    results.Add((r, i));
+                    _logger.LogInformation(
+                        "[MULTI-FRAME] Set {Set}: S{Seg}x{Mult}={Score} conf={Conf:F3}",
+                        i, r.Segment, r.Multiplier, r.Score, r.Confidence);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[MULTI-FRAME] Set {Set} failed", i);
+            }
+        }
+
+        if (results.Count == 0)
+        {
+            _logger.LogWarning("[MULTI-FRAME] All sets failed, falling back to primary frame");
+            return DartDetectNative.Detect(dartNumber, boardId, cameraIds, primaryCurrent, primaryBefore);
+        }
+
+        // Majority vote on segment+multiplier, then pick highest confidence within majority
+        var grouped = results.GroupBy(r => (r.result.Segment, r.result.Multiplier))
+            .OrderByDescending(g => g.Count())
+            .ThenByDescending(g => g.Max(x => x.result.Confidence))
+            .First();
+
+        var best = grouped.OrderByDescending(x => x.result.Confidence).First();
+        _logger.LogInformation(
+            "[MULTI-FRAME] Consensus: S{Seg}x{Mult} ({Agree}/{Total} agree), best conf={Conf:F3} from set {Set}",
+            best.result.Segment, best.result.Multiplier, grouped.Count(), results.Count,
+            best.result.Confidence, best.setIndex);
+
+        return best.result;
     }
 
     private static string FormatZone(int segment, int multiplier)

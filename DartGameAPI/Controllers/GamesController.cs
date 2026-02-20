@@ -105,7 +105,17 @@ public class GamesController : ControllerBase
 
         var ddStartEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         _logger.LogInformation("[TIMING][{RequestId}] DG: Calling DartDetect @ epoch={Epoch}", requestId, ddStartEpoch);
-        var detectResult = await _dartDetect.DetectAsync(images, boardId, dartNumber, beforeImages);
+        // Phase 4B: Convert multi-frame images if provided
+        List<List<CameraImageDto>>? multiFrameImages = null;
+        if (request.MultiFrameImages != null && request.MultiFrameImages.Count > 1)
+        {
+            multiFrameImages = request.MultiFrameImages.Select(frameSet =>
+                frameSet.Select(i => new CameraImageDto { CameraId = i.CameraId, Image = i.Image }).ToList()
+            ).ToList();
+            _logger.LogInformation("[TIMING][{RequestId}] DG: Multi-frame with {Sets} frame sets", requestId, multiFrameImages.Count);
+        }
+
+        var detectResult = await _dartDetect.DetectAsync(images, boardId, dartNumber, beforeImages, multiFrameImages);
         var ddEndEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         _logger.LogInformation("[TIMING][{RequestId}] DG: DartDetect returned (took={Took}ms)", requestId, ddEndEpoch - ddStartEpoch);
         
@@ -1033,6 +1043,7 @@ public class DetectRequest
     public string? BoardId { get; set; }
     public List<ImagePayload>? Images { get; set; }
     public List<ImagePayload>? BeforeImages { get; set; }
+    public List<List<ImagePayload>>? MultiFrameImages { get; set; }
     public string? RequestId { get; set; }
 }
 
