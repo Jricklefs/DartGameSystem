@@ -1,3 +1,5 @@
+using DartGameAPI.Services;
+
 namespace DartGameAPI.Models;
 
 /// <summary>
@@ -55,6 +57,15 @@ public class Turn
     /// True after UI confirms bust — waiting for board clear to advance turn
     /// </summary>
     public bool BustConfirmed { get; set; } = false;
+
+    /// <summary>Score at the start of this turn (for recomputation on correction)</summary>
+    public int TurnStartScore { get; set; }
+
+    /// <summary>Whether this turn is currently active</summary>
+    public bool IsTurnActive { get; set; }
+
+    /// <summary>Whether a bust is pending confirmation for this turn</summary>
+    public bool BustPending { get; set; }
 }
 
 /// <summary>
@@ -67,6 +78,8 @@ public class Player
     public int Score { get; set; }
     public int DartsThrown { get; set; }
     public int LegsWon { get; set; } = 0;
+    public int SetsWon { get; set; } = 0;
+    public bool IsIn { get; set; } = true;
     public List<Turn> Turns { get; set; } = new();
 }
 
@@ -79,7 +92,8 @@ public enum GameMode
     Game501,    // Start at 501, get to exactly 0 with double out
     Game301,    // Start at 301
     Debug20,    // Start at 20, for fast testing
-    Cricket     // Hit 15-20 and bulls
+    Cricket,    // Hit 15-20 and bulls
+    X01         // Configurable X01 (301-1001) with DI/DO/MO
 }
 
 /// <summary>
@@ -132,6 +146,18 @@ public class Game
     /// New code should read from Rules instead of the individual properties above.
     /// </summary>
     public GameRules Rules { get; set; } = new();
+
+    /// <summary>Whether this game uses the X01 engine (any X01-type mode with MatchConfig)</summary>
+    public bool IsX01Engine => MatchConfig != null;
+
+    /// <summary>X01 match configuration (variants, rules, sets/legs)</summary>
+    public MatchConfig? MatchConfig { get; set; }
+
+    /// <summary>Current engine state machine state</summary>
+    public EngineState EngineState { get; set; } = EngineState.MatchNotStarted;
+
+    /// <summary>Pending bust confirmations</summary>
+    public List<PendingBust> PendingBusts { get; set; } = new();
     
     // Known dart positions on board (to detect new vs existing)
     public List<KnownDart> KnownDarts { get; set; } = new();

@@ -653,7 +653,7 @@ function showLegWonModal(winnerName, legsWon, legsToWin, players) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'leg-won-modal';
-        modal.className = 'modal';
+        modal.className = 'modal hidden';
         modal.innerHTML = `
             <div class="modal-content winner-content">
                 <h2 class="winner-title">🎯 LEG WON! 🎯</h2>
@@ -664,8 +664,17 @@ function showLegWonModal(winnerName, legsWon, legsToWin, players) {
         `;
         document.body.appendChild(modal);
         
-        document.getElementById('leg-won-ok').addEventListener('click', () => {
-            modal.classList.remove('show');
+        document.getElementById('leg-won-ok').addEventListener('click', async () => {
+            modal.classList.add('hidden');
+            // Refresh game state from server to get new leg
+            try {
+                const resp = await fetch('/api/games/board/' + boardId);
+                if (resp.ok) {
+                    currentGame = await resp.json();
+                    updateScoreboard();
+                    updateCurrentTurn();
+                }
+            } catch (e) { console.error('Failed to refresh game:', e); }
         });
     }
     
@@ -677,7 +686,7 @@ function showLegWonModal(winnerName, legsWon, legsToWin, players) {
     ).join('  •  ');
     modal.querySelector('.leg-standings').textContent = standings;
     
-    modal.classList.add('show');
+    modal.classList.remove('hidden');
     
     if (audioSettings.mode === 'tts') {
         dartAudio.speak(`${winnerName} wins the leg! ${legsWon} of ${legsToWin}.`);
@@ -690,7 +699,7 @@ function showWinnerModal(winner) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'winner-modal';
-        modal.className = 'modal';
+        modal.className = 'modal hidden';
         modal.innerHTML = `
             <div class="modal-content winner-content">
                 <h2 class="winner-title">🏆 WINNER! 🏆</h2>
@@ -704,19 +713,19 @@ function showWinnerModal(winner) {
         document.body.appendChild(modal);
         
         document.getElementById('winner-play-again').addEventListener('click', () => {
-            modal.classList.remove('show');
+            modal.classList.add('hidden');
             // Restart with same players
             location.reload();  // Simple reload for now
         });
         
         document.getElementById('winner-quit').addEventListener('click', () => {
-            modal.classList.remove('show');
+            modal.classList.add('hidden');
             showScreen('setup-screen');
         });
     }
     
     modal.querySelector('.winner-name').textContent = winner.name || winner;
-    modal.classList.add('show');
+    modal.classList.remove('hidden');
     
     // Announce winner
     if (audioSettings.mode === 'tts') {
@@ -759,6 +768,9 @@ async function startGame() {
                 playerNames: players,
                 bestOf: selectedBestOf,
                 requireDoubleOut: rules['double-out'] ?? false,
+                startingScore: getSelectedStartingScore(),
+                doubleIn: rules['double-in'] ?? false,
+                masterOut: rules['master-out'] ?? false,
                 rules: rules
             })
         });
@@ -802,7 +814,7 @@ function showStartGameError(error) {
         // Create modal if it doesn't exist
         modal = document.createElement('div');
         modal.id = 'start-error-modal';
-        modal.className = 'modal';
+        modal.className = 'modal hidden';
         modal.innerHTML = `
             <div class="modal-backdrop" onclick="document.getElementById('start-error-modal').classList.add('hidden')"></div>
             <div class="modal-content art-deco-card" style="max-width: 400px; text-align: center;">
@@ -877,7 +889,11 @@ const gameConfig = {
             { value: '20', label: '🐛 Debug 20' },
             { value: '301', label: '301' },
             { value: '501', label: '501' },
+            { value: '401', label: '401' },
+            { value: '601', label: '601' },
             { value: '701', label: '701' },
+            { value: '801', label: '801' },
+            { value: '901', label: '901' },
             { value: '1001', label: '1001' }
         ],
         defaultVariant: '501',
@@ -1048,16 +1064,21 @@ function getSelectedGameMode() {
     const category = document.getElementById('game-category')?.value || 'x01';
     const variant = document.getElementById('game-variant')?.value;
     const config = gameConfig[category];
-    
-    // Use variant if selected, otherwise default
     const gameVariant = variant || config?.defaultVariant || '501';
-    
     if (category === 'x01') {
         if (gameVariant === '20') return 'Debug20';
-        return `Game${gameVariant}`;
+        return 'X01';
     } else {
         return gameVariant;
     }
+}
+
+function getSelectedStartingScore() {
+    const category = document.getElementById('game-category')?.value || 'x01';
+    if (category !== 'x01') return 0;
+    const variant = document.getElementById('game-variant')?.value || '501';
+    if (variant === '20') return 20;
+    return parseInt(variant) || 501;
 }
 
 function getSelectedRules() {

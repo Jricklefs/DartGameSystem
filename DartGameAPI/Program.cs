@@ -1,4 +1,4 @@
-﻿using DartGameAPI.Services;
+using DartGameAPI.Services;
 using DartGameAPI.Hubs;
 using DartGameAPI.Data;
 using Microsoft.EntityFrameworkCore;
@@ -50,12 +50,12 @@ builder.Services.AddHttpClient<DartDetectClient>();
 try
 {
     var version = DartDetectNative.GetVersion();
-    Console.WriteLine($"âœ“ DartDetectLib native loaded: {version}");
+    Console.WriteLine($"\u2714 DartDetectLib native loaded: {version}");
     builder.Services.AddSingleton<IDartDetectService, NativeDartDetectService>();
 }
 catch (DllNotFoundException)
 {
-    Console.WriteLine("âœ— DartDetectLib.dll not found â€” falling back to HTTP DartDetect API");
+    Console.WriteLine("\u2718 DartDetectLib.dll not found \u2014 falling back to HTTP DartDetect API");
     builder.Services.AddSingleton<IDartDetectService>(sp => sp.GetRequiredService<DartDetectClient>());
 }
 
@@ -67,6 +67,11 @@ var benchmarkSettings = new BenchmarkSettings();
 builder.Configuration.GetSection("Benchmark").Bind(benchmarkSettings);
 builder.Services.AddSingleton(benchmarkSettings);
 builder.Services.AddSingleton<BenchmarkService>();
+
+// X01 Game Engine and supporting services
+builder.Services.AddSingleton<GameEventDispatcher>();
+builder.Services.AddSingleton<IDartSensorController, SignalRSensorController>();
+builder.Services.AddSingleton<X01GameEngine>();
 
 // Game service (singleton - holds all state)
 builder.Services.AddSingleton<GameService>();
@@ -89,16 +94,16 @@ using (var scope = app.Services.CreateScope())
         var canConnect = await db.Database.CanConnectAsync();
         if (canConnect)
         {
-            app.Logger.LogInformation("âœ“ Connected to DartsMobDB");
+            app.Logger.LogInformation("\u2714 Connected to DartsMobDB");
         }
         else
         {
-            app.Logger.LogError("âœ— Cannot connect to DartsMobDB");
+            app.Logger.LogError("\u2718 Cannot connect to DartsMobDB");
         }
     }
     catch (Exception ex)
     {
-        app.Logger.LogError(ex, "âœ— Database connection failed");
+        app.Logger.LogError(ex, "\u2718 Database connection failed");
     }
 }
 
@@ -150,4 +155,3 @@ app.MapGet("/health", () => new { status = "healthy", timestamp = DateTime.UtcNo
 app.MapGet("/", () => Results.Redirect("/index.html"));
 
 app.Run();
-

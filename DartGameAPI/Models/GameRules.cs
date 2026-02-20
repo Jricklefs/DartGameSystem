@@ -21,6 +21,9 @@ public class GameRules
     
     /// <summary>Must start scoring on a double</summary>
     public bool RequireDoubleIn { get; set; } = false;
+
+    /// <summary>Must finish on a double or triple</summary>
+    public bool MasterOut { get; set; } = false;
     
     /// <summary>Which segments are in play (null = all). For Cricket: 15-20 + Bull</summary>
     public List<int>? ActiveSegments { get; set; } = null;
