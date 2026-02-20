@@ -149,22 +149,24 @@ struct CameraCalibration {
 
 // Board cache: stores previous dart masks for multi-dart detection
 struct BoardCache {
-    std::vector<cv::Mat> prev_dart_masks;  // masks from darts 1..N-1
+    std::map<std::string, std::vector<cv::Mat>> prev_dart_masks_by_camera;  // camera_id -> masks from darts 1..N-1
     std::mutex mtx;
     
     void clear() {
         std::lock_guard<std::mutex> lock(mtx);
-        prev_dart_masks.clear();
+        prev_dart_masks_by_camera.clear();
     }
     
-    void add_mask(const cv::Mat& mask) {
+    void add_mask(const std::string& camera_id, const cv::Mat& mask) {
         std::lock_guard<std::mutex> lock(mtx);
-        prev_dart_masks.push_back(mask.clone());
+        prev_dart_masks_by_camera[camera_id].push_back(mask.clone());
     }
     
-    std::vector<cv::Mat> get_masks() {
+    std::vector<cv::Mat> get_masks(const std::string& camera_id) {
         std::lock_guard<std::mutex> lock(mtx);
-        return prev_dart_masks;
+        auto it = prev_dart_masks_by_camera.find(camera_id);
+        if (it == prev_dart_masks_by_camera.end()) return {};
+        return it->second;
     }
 };
 

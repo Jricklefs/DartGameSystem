@@ -21,6 +21,7 @@ public static class DartDetectNative
         int dartNumber,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string boardId,
         int numCameras,
+        [MarshalAs(UnmanagedType.LPArray)] IntPtr[] cameraIds,
         [MarshalAs(UnmanagedType.LPArray)] IntPtr[] currentImages,
         [MarshalAs(UnmanagedType.LPArray)] int[] currentSizes,
         [MarshalAs(UnmanagedType.LPArray)] IntPtr[] beforeImages,
@@ -69,15 +70,19 @@ public static class DartDetectNative
     public static DetectionResult? Detect(
         int dartNumber,
         string boardId,
+        List<string> cameraIds,
         byte[][] currentImages,
         byte[][] beforeImages)
     {
-        if (currentImages.Length != beforeImages.Length || currentImages.Length == 0)
+        if (currentImages.Length != beforeImages.Length ||
+            currentImages.Length != cameraIds.Count ||
+            currentImages.Length == 0)
             return null;
 
         int numCameras = currentImages.Length;
 
         // Pin image byte arrays and create pointer arrays
+        var cameraIdPtrs = new IntPtr[numCameras];
         var currentPtrs = new IntPtr[numCameras];
         var beforePtrs = new IntPtr[numCameras];
         var currentSizes = new int[numCameras];
@@ -89,6 +94,7 @@ public static class DartDetectNative
         {
             for (int i = 0; i < numCameras; i++)
             {
+                cameraIdPtrs[i] = Marshal.StringToCoTaskMemUTF8(cameraIds[i]);
                 currentHandles[i] = GCHandle.Alloc(currentImages[i], GCHandleType.Pinned);
                 beforeHandles[i] = GCHandle.Alloc(beforeImages[i], GCHandleType.Pinned);
                 currentPtrs[i] = currentHandles[i].AddrOfPinnedObject();
@@ -99,6 +105,7 @@ public static class DartDetectNative
 
             IntPtr resultPtr = dd_detect(
                 dartNumber, boardId, numCameras,
+                cameraIdPtrs,
                 currentPtrs, currentSizes,
                 beforePtrs, beforeSizes);
 
@@ -119,6 +126,7 @@ public static class DartDetectNative
             {
                 if (currentHandles[i].IsAllocated) currentHandles[i].Free();
                 if (beforeHandles[i].IsAllocated) beforeHandles[i].Free();
+                if (cameraIdPtrs[i] != IntPtr.Zero) Marshal.FreeCoTaskMem(cameraIdPtrs[i]);
             }
         }
     }

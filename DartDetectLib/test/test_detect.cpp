@@ -17,7 +17,7 @@ int main()
     std::cout << "[PASS] Init with empty JSON returns error" << std::endl;
     
     // Test 2: Detect without init should return error
-    const char* result = dd_detect(1, "default", 0, nullptr, nullptr, nullptr, nullptr);
+    const char* result = dd_detect(1, "default", 0, nullptr, nullptr, nullptr, nullptr, nullptr);
     assert(result != nullptr);
     assert(std::strstr(result, "error") != nullptr || std::strstr(result, "no_detection") != nullptr);
     std::cout << "[PASS] Detect without init returns error: " << result << std::endl;

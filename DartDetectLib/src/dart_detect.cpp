@@ -2,7 +2,7 @@
  * dart_detect.cpp - Main entry points (C API for P/Invoke)
  * 
  * Orchestrates the full detection pipeline:
- * decode images GåÆ detect per camera GåÆ triangulate GåÆ vote GåÆ return JSON
+ * decode images -> detect per camera -> triangulate -> vote -> return JSON
  */
 #include "dart_detect.h"
 #include "dart_detect_internal.h"
@@ -215,6 +215,7 @@ DD_API const char* dd_detect(
     int dart_number,
     const char* board_id,
     int num_cameras,
+    const char** camera_ids,
     const unsigned char** current_images,
     const int* current_sizes,
     const unsigned char** before_images,
@@ -227,25 +228,35 @@ DD_API const char* dd_detect(
         std::strcpy(err, "{\"error\":\"not initialized\"}");
         return err;
     }
+    if (!current_images || !current_sizes || !before_images || !before_sizes) {
+        char* err = new char[80];
+        std::strcpy(err, "{\"error\":\"missing image buffers\"}");
+        return err;
+    }
     
     std::string bid(board_id ? board_id : "default");
     auto& cache = g_board_caches[bid];
-    
-    // Get previous dart masks
-    std::vector<cv::Mat> prev_masks;
-    if (dart_number > 1) {
-        prev_masks = cache.get_masks();
-    }
     
     // Detect per camera
     std::map<std::string, DetectionResult> camera_results;
     std::map<std::string, CameraCalibration> active_cals;
     
     for (int i = 0; i < num_cameras && i < 3; ++i) {
-        std::string cam_id = "cam" + std::to_string(i);
+        std::string cam_id;
+        if (camera_ids && camera_ids[i] && camera_ids[i][0] != '\0') {
+            cam_id = camera_ids[i];
+        } else {
+            cam_id = "cam" + std::to_string(i);
+        }
         
         auto cal_it = g_calibrations.find(cam_id);
         if (cal_it == g_calibrations.end()) continue;
+
+        // Get previous dart masks for this specific camera only.
+        std::vector<cv::Mat> prev_masks;
+        if (dart_number > 1) {
+            prev_masks = cache.get_masks(cam_id);
+        }
         
         cv::Mat current = decode_image(current_images[i], current_sizes[i]);
         cv::Mat before = decode_image(before_images[i], before_sizes[i]);
@@ -261,12 +272,10 @@ DD_API const char* dd_detect(
         }
     }
     
-    // Store motion mask for this dart
-    // Combine all camera masks (use first available)
-    for (const auto& [_, det] : camera_results) {
+    // Store per-camera masks so multi-dart segmentation stays camera-specific.
+    for (const auto& [cam_id, det] : camera_results) {
         if (!det.motion_mask.empty()) {
-            cache.add_mask(det.motion_mask);
-            break;
+            cache.add_mask(cam_id, det.motion_mask);
         }
     }
     
