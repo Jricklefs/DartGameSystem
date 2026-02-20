@@ -91,7 +91,7 @@ public class DartDetectClient : IDartDetectService
     /// Send images to DartDetect for dart tip detection and scoring.
     /// Includes calibration data with each camera (fully stateless).
     /// </summary>
-    public async Task<DetectResponse?> DetectAsync(List<CameraImageDto> images, string boardId = "default", int dartNumber = 1, List<CameraImageDto>? beforeImages = null, CancellationToken ct = default)
+    public async Task<DetectResponse?> DetectAsync(List<CameraImageDto> images, string boardId = "default", int dartNumber = 1, List<CameraImageDto>? beforeImages = null, List<List<CameraImageDto>>? multiFrameImages = null, CancellationToken ct = default)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
