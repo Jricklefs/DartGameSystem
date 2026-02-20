@@ -1,4 +1,4 @@
-﻿/**
+/**
  * skeleton.cpp - Skeleton/Hough detection, barrel-centric detection, PCA blob chain tip
  * 
  * Ported from Python: skeleton_detection.py detect_dart()
@@ -443,7 +443,7 @@ DetectionResult detect_dart(
                     if (ref_angle) {
                         double diff_a = std::abs(a - *ref_angle);
                         diff_a = std::min(diff_a, CV_PI - diff_a);
-                        angle_score = std::max(0.1, std::cos(diff_a));
+                        angle_score = std::max(0.5, 0.5 + 0.5 * std::cos(diff_a));
                     }
                     scored.push_back({hl, len, len * angle_score, a});
                 }
@@ -486,7 +486,7 @@ DetectionResult detect_dart(
                         double angle_diff = std::abs(line_angle - *ref_angle);
                         if (angle_diff > CV_PI) angle_diff = 2 * CV_PI - angle_diff;
                         angle_diff = std::min(angle_diff, CV_PI - angle_diff);
-                        if (angle_diff > CV_PI / 4.0) accept = false;  // > 45┬░
+                        if (angle_diff > CV_PI * 5.0 / 12.0) accept = false;  // > 75-�
                     }
                     if (accept && max_len < 15) accept = false;
                     
@@ -570,7 +570,7 @@ DetectionResult detect_dart(
                                 tip_prox_score = std::max(0.1, 1.0 - perp / 100.0);
                             }
                         }
-                        double score = len * std::max(angle_score, 0.1) * tip_prox_score;
+                        double score = len * std::max(0.5, 0.5 + 0.5 * angle_score) * tip_prox_score;
                         scored.push_back({hl, len, a, score});
                     }
                     
