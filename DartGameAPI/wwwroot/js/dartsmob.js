@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DartsMob - Main Game JavaScript
  * Mobile-first redesign
  */
@@ -91,7 +91,7 @@ function initTheme() {
     // Apply tagline
     const taglineEl = document.getElementById('app-tagline');
     if (taglineEl && theme.tagline) {
-        taglineEl.textContent = `— ${theme.tagline} —`;
+        taglineEl.textContent = `� ${theme.tagline} �`;
     }
     
     // Apply background
@@ -160,6 +160,10 @@ async function initConnection() {
     connection.on('TurnEnded', handleTurnEnded);
     connection.on('DartNotFound', handleDartNotFound);
     connection.on('LegWon', handleLegWon);
+    connection.on('BustDetected', handleBustDetected);
+    connection.on('BustConfirmedWaitingForClear', handleBustConfirmedWaitingForClear);
+    connection.on('BustBoardCleared', handleBustBoardCleared);
+    connection.on('BustCancelled', handleBustCancelled);
 
     try {
         await connection.start();
@@ -174,7 +178,7 @@ async function initConnection() {
 function updateConnectionStatus(text, className) {
     const el = document.getElementById('connection-status');
     if (el) {
-        el.textContent = `🔌 ${text}`;
+        el.textContent = `?? ${text}`;
         el.className = `connection ${className}`;
     }
 }
@@ -335,7 +339,7 @@ function handleDartThrown(data) {
         const winnerName = data.game.winnerName || 
                           data.game.players?.find(p => p.id === data.game.winnerId)?.name ||
                           'Winner';
-        console.log('🏆 Game finished via dart! Winner:', winnerName);
+        console.log('?? Game finished via dart! Winner:', winnerName);
         setTimeout(() => showWinnerModal(winnerName), 1000);
     }
 }
@@ -364,7 +368,7 @@ function handleGameStarted(data) {
 }
 
 function handleGameEnded(data) {
-    console.log('🏆 Game ended! Full data:', JSON.stringify(data));
+    console.log('?? Game ended! Full data:', JSON.stringify(data));
     
     // Update game state
     if (data.game) {
@@ -377,7 +381,7 @@ function handleGameEnded(data) {
                        (data.players?.find(p => p.id === data.winnerId)?.name) ||
                        'Winner';
     
-    console.log('🏆 Showing winner modal for:', winnerName);
+    console.log('?? Showing winner modal for:', winnerName);
     
     // Small delay to let any dart animations finish
     setTimeout(() => {
@@ -464,7 +468,7 @@ function updateCurrentTurn() {
             console.log(`[updateCurrentTurn] slot ${i} = ${darts[i].score}`);
         } else {
             slot.classList.remove('hit');
-            slot.textContent = '—';
+            slot.textContent = '�';
         }
     });
     
@@ -476,7 +480,7 @@ function updateCurrentTurn() {
 function clearCurrentTurn() {
     document.querySelectorAll('.dart-slot').forEach(slot => {
         slot.classList.remove('hit');
-        slot.textContent = '—';
+        slot.textContent = '�';
     });
     document.getElementById('turn-score').textContent = '0';
 }
@@ -542,7 +546,7 @@ function showBustModal() {
         dartsHtml += `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #222; border-radius: 8px; margin-bottom: 8px;">
                 <span style="font-size: 1.3rem; color: var(--paper);">Dart ${i + 1}: <strong>${dartText}</strong> (${d.score})</span>
-                <button onclick="openCorrectionForDart(${i})" style="background: #d4af37; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">✏️ Correct</button>
+                <button onclick="openCorrectionForDart(${i})" style="background: #d4af37; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">?? Correct</button>
             </div>
         `;
     });
@@ -557,7 +561,7 @@ function showBustModal() {
     `;
     modal.innerHTML = `
         <div style="background: linear-gradient(180deg, #2a1a1a 0%, #1a0a0a 100%); border: 3px solid #ff4444; border-radius: 16px; padding: 30px; max-width: 500px; width: 100%; text-align: center;">
-            <h1 style="color: #ff4444; font-size: 3rem; margin: 0 0 10px 0; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em; text-shadow: 0 0 20px rgba(255,68,68,0.5);">💥 BUSTED! 💥</h1>
+            <h1 style="color: #ff4444; font-size: 3rem; margin: 0 0 10px 0; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em; text-shadow: 0 0 20px rgba(255,68,68,0.5);">?? BUSTED! ??</h1>
             <p style="color: var(--paper-muted); margin: 0 0 20px 0;">${player?.name || 'Player'} - Score reverted to ${turn?.scoreBeforeBust || player?.score}</p>
             
             <div style="margin-bottom: 20px; text-align: left;">
@@ -565,12 +569,12 @@ function showBustModal() {
             </div>
             
             <p style="color: #ffaa00; margin-bottom: 20px; font-size: 0.95rem;">
-                🎯 Remove your darts from the board.<br>
+                ?? Remove your darts from the board.<br>
                 You can correct any dart before confirming.
             </p>
             
             <button id="confirm-bust-btn" onclick="confirmBust()" style="background: linear-gradient(180deg, #ff5555 0%, #cc3333 100%); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-size: 1.3rem; font-weight: bold; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em;">
-                ✓ CONFIRM BUST
+                ? CONFIRM BUST
             </button>
         </div>
     `;
@@ -594,7 +598,7 @@ async function confirmBust() {
     const btn = document.getElementById('confirm-bust-btn');
     if (btn) {
         btn.disabled = true;
-        btn.textContent = '⏳ Confirming...';
+        btn.textContent = '? Confirming...';
     }
     
     try {
@@ -635,7 +639,7 @@ function openCorrectionForDart(dartIndex) {
 }
 
 function handleLegWon(data) {
-    console.log('🎯 Leg won!', data);
+    console.log('?? Leg won!', data);
     
     // Update player leg counts in local state
     if (currentGame && data.game?.Players) {
@@ -656,7 +660,7 @@ function showLegWonModal(winnerName, legsWon, legsToWin, players) {
         modal.className = 'modal hidden';
         modal.innerHTML = `
             <div class="modal-content winner-content">
-                <h2 class="winner-title">🎯 LEG WON! 🎯</h2>
+                <h2 class="winner-title">?? LEG WON! ??</h2>
                 <div class="winner-name"></div>
                 <div class="leg-standings"></div>
                 <button class="btn btn-primary" id="leg-won-ok" style="margin-top: 20px;">Continue</button>
@@ -683,7 +687,7 @@ function showLegWonModal(winnerName, legsWon, legsToWin, players) {
     // Build standings
     const standings = players.map(p => 
         `${p.Name}: ${p.LegsWon} / ${legsToWin}`
-    ).join('  •  ');
+    ).join('  �  ');
     modal.querySelector('.leg-standings').textContent = standings;
     
     modal.classList.remove('hidden');
@@ -702,11 +706,11 @@ function showWinnerModal(winner) {
         modal.className = 'modal hidden';
         modal.innerHTML = `
             <div class="modal-content winner-content">
-                <h2 class="winner-title">🏆 WINNER! 🏆</h2>
+                <h2 class="winner-title">?? WINNER! ??</h2>
                 <div class="winner-name"></div>
                 <div class="winner-buttons">
-                    <button class="btn btn-primary" id="winner-play-again">🎯 Play Again</button>
-                    <button class="btn btn-secondary" id="winner-quit">🚪 Quit</button>
+                    <button class="btn btn-primary" id="winner-play-again">?? Play Again</button>
+                    <button class="btn btn-secondary" id="winner-quit">?? Quit</button>
                 </div>
             </div>
         `;
@@ -755,7 +759,7 @@ async function startGame() {
     const startBtn = document.getElementById('start-game-btn');
     if (startBtn) {
         startBtn.disabled = true;
-        startBtn.textContent = '⏳ Starting...';
+        startBtn.textContent = '? Starting...';
     }
     
     try {
@@ -800,10 +804,10 @@ async function startGame() {
 function showStartGameError(error) {
     // Map error codes to user-friendly messages
     const messages = {
-        'NO_CAMERAS': '📷 No cameras registered. Go to Settings to set up cameras.',
-        'NOT_CALIBRATED': '🎯 Cameras not calibrated. Go to Settings → Calibration.',
-        'SENSOR_DISCONNECTED': '📡 DartSensor not connected. Please start the sensor.',
-        'BOARD_NOT_FOUND': '🎯 Board not found. Check your settings.'
+        'NO_CAMERAS': '?? No cameras registered. Go to Settings to set up cameras.',
+        'NOT_CALIBRATED': '?? Cameras not calibrated. Go to Settings ? Calibration.',
+        'SENSOR_DISCONNECTED': '?? DartSensor not connected. Please start the sensor.',
+        'BOARD_NOT_FOUND': '?? Board not found. Check your settings.'
     };
     
     const friendlyMessage = messages[error.code] || error.message || error.error || 'Failed to start game';
@@ -818,7 +822,7 @@ function showStartGameError(error) {
         modal.innerHTML = `
             <div class="modal-backdrop" onclick="document.getElementById('start-error-modal').classList.add('hidden')"></div>
             <div class="modal-content art-deco-card" style="max-width: 400px; text-align: center;">
-                <h2 style="color: var(--gold); margin-bottom: 1rem;">⚠️ Cannot Start Game</h2>
+                <h2 style="color: var(--gold); margin-bottom: 1rem;">?? Cannot Start Game</h2>
                 <p id="start-error-message" style="margin-bottom: 1.5rem; color: #ccc;"></p>
                 <button class="btn-gold" onclick="document.getElementById('start-error-modal').classList.add('hidden')">OK</button>
             </div>
@@ -884,9 +888,9 @@ function updateRoundDisplay() {
 // Game definitions with category-specific options
 const gameConfig = {
     x01: {
-        label: '🔢 X01',
+        label: '?? X01',
         variants: [
-            { value: '20', label: '🐛 Debug 20' },
+            { value: '20', label: '?? Debug 20' },
             { value: '301', label: '301' },
             { value: '501', label: '501' },
             { value: '401', label: '401' },
@@ -903,7 +907,7 @@ const gameConfig = {
         ]
     },
     cricket: {
-        label: '🦗 Cricket',
+        label: '?? Cricket',
         variants: [
             { value: 'CricketStandard', label: 'Standard' },
             { value: 'CricketCutThroat', label: 'Cut-Throat' },
@@ -913,7 +917,7 @@ const gameConfig = {
         rules: []
     },
     around: {
-        label: '🔄 Around the World',
+        label: '?? Around the World',
         variants: [
             { value: 'AroundTheClock', label: 'Around the Clock' },
             { value: 'Shanghai', label: 'Shanghai' }
@@ -924,7 +928,7 @@ const gameConfig = {
         ]
     },
     killer: {
-        label: '💀 Killer',
+        label: '?? Killer',
         variants: [
             { value: 'Killer', label: 'Killer' },
             { value: 'BlindKiller', label: 'Blind Killer' }
@@ -935,7 +939,7 @@ const gameConfig = {
         ]
     },
     practice: {
-        label: '🎯 Practice',
+        label: '?? Practice',
         variants: [
             { value: 'FreePlay', label: 'Free Play (Count Up)' },
             { value: 'DoublesTraining', label: 'Doubles Training' },
@@ -1151,7 +1155,7 @@ function formatMode(mode) {
     }
     
     // Handle Debug mode
-    if (mode === 'Debug20') return '🐛 Debug 20';
+    if (mode === 'Debug20') return '?? Debug 20';
 
     // Handle X01 games
     const x01Match = mode.match(/^Game(\d+)$/);
@@ -1314,7 +1318,7 @@ function getSegmentAndScore() {
     
     const segment = parseInt(correctionInput, 10);
     if (isNaN(segment) || segment < 1 || segment > 20) {
-        return { segment: 0, score: 0, display: '—' };
+        return { segment: 0, score: 0, display: '�' };
     }
     
     const score = segment * correctionMultiplier;
@@ -1329,7 +1333,7 @@ function updateCorrectionDisplay() {
     const { display, score } = getSegmentAndScore();
     
     if (correctionInput === '' && correctionMultiplier === 1) {
-        displayEl.textContent = '—';
+        displayEl.textContent = '�';
     } else {
         // Show S12, D20, T19, BULL, D-BULL, MISS
         displayEl.textContent = display;
@@ -1347,7 +1351,7 @@ function openCorrectionModal(dartIndex) {
     document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
     
     document.getElementById('correction-dart-num').textContent = dartIndex + 1;
-    document.getElementById('correction-input-display').textContent = '—';
+    document.getElementById('correction-input-display').textContent = '�';
     
     document.getElementById('dart-correction-modal')?.classList.remove('hidden');
 }
@@ -1485,7 +1489,7 @@ async function submitCorrection() {
         };
         
         // Log to centralized system
-        log.info('Correction', `Corrected dart ${correctionDartIndex}: ${correctionLog.original.zone} ${correctionLog.original.segment} → ${correctionLog.corrected.display}`, correctionLog);
+        log.info('Correction', `Corrected dart ${correctionDartIndex}: ${correctionLog.original.zone} ${correctionLog.original.segment} ? ${correctionLog.corrected.display}`, correctionLog);
         
         // Store corrections in localStorage for later export
         try {
@@ -1695,7 +1699,7 @@ function addPlayerRow() {
     row.className = 'player-row';
     row.innerHTML = `
         <input type="text" class="player-input" placeholder="Player ${count}">
-        <button class="btn-remove-player" title="Remove">✕</button>
+        <button class="btn-remove-player" title="Remove">?</button>
     `;
     list.appendChild(row);
 }
@@ -1711,7 +1715,7 @@ function addBotPlayer() {
     row.className = 'player-row';
     row.innerHTML = `
         <input type="text" class="player-input" value="${botName}" data-is-bot="true">
-        <button class="btn-remove-player" title="Remove">✕</button>
+        <button class="btn-remove-player" title="Remove">?</button>
     `;
     list.appendChild(row);
 }
@@ -1791,7 +1795,7 @@ async function loadRegisteredPlayers() {
                     <div class="nickname">${escapeHtml(p.nickname)}</div>
                     <div class="stats">${p.gamesPlayed || 0} games played</div>
                 </div>
-                <span class="check">✓</span>
+                <span class="check">?</span>
             </div>
         `).join('');
         
@@ -1830,7 +1834,7 @@ function applySelectedPlayers() {
         row.className = 'player-row';
         row.innerHTML = `
             <input type="text" class="player-input" value="${escapeHtml(player.nickname)}" data-player-id="${player.id}">
-            ${i > 0 ? '<button class="btn-remove-player" title="Remove">✕</button>' : ''}
+            ${i > 0 ? '<button class="btn-remove-player" title="Remove">?</button>' : ''}
         `;
         list.appendChild(row);
     });
@@ -1939,7 +1943,7 @@ async function toggleLookingForMatch(e) {
             await connectOnlineHub();
             await onlineConnection.invoke('JoinMatchmakingQueue', 'Game501', 'anyone', null, null);
             if (statusEl) {
-                statusEl.textContent = '🔍 Searching for opponent...';
+                statusEl.textContent = '?? Searching for opponent...';
                 statusEl.classList.add('active');
             }
         } catch (err) {
@@ -2011,7 +2015,7 @@ async function connectOnlineHub() {
     });
 
     onlineConnection.on('LegWon', (data) => {
-        addChatMessage('System', `🎯 ${data.winnerName} won the leg!`);
+        addChatMessage('System', `?? ${data.winnerName} won the leg!`);
     });
 
     onlineConnection.on('MatchWon', (data) => {
@@ -2130,7 +2134,7 @@ function displayOpenMatches(matches) {
         <div class="open-match" onclick="joinOnlineMatch('${m.matchCode}')">
             <div class="match-info">
                 <span class="match-host">${escapeHtml(m.hostName)}'s Game</span>
-                <span class="match-mode">${formatMode(m.gameMode)} • Best of ${m.bestOf}</span>
+                <span class="match-mode">${formatMode(m.gameMode)} � Best of ${m.bestOf}</span>
             </div>
             <button class="btn-join">Join</button>
         </div>
@@ -2327,7 +2331,7 @@ function dartNotDetected() {
     // Update modal title to indicate this is a manual entry
     const modalTitle = document.querySelector('#dart-correction-modal .modal-title');
     if (modalTitle) {
-        modalTitle.textContent = '🚫 Dart Not Detected - Enter Score';
+        modalTitle.textContent = '?? Dart Not Detected - Enter Score';
     }
     
     // Open the correction modal
