@@ -88,7 +88,6 @@ void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
 #include <algorithm>
 #include <set>
 #include <numeric>
-#include <random>
 
 // ============================================================================
 // Helper: Find flight blob (largest contour)
@@ -154,103 +153,6 @@ static Point2f refine_tip_subpixel(Point2f tip, const cv::Mat& gray, const cv::M
     if (min_dist < roi_size)
         return Point2f(best.x + x1, best.y + y1);
     return tip;
-}
-
-
-// ============================================================================
-// RANSAC line fitting on point cloud
-// ============================================================================
-struct RansacLineResult {
-    double vx, vy, cx, cy;
-    double confidence;  // inlier_count / total_points
-    int inlier_count;
-    bool valid;
-};
-
-static RansacLineResult ransac_fit_line(
-    const std::vector<cv::Point>& points,
-    double threshold = 2.5,
-    int iterations = 150,
-    double min_inlier_ratio = 0.3)
-{
-    RansacLineResult result;
-    result.valid = false;
-    result.confidence = 0;
-    result.inlier_count = 0;
-    
-    int N = (int)points.size();
-    if (N < 10) return result;
-    
-    std::mt19937 rng(42);  // deterministic seed for reproducibility
-    
-    int best_inliers = 0;
-    double best_vx = 0, best_vy = 0;
-    
-    for (int iter = 0; iter < iterations; ++iter) {
-        // Pick 2 random points
-        int i1 = rng() % N;
-        int i2 = rng() % N;
-        if (i1 == i2) continue;
-        
-        double dx = points[i2].x - points[i1].x;
-        double dy = points[i2].y - points[i1].y;
-        double len = std::sqrt(dx * dx + dy * dy);
-        if (len < 1.0) continue;
-        
-        // Line direction (normalized)
-        double lvx = dx / len, lvy = dy / len;
-        // Normal: (-lvy, lvx)
-        
-        // Count inliers: distance from point to line through p1 with direction (lvx, lvy)
-        int inliers = 0;
-        for (int k = 0; k < N; ++k) {
-            double px = points[k].x - points[i1].x;
-            double py = points[k].y - points[i1].y;
-            double dist = std::abs(px * (-lvy) + py * lvx);  // perpendicular distance
-            if (dist <= threshold) ++inliers;
-        }
-        
-        if (inliers > best_inliers) {
-            best_inliers = inliers;
-            best_vx = lvx;
-            best_vy = lvy;
-        }
-    }
-    
-    double ratio = (double)best_inliers / N;
-    if (ratio < min_inlier_ratio) return result;
-    
-    // Refit using all inliers for better accuracy
-    double lvx = best_vx, lvy = best_vy;
-    // Collect inlier points and use fitLine for sub-pixel accuracy
-    std::vector<cv::Point2f> inlier_pts;
-    // Use a reference point (first point)
-    for (int k = 0; k < N; ++k) {
-        double px = points[k].x - points[0].x;
-        double py = points[k].y - points[0].y;
-        double dist = std::abs(px * (-lvy) + py * lvx);
-        if (dist <= 2.5) {  // use same threshold
-            inlier_pts.push_back(cv::Point2f((float)points[k].x, (float)points[k].y));
-        }
-    }
-    
-    if ((int)inlier_pts.size() >= 5) {
-        cv::Vec4f lp;
-        cv::fitLine(inlier_pts, lp, cv::DIST_L2, 0, 0.01, 0.01);
-        result.vx = lp[0]; result.vy = lp[1];
-        result.cx = lp[2]; result.cy = lp[3];
-    } else {
-        // Compute centroid of all points
-        double sx = 0, sy = 0;
-        for (const auto& p : points) { sx += p.x; sy += p.y; }
-        result.vx = best_vx; result.vy = best_vy;
-        result.cx = sx / N; result.cy = sy / N;
-    }
-    
-    result.confidence = ratio;
-    result.inlier_count = best_inliers;
-    result.valid = true;
-    return result;
 }
 
 // ============================================================================
@@ -520,17 +422,41 @@ DetectionResult detect_dart(
             }
         }
         
-        // === Barrel RANSAC line fitting (replaces Hough) ===
+        // === Barrel skeleton + Hough ===
         if (!barrel_mask.empty() && barrel_info) {
-            std::vector<cv::Point> barrel_pts;
-            cv::findNonZero(barrel_mask, barrel_pts);
+            cv::Mat skel;
+            zhangSuenThinning(barrel_mask, skel);
             
-            if ((int)barrel_pts.size() > 20) {
-                auto ransac = ransac_fit_line(barrel_pts, 2.5, 150, 0.3);
+            std::vector<cv::Vec4i> hough_lines;
+            cv::HoughLinesP(skel, hough_lines, 1, CV_PI / 180, 8, 10, 5);
+            
+            if (!hough_lines.empty()) {
+                // Score lines: length * angle alignment
+                struct ScoredLine { cv::Vec4i line; double length, score, angle; };
+                std::vector<ScoredLine> scored;
                 
-                if (ransac.valid) {
-                    double vx = ransac.vx, vy = ransac.vy;
-                    // Orient toward board center (vy > 0 convention)
+                for (const auto& hl : hough_lines) {
+                    double dx = hl[2] - hl[0], dy = hl[3] - hl[1];
+                    double len = std::sqrt(dx*dx + dy*dy);
+                    double a = std::atan2(dy, dx);
+                    double angle_score = 0.5;
+                    if (ref_angle) {
+                        double diff_a = std::abs(a - *ref_angle);
+                        diff_a = std::min(diff_a, CV_PI - diff_a);
+                        angle_score = std::max(0.1, std::cos(diff_a));
+                    }
+                    scored.push_back({hl, len, len * angle_score, a});
+                }
+                
+                std::sort(scored.begin(), scored.end(),
+                    [](const auto& a, const auto& b) { return a.score > b.score; });
+                
+                auto& best = scored[0];
+                double dx = best.line[2] - best.line[0];
+                double dy = best.line[3] - best.line[1];
+                double norm = std::sqrt(dx*dx + dy*dy);
+                if (norm > 0) {
+                    double vx = dx / norm, vy = dy / norm;
                     if (vy < 0) { vx = -vx; vy = -vy; }
                     
                     bool accept = true;
@@ -539,13 +465,13 @@ DetectionResult detect_dart(
                         double angle_diff = std::abs(line_angle - *ref_angle);
                         if (angle_diff > CV_PI) angle_diff = 2 * CV_PI - angle_diff;
                         angle_diff = std::min(angle_diff, CV_PI - angle_diff);
-                        if (angle_diff > CV_PI / 3.0) accept = false;  // > 60 degrees (relaxed from 45)
+                        if (angle_diff > CV_PI / 4.0) accept = false;  // > 45┬░
                     }
+                    if (accept && best.length < 15) accept = false;
                     
                     if (accept) {
                         pca_line = PcaLine{vx, vy, barrel_info->pivot.x, barrel_info->pivot.y,
-                                           ransac.confidence * barrel_pts.size(), "barrel_ransac",
-                                           ransac.confidence};
+                                           best.length, "barrel_hough"};
                     }
                 }
             }
@@ -561,35 +487,7 @@ DetectionResult detect_dart(
                     double vx = line_params[0], vy = line_params[1];
                     if (vy < 0) { vx = -vx; vy = -vy; }
                     pca_line = PcaLine{vx, vy, barrel_info->pivot.x, barrel_info->pivot.y,
-                                       (double)b_pts.size(), "barrel_fitline", 0.5};
-                }
-            }
-        }
-        
-        // === Fallback: RANSAC on full mask, then skeleton + Hough ===
-        if (!pca_line) {
-            // Try RANSAC on full mask first
-            std::vector<cv::Point> full_mask_pts;
-            cv::findNonZero(motion_mask, full_mask_pts);
-            if ((int)full_mask_pts.size() > 30) {
-                auto ransac = ransac_fit_line(full_mask_pts, 3.0, 200, 0.3);
-                if (ransac.valid) {
-                    double vx = ransac.vx, vy = ransac.vy;
-                    if (vy < 0) { vx = -vx; vy = -vy; }
-                    bool accept = true;
-                    if (ref_angle) {
-                        double line_angle = std::atan2(vy, vx);
-                        double angle_diff = std::abs(line_angle - *ref_angle);
-                        if (angle_diff > CV_PI) angle_diff = 2 * CV_PI - angle_diff;
-                        angle_diff = std::min(angle_diff, CV_PI - angle_diff);
-                        if (angle_diff > CV_PI / 3.0) accept = false;
-                    }
-                    if (accept) {
-                        double cx_pt = ransac.cx, cy_pt = ransac.cy;
-                        pca_line = PcaLine{vx, vy, cx_pt, cy_pt,
-                                           ransac.confidence * full_mask_pts.size(),
-                                           "fullmask_ransac", ransac.confidence};
-                    }
+                                       (double)b_pts.size(), "barrel_fitline"};
                 }
             }
         }
@@ -668,7 +566,7 @@ DetectionResult detect_dart(
                         pca_line = PcaLine{vx, vy,
                             (best.line[0] + best.line[2]) / 2.0,
                             (best.line[1] + best.line[3]) / 2.0,
-                            best.length, "skeleton_hough_fallback", 0.6};
+                            best.length, "skeleton_hough_fallback"};
                     }
                 }
                 
@@ -683,7 +581,7 @@ DetectionResult detect_dart(
                         double vx = lp[0], vy = lp[1];
                         if (vy < 0) { vx = -vx; vy = -vy; }
                         pca_line = PcaLine{vx, vy, (double)lp[2], (double)lp[3],
-                                           (double)largest.size(), "fitline_huber_fallback", 0.4};
+                                           (double)largest.size(), "fitline_huber_fallback"};
                     }
                 }
                 
@@ -704,7 +602,7 @@ DetectionResult detect_dart(
                         pca_line = PcaLine{vx, vy,
                             pca.mean.at<double>(0, 0), pca.mean.at<double>(0, 1),
                             pca.eigenvalues.at<double>(0, 0) / (pca.eigenvalues.at<double>(1, 0) + 1e-6),
-                            "full_pca_fallback", 0.3};
+                            "full_pca_fallback"};
                     }
                 }
             }

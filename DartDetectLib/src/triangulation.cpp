@@ -244,7 +244,6 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
         bool tip_reliable;
         double tip_dist;
         double mask_quality;
-        double line_confidence;  // RANSAC inlier ratio from PcaLine
     };
     
     std::map<std::string, CamLine> cam_lines;
@@ -277,13 +276,11 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
         double tip_dist = std::sqrt(tip_n.x * tip_n.x + tip_n.y * tip_n.y);
         bool tip_reliable = tip_dist <= 1.2;
         
-        double line_conf = det.pca_line ? det.pca_line->confidence : 0.5;
-        
         cam_lines[cam_id] = CamLine{
             p1_n, p2_n, tip_n,
             Point2f(det.tip->x, det.tip->y),
             std::move(tps), vote, tip_reliable, tip_dist,
-            det.mask_quality, line_conf
+            det.mask_quality
         };
     }
     
@@ -345,66 +342,22 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
     
     if (intersections.empty()) return std::nullopt;
     
-    // Step 3: Voting hierarchy with confidence weighting + multiplier voting
-    // Per-camera segment and multiplier votes, weighted by line confidence
-    struct CamVoteInfo {
-        int segment;
-        int multiplier;
-        double weight;  // line_confidence
-    };
-    std::map<std::string, CamVoteInfo> cam_vote_info;
+    // Step 3: Voting hierarchy
+    // Per-camera segment votes
+    std::map<std::string, int> cam_votes;
     for (const auto& [cam_id, data] : cam_lines) {
-        cam_vote_info[cam_id] = CamVoteInfo{
-            data.vote.segment, data.vote.multiplier, data.line_confidence
-        };
+        cam_votes[cam_id] = data.vote.segment;
     }
     
-    // Confidence-weighted segment voting
-    std::map<int, double> seg_weights;
-    std::map<int, int> seg_counts;
-    for (const auto& [_, vi] : cam_vote_info) {
-        seg_weights[vi.segment] += vi.weight;
-        seg_counts[vi.segment]++;
-    }
+    // Count votes
+    std::map<int, int> vote_counts;
+    for (const auto& [_, seg] : cam_votes) vote_counts[seg]++;
     
-    int most_common_seg = 0; double best_seg_weight = 0; int most_common_count = 0;
-    for (const auto& [seg, w] : seg_weights) {
-        if (w > best_seg_weight) {
+    int most_common_seg = 0, most_common_count = 0;
+    for (const auto& [seg, cnt] : vote_counts) {
+        if (cnt > most_common_count) {
             most_common_seg = seg;
-            best_seg_weight = w;
-            most_common_count = seg_counts[seg];
-        }
-    }
-    
-    // Multiplier voting: if 2+ cameras agree on multiplier, use that
-    std::map<int, int> mult_counts;
-    std::map<int, double> mult_weights;
-    for (const auto& [_, vi] : cam_vote_info) {
-        mult_counts[vi.multiplier]++;
-        mult_weights[vi.multiplier] += vi.weight;
-    }
-    int voted_multiplier = -1;  // -1 means use intersection point's multiplier
-    for (const auto& [mult, cnt] : mult_counts) {
-        if (cnt >= 2) {
-            if (voted_multiplier < 0 || mult_weights[mult] > mult_weights[voted_multiplier])
-                voted_multiplier = mult;
-        }
-    }
-    
-    // Step 3b: Triangle of confusion check
-    bool triangle_confused = false;
-    if ((int)intersections.size() >= 3) {
-        double max_spread = 0;
-        for (size_t i = 0; i < intersections.size(); ++i) {
-            for (size_t j = i + 1; j < intersections.size(); ++j) {
-                double dx = intersections[i].coords.x - intersections[j].coords.x;
-                double dy = intersections[i].coords.y - intersections[j].coords.y;
-                double dist = std::sqrt(dx * dx + dy * dy);
-                max_spread = std::max(max_spread, dist);
-            }
-        }
-        if (max_spread > 0.05) {  // ~8.5mm in normalized space
-            triangle_confused = true;
+            most_common_count = cnt;
         }
     }
     
@@ -413,18 +366,7 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
     std::string method;
     double confidence;
     
-    if (triangle_confused) {
-        // Fall back to confidence-weighted per-camera zone voting
-        // Use the intersection from the pair with highest combined confidence
-        best = &*std::max_element(intersections.begin(), intersections.end(),
-            [&](const auto& a, const auto& b) {
-                double wa = cam_lines[a.cam1].line_confidence + cam_lines[a.cam2].line_confidence;
-                double wb = cam_lines[b.cam1].line_confidence + cam_lines[b.cam2].line_confidence;
-                return wa < wb;
-            });
-        method = "ConfidenceWeighted_TriangleConfused";
-        confidence = 0.4;
-    } else if (most_common_count == (int)cam_vote_info.size() && (int)cam_vote_info.size() >= 3) {
+    if (most_common_count == (int)cam_votes.size() && (int)cam_votes.size() >= 3) {
         // UnanimousCam
         best = &*std::min_element(intersections.begin(), intersections.end(),
             [](const auto& a, const auto& b) { return a.total_error < b.total_error; });
@@ -433,8 +375,8 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
     } else if (most_common_count >= 2) {
         // Cam+1: prefer intersections involving agreeing cameras
         std::set<std::string> agreeing;
-        for (const auto& [cid, vi] : cam_vote_info) {
-            if (vi.segment == most_common_seg) agreeing.insert(cid);
+        for (const auto& [cid, seg] : cam_votes) {
+            if (seg == most_common_seg) agreeing.insert(cid);
         }
         
         std::vector<const Intersection*> agreeing_ix;
@@ -453,14 +395,10 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
         method = "Cam+1";
         confidence = 0.8;
     } else {
-        // BestError, weighted by line confidence
-        best = &*std::max_element(intersections.begin(), intersections.end(),
-            [&](const auto& a, const auto& b) {
-                double wa = (cam_lines[a.cam1].line_confidence + cam_lines[a.cam2].line_confidence) / (a.total_error + 0.01);
-                double wb = (cam_lines[b.cam1].line_confidence + cam_lines[b.cam2].line_confidence) / (b.total_error + 0.01);
-                return wa < wb;
-            });
-        method = "BestError_ConfWeighted";
+        // BestError
+        best = &*std::min_element(intersections.begin(), intersections.end(),
+            [](const auto& a, const auto& b) { return a.total_error < b.total_error; });
+        method = "BestError";
         confidence = 0.5;
     }
     
@@ -495,16 +433,6 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
     result.total_error = best->total_error;
     for (const auto& [cam_id, data] : cam_lines)
         result.per_camera[cam_id] = data.vote;
-    
-    // Apply multiplier voting override if 2+ cameras agree
-    if (voted_multiplier >= 0 && voted_multiplier != result.multiplier) {
-        result.multiplier = voted_multiplier;
-        result.score = result.segment * result.multiplier;
-        // Handle special bull scoring
-        if (result.segment == 25) result.score = (result.multiplier == 2) ? 50 : 25;
-        if (result.segment == 0 && result.multiplier == 1) result.score = 25;
-        result.method += "+MultVote";
-    }
     
     return result;
 }
