@@ -199,7 +199,6 @@ public class X01GameEngine
                     ScoreAfter = player.Score,
                     TurnComplete = dartsThrown >= config.DartsPerTurn
                 };
-                if (result.TurnComplete) EndTurn(game);
                 return result;
             }
             else
@@ -212,7 +211,6 @@ public class X01GameEngine
                     ScoreAfter = player.Score,
                     TurnComplete = dartsThrown >= config.DartsPerTurn
                 };
-                if (result.TurnComplete) EndTurn(game);
                 return result;
             }
         }
@@ -265,7 +263,6 @@ public class X01GameEngine
             TurnComplete = dartsThrown >= config.DartsPerTurn
         };
 
-        if (dartResult.TurnComplete) EndTurn(game);
         return dartResult;
     }
 
@@ -293,8 +290,6 @@ public class X01GameEngine
 
         _logger.LogInformation("Bust confirmed for player {Name}, score reverted to {Score}",
             player.Name, player.Score);
-
-        EndTurn(game);
     }
 
     /// <summary>

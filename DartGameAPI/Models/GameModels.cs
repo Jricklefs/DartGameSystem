@@ -147,8 +147,8 @@ public class Game
     /// </summary>
     public GameRules Rules { get; set; } = new();
 
-    /// <summary>Whether this game uses the X01 engine</summary>
-    public bool IsX01Engine => Mode == GameMode.X01;
+    /// <summary>Whether this game uses the X01 engine (any X01-type mode with MatchConfig)</summary>
+    public bool IsX01Engine => MatchConfig != null;
 
     /// <summary>X01 match configuration (variants, rules, sets/legs)</summary>
     public MatchConfig? MatchConfig { get; set; }
