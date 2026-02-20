@@ -437,6 +437,12 @@ DetectionResult detect_dart(
                 else if (sr_row.area > 0) best = &sr_row;
                 else if (sr_col.area > 0) best = &sr_col;
                 
+                // Reject barrel splits that are not elongated enough
+                // (aspect < 2.5 means still blobby, not a real barrel)
+                if (best && best->aspect < 2.5) {
+                    best = nullptr;
+                }
+                
                 if (best) {
                     barrel_mask = best->mask;
                     barrel_info = BarrelInfo{
