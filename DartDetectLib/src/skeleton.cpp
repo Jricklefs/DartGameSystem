@@ -451,12 +451,33 @@ DetectionResult detect_dart(
                 std::sort(scored.begin(), scored.end(),
                     [](const auto& a, const auto& b) { return a.score > b.score; });
                 
-                auto& best = scored[0];
-                double dx = best.line[2] - best.line[0];
-                double dy = best.line[3] - best.line[1];
-                double norm = std::sqrt(dx*dx + dy*dy);
+                // Average top-N Hough lines (up to 3) within 30 deg of best
+                double best_angle = scored[0].angle;
+                double avg_vx = 0, avg_vy = 0, total_weight = 0;
+                double max_len = 0;
+                int n_avg = 0;
+                for (int si = 0; si < (int)scored.size() && n_avg < 3; ++si) {
+                    double adiff = std::abs(scored[si].angle - best_angle);
+                    adiff = std::min(adiff, CV_PI - adiff);
+                    if (adiff > CV_PI / 6.0) continue;  // > 30 deg
+                    double dx_i = scored[si].line[2] - scored[si].line[0];
+                    double dy_i = scored[si].line[3] - scored[si].line[1];
+                    double n_i = std::sqrt(dx_i*dx_i + dy_i*dy_i);
+                    if (n_i <= 0) continue;
+                    double uvx = dx_i / n_i, uvy = dy_i / n_i;
+                    // Align direction with best line
+                    double dot_best = uvx * std::cos(best_angle) + uvy * std::sin(best_angle);
+                    if (dot_best < 0) { uvx = -uvx; uvy = -uvy; }
+                    avg_vx += uvx * scored[si].score;
+                    avg_vy += uvy * scored[si].score;
+                    total_weight += scored[si].score;
+                    max_len = std::max(max_len, scored[si].length);
+                    ++n_avg;
+                }
+                if (total_weight > 0) { avg_vx /= total_weight; avg_vy /= total_weight; }
+                double norm = std::sqrt(avg_vx*avg_vx + avg_vy*avg_vy);
                 if (norm > 0) {
-                    double vx = dx / norm, vy = dy / norm;
+                    double vx = avg_vx / norm, vy = avg_vy / norm;
                     if (vy < 0) { vx = -vx; vy = -vy; }
                     
                     bool accept = true;
@@ -467,11 +488,11 @@ DetectionResult detect_dart(
                         angle_diff = std::min(angle_diff, CV_PI - angle_diff);
                         if (angle_diff > CV_PI / 4.0) accept = false;  // > 45┬░
                     }
-                    if (accept && best.length < 15) accept = false;
+                    if (accept && max_len < 15) accept = false;
                     
                     if (accept) {
                         pca_line = PcaLine{vx, vy, barrel_info->pivot.x, barrel_info->pivot.y,
-                                           best.length, "barrel_hough"};
+                                           max_len, "barrel_hough"};
                     }
                 }
             }
@@ -556,17 +577,40 @@ DetectionResult detect_dart(
                     std::sort(scored.begin(), scored.end(),
                         [](const auto& a, const auto& b) { return a.score > b.score; });
                     
-                    auto& best = scored[0];
-                    double dx = best.line[2] - best.line[0];
-                    double dy = best.line[3] - best.line[1];
-                    double norm = std::sqrt(dx*dx + dy*dy);
-                    if (norm > 0) {
-                        double vx = dx / norm, vy = dy / norm;
+                    // Average top-N Hough lines (up to 3) within 30 deg of best
+                    double best_angle2 = scored[0].angle;
+                    double avg_vx2 = 0, avg_vy2 = 0, total_w2 = 0;
+                    double avg_cx = 0, avg_cy = 0, max_len2 = 0;
+                    int n_avg2 = 0;
+                    for (int si = 0; si < (int)scored.size() && n_avg2 < 3; ++si) {
+                        double adiff = std::abs(scored[si].angle - best_angle2);
+                        adiff = std::min(adiff, CV_PI - adiff);
+                        if (adiff > CV_PI / 6.0) continue;
+                        double dx_i = scored[si].line[2] - scored[si].line[0];
+                        double dy_i = scored[si].line[3] - scored[si].line[1];
+                        double n_i = std::sqrt(dx_i*dx_i + dy_i*dy_i);
+                        if (n_i <= 0) continue;
+                        double uvx = dx_i / n_i, uvy = dy_i / n_i;
+                        double dot_best = uvx * std::cos(best_angle2) + uvy * std::sin(best_angle2);
+                        if (dot_best < 0) { uvx = -uvx; uvy = -uvy; }
+                        avg_vx2 += uvx * scored[si].score;
+                        avg_vy2 += uvy * scored[si].score;
+                        avg_cx += ((scored[si].line[0] + scored[si].line[2]) / 2.0) * scored[si].score;
+                        avg_cy += ((scored[si].line[1] + scored[si].line[3]) / 2.0) * scored[si].score;
+                        total_w2 += scored[si].score;
+                        max_len2 = std::max(max_len2, scored[si].length);
+                        ++n_avg2;
+                    }
+                    if (total_w2 > 0) {
+                        avg_vx2 /= total_w2; avg_vy2 /= total_w2;
+                        avg_cx /= total_w2; avg_cy /= total_w2;
+                    }
+                    double norm2 = std::sqrt(avg_vx2*avg_vx2 + avg_vy2*avg_vy2);
+                    if (norm2 > 0) {
+                        double vx = avg_vx2 / norm2, vy = avg_vy2 / norm2;
                         if (vy < 0) { vx = -vx; vy = -vy; }
-                        pca_line = PcaLine{vx, vy,
-                            (best.line[0] + best.line[2]) / 2.0,
-                            (best.line[1] + best.line[3]) / 2.0,
-                            best.length, "skeleton_hough_fallback"};
+                        pca_line = PcaLine{vx, vy, avg_cx, avg_cy,
+                            max_len2, "skeleton_hough_fallback"};
                     }
                 }
                 
