@@ -9,6 +9,85 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        /* Game delete button */
+        .game-delete-btn {
+            width: 28px;
+            height: 28px;
+            background: rgba(192, 57, 43, 0.3);
+            border: 1px solid rgba(192, 57, 43, 0.5);
+            border-radius: 50%;
+            color: #e74c3c;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .game-delete-btn:hover {
+            background: rgba(192, 57, 43, 0.6);
+            color: #fff;
+            transform: scale(1.1);
+        }
+        .game-timestamp {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.4);
+            margin-top: 2px;
+        }
+        /* Delete confirm modal */
+        .delete-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .delete-modal-overlay.hidden { display: none; }
+        .delete-modal-box {
+            background: #1a1a1a;
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            max-width: 360px;
+            width: 90%;
+        }
+        .delete-modal-box h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            color: var(--gold);
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+        .delete-modal-box p {
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 24px;
+        }
+        .delete-modal-btns {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .delete-modal-btns button {
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            border: none;
+            min-width: 100px;
+        }
+        .btn-delete-confirm { background: #c0392b; color: #fff; }
+        .btn-delete-cancel {
+            background: rgba(255,255,255,0.1);
+            color: var(--cream);
+            border: 1px solid rgba(255,255,255,0.3) !important;
+        }
+    </style>
 </head>
 <body class="settings-page">
     <div id="background-layer" class="background-layer"></div>
@@ -548,5 +627,16 @@
         </main>
 
     <script src="/js/settings.js"></script>
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="delete-modal-overlay hidden">
+        <div class="delete-modal-box">
+            <h3>DELETE GAME?</h3>
+            <p>This will permanently remove this game and all its data.</p>
+            <div class="delete-modal-btns">
+                <button class="btn-delete-cancel" onclick="cancelDelete()">CANCEL</button>
+                <button class="btn-delete-confirm" onclick="executeDelete()">DELETE</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

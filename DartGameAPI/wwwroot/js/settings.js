@@ -3313,3 +3313,54 @@ if (document.readyState === 'loading') {
 } else {
     initTuning();
 }
+
+// ============================================================================
+// Game Delete + Timestamp Functions
+// ============================================================================
+
+let pendingDeleteGameId = null;
+
+function confirmDeleteGame(gameId) {
+    pendingDeleteGameId = gameId;
+    document.getElementById('delete-confirm-modal').classList.remove('hidden');
+}
+
+function cancelDelete() {
+    pendingDeleteGameId = null;
+    document.getElementById('delete-confirm-modal').classList.add('hidden');
+}
+
+async function executeDelete() {
+    if (!pendingDeleteGameId) return;
+    const gameId = pendingDeleteGameId;
+    document.getElementById('delete-confirm-modal').classList.add('hidden');
+    try {
+        const resp = await fetch(`/api/games/${gameId}`, { method: 'DELETE' });
+        if (resp.ok) {
+            const card = document.getElementById('game-card-' + gameId);
+            if (card) {
+                card.style.transition = 'opacity 0.3s, transform 0.3s';
+                card.style.opacity = '0';
+                card.style.transform = 'translateX(100px)';
+                setTimeout(() => card.remove(), 300);
+            }
+            // Reload benchmark games after deletion
+            setTimeout(() => loadBenchmarkGames(), 500);
+        } else {
+            console.error('Delete failed:', await resp.text());
+            alert('Failed to delete game');
+        }
+    } catch (e) {
+        console.error('Delete error:', e);
+        alert('Error deleting game: ' + e.message);
+    }
+    pendingDeleteGameId = null;
+}
+
+function formatTimestamp(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+           ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
