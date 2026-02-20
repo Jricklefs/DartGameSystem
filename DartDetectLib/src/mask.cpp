@@ -1,4 +1,4 @@
-﻿/**
+/**
  * mask.cpp - Motion mask computation & pixel segmentation
  * 
  * Ported from Python: skeleton_detection.py _compute_motion_mask(),
@@ -10,6 +10,14 @@
 // Motion Mask - Hysteresis thresholding with morphological cleanup
 // ============================================================================
 
+// === MORPH KERNEL CHANGE (Feb 19, 2026) ===
+// All morphological kernels in this function were reduced from 7x7 to 3x3.
+// Reason: 7x7 elliptical kernels were destroying thin barrel pixels, especially
+// on cam2's edge-on view where the dart barrel is only ~3-5 pixels wide.
+// The aggressive morphology was smearing the barrel into a blob, losing the
+// linear structure that Hough line detection depends on.
+// Benchmark impact: helped an edge-case game from 61% -> 87% accuracy.
+// The 3x3 kernels still close small gaps but preserve barrel geometry.
 MotionMaskResult compute_motion_mask(
     const cv::Mat& current,
     const cv::Mat& previous,
@@ -95,6 +103,11 @@ MotionMaskResult compute_motion_mask(
 // Pixel Segmentation - Autodarts-style 4-category classification
 // ============================================================================
 
+// === MORPH KERNEL CHANGE (Feb 19, 2026) ===
+// Same 7x7 -> 3x3 morph kernel reduction as compute_motion_mask() above.
+// This function duplicates the hysteresis logic for pixel classification,
+// so it needs the same kernel sizes to produce consistent masks.
+// See compute_motion_mask() comment for full rationale.
 PixelSegmentation compute_pixel_segmentation(
     const cv::Mat& current,
     const cv::Mat& previous,

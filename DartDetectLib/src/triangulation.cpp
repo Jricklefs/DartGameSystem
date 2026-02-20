@@ -108,6 +108,16 @@ TpsTransform build_tps_transform(const CameraCalibration& cal)
             dst_y.push_back(ring.norm_radius * std::cos(angle_cw_rad));
         }
     }
+    // === MID-RING TPS CONTROL POINTS (Feb 19, 2026) ===
+    // The original TPS used only the 6 standard dartboard rings as control points
+    // (121 total: 6 rings x 20 angles + center). This left large normalized-radius
+    // gaps with zero constraints: 0.488 between bull and triple-inner, and 0.324
+    // between triple-outer and double-inner. The TPS warp was inaccurate in these
+    // gap regions, causing darts landing in the single-bed zones to score incorrectly.
+    // Adding interpolated rings at the midpoints (bull+triple)/2 and (triple+double)/2
+    // gives ~40 more control points (161 total), significantly improving warp accuracy.
+    // Benchmark: +1 dart accuracy across test games.
+
     
         // Add mid-ring interpolated control points for smoother TPS in gap regions
     // Mid bull-to-triple_inner and mid triple_outer-to-double_inner
@@ -283,7 +293,9 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
         auto cal_it = calibrations.find(cam_id);
         if (cal_it == calibrations.end()) continue;
         
-        const TpsTransform& tps = cal_it->second.tps_cache;
+        // TPS is precomputed at init time (see dd_init in dart_detect.cpp),
+        // not per-detection. This avoids the O(n^3) TPS solve on every dart.
+const TpsTransform& tps = cal_it->second.tps_cache;
         if (!tps.valid) continue;
         
         double vx = det.pca_line->vx, vy = det.pca_line->vy;

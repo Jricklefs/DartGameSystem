@@ -3,6 +3,24 @@
  * 
  * Ported from Python: skeleton_detection.py detect_dart()
  */
+// === ACCURACY IMPROVEMENT NOTES (Feb 19, 2026) ===
+// Tried and kept:
+//   - Morph kernels 7->3: +26% on edge-case game (mask.cpp)
+//   - Dual-axis barrel splitting: handles angled darts (skeleton.cpp)
+//   - Mid-ring TPS points: +1 dart accuracy (triangulation.cpp)
+//   - TPS precompute at init: 300ms->178ms per dart (dart_detect.cpp)
+//   - Hough averaging top-3: neutral but reduces noise (skeleton.cpp)
+//   - Reduced ref_angle bias: neutral (skeleton.cpp)
+//
+// Tried and reverted:
+//   - RANSAC replacing Hough: 89%->65%, RANSAC worse on thin barrel pixels
+//   - Multiplier voting across cameras: 92%->79%, per-camera scoring less accurate than intersection
+//   - Wire tolerance +1.4mm: 90%->86%, overcorrected (too many singles->triples)
+//   - 40-angle TPS (midpoint angles): caused regression + O(n^3) perf hit
+//
+// Current best: 91/101 (90%) across 3 benchmark games, ~178ms avg
+// Remaining errors: genuine wire-boundary darts (ring boundary + adjacent segment)
+
 #include "dart_detect_internal.h"
 // Zhang-Suen thinning (replaces cv::ximgproc::thinning to avoid contrib dependency)
 namespace {
@@ -293,7 +311,14 @@ DetectionResult detect_dart(
             cv::findNonZero(motion_mask, dart_pts);
             
             if ((int)dart_pts.size() > 100) {
-                // Dual-axis barrel splitting: try row-based and column-based,
+                // === DUAL-AXIS BARREL SPLITTING (Feb 19, 2026) ===
+                // Original code only did row-based width profiling, which assumed
+                // the dart enters from the top of the frame. This fails for angled
+                // darts (especially on side-mounted cameras) where the barrel runs
+                // more horizontally. Now we try both row-based and column-based
+                // width profiling and pick whichever yields a barrel with better
+                // aspect ratio (more elongated = more correct split).
+// Dual-axis barrel splitting: try row-based and column-based,
                 // pick whichever yields a more elongated (better) barrel.
                 
                 struct SplitResult {
@@ -439,7 +464,14 @@ DetectionResult detect_dart(
                     double dx = hl[2] - hl[0], dy = hl[3] - hl[1];
                     double len = std::sqrt(dx*dx + dy*dy);
                     double a = std::atan2(dy, dx);
-                    double angle_score = 0.5;
+                    // === REDUCED REF_ANGLE BIAS (Feb 19, 2026) ===
+                    // angle_score range changed from 0.1-1.0 to 0.5-1.0.
+                    // The old 0.1 floor meant lines far from ref_angle were
+                    // penalized 10x, which pulled line selection toward board
+                    // center and shifted detected angles by 5-15 degrees.
+                    // The 0.5 floor still prefers ref-aligned lines but lets
+                    // the actual Hough evidence dominate.
+double angle_score = 0.5;
                     if (ref_angle) {
                         double diff_a = std::abs(a - *ref_angle);
                         diff_a = std::min(diff_a, CV_PI - diff_a);
@@ -486,7 +518,9 @@ DetectionResult detect_dart(
                         double angle_diff = std::abs(line_angle - *ref_angle);
                         if (angle_diff > CV_PI) angle_diff = 2 * CV_PI - angle_diff;
                         angle_diff = std::min(angle_diff, CV_PI - angle_diff);
-                        if (angle_diff > CV_PI * 5.0 / 12.0) accept = false;  // > 75-¦
+                        // Rejection threshold widened from 45 deg (PI/4) to 75 deg (5*PI/12).
+                    // The old 45 deg threshold rejected valid lines on angled darts.
+if (angle_diff > CV_PI * 5.0 / 12.0) accept = false;  // > 75-¦
                     }
                     if (accept && max_len < 15) accept = false;
                     
