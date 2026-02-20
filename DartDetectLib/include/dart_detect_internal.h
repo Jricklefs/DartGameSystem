@@ -17,6 +17,9 @@
 #include <cmath>
 #include <mutex>
 
+// Phase 3: Enable/disable ROI cropping (gate for safety)
+#define ENABLE_ROI_CROP
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -42,13 +45,9 @@ static const double TRIPLE_OUTER_NORM = TRIPLE_OUTER_RADIUS_MM / DOUBLE_OUTER_RA
 static const double DOUBLE_INNER_NORM = DOUBLE_INNER_RADIUS_MM / DOUBLE_OUTER_RADIUS_MM;
 static const double DOUBLE_OUTER_NORM = 1.0;
 
-// Detection parameters
-static const int BLOB_CHAIN_DIST = 150;
-// MORPH_CLOSE_KERNEL_SIZE: reduced from 15 to 7 (Feb 19, 2026).
-// Original 15x15 close was too aggressive for thin barrel masks, merging
-// the barrel with nearby noise blobs. 7x7 still bridges small gaps in
-// the barrel without destroying its linear structure.
-static const int MORPH_CLOSE_KERNEL_SIZE = 7;
+// Detection parameters (base values at 1080p; scaled by resolution_scale at runtime)
+static const int BLOB_CHAIN_DIST_BASE = 150;
+static const int MORPH_CLOSE_KERNEL_SIZE_BASE = 7;
 static const int LINE_ABSORB_PERP_DIST = 20;
 static const int LINE_ABSORB_EXTEND_LIMIT = 80;
 static const int PCA_GAP_TOLERANCE = 120;
@@ -56,6 +55,41 @@ static const int PCA_MAX_WALK = 500;
 static const int PCA_PERP_TOLERANCE = 15;
 static const double DETECTION_MIN_NEW_DART_PIXEL_RATIO = 0.6;
 static const int MOVED_PIXEL_DISTANCE = 15;
+
+// Phase 3: Resolution-adaptive thresholds — base values at 1080p
+static const double MASK_QUALITY_THRESHOLD_BASE = 12000.0;
+static const double BARREL_WIDTH_MAX_BASE = 20.0;
+static const double DART_LENGTH_MIN_BASE = 150.0;
+static const double RANSAC_THRESHOLD_BASE = 6.0;
+static const double RANSAC_MIN_PAIR_DIST_BASE = 20.0;
+
+// Legacy aliases for backward compat (used where scale not yet applied)
+static const int BLOB_CHAIN_DIST = 150;
+static const int MORPH_CLOSE_KERNEL_SIZE = 7;
+
+// ============================================================================
+// Phase 3: Resolution Scale Helper
+// ============================================================================
+
+// Compute scale factor from image height relative to 1080p reference
+inline double compute_resolution_scale(int image_height) {
+    return (image_height > 0) ? (double)image_height / 1080.0 : 1.0;
+}
+
+// Scale a pixel value and ensure it's at least min_val
+inline int scale_px(int base, double scale, int min_val = 1) {
+    return std::max(min_val, (int)std::round(base * scale));
+}
+
+// Scale a pixel value and ensure it's odd (for kernel sizes)
+inline int scale_px_odd(int base, double scale, int min_val = 3) {
+    int v = std::max(min_val, (int)std::round(base * scale));
+    return (v % 2 == 0) ? v + 1 : v;
+}
+
+inline double scale_d(double base, double scale) {
+    return base * scale;
+}
 
 // ============================================================================
 // Types
@@ -141,10 +175,14 @@ struct CameraCalibration {
     std::optional<EllipseData> bullseye_ellipse;
     
     // Precomputed TPS transform (built once at init, not per-detection).
-    // Added Feb 19, 2026: TPS solve is O(n^3) on ~161 control points.
-    // Previously built per-detection, adding 500ms+ per dart. Now computed
-    // once in dd_init() and cached here. Reduced avg detection from 300ms to 178ms.
     TpsTransform tps_cache;
+    
+    // Phase 3: Board ROI — bounding rect of outer double ellipse + margin
+    cv::Rect board_roi;       // ROI in full-image space
+    bool has_roi = false;
+    
+    // Phase 3: Resolution scale factor (image_height / 1080.0)
+    double resolution_scale = 1.0;
 };
 
 // Board cache: stores previous dart masks for multi-dart detection
@@ -220,7 +258,8 @@ DetectionResult detect_dart(
     const cv::Mat& previous_frame,
     Point2f board_center,
     const std::vector<cv::Mat>& prev_dart_masks,
-    int diff_threshold = 15
+    int diff_threshold = 15,
+    double resolution_scale = 1.0
 );
 
 // ============================================================================
