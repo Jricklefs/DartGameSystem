@@ -106,6 +106,7 @@ void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
 #include <algorithm>
 #include <set>
 #include <numeric>
+#include <random>
 
 // ============================================================================
 // Helper: Find flight blob (largest contour)
@@ -447,86 +448,78 @@ DetectionResult detect_dart(
             }
         }
         
-        // === Barrel skeleton + Hough ===
+        // === Barrel RANSAC line fitting ===
         if (!barrel_mask.empty() && barrel_info) {
-            cv::Mat skel;
-            zhangSuenThinning(barrel_mask, skel);
-            
-            std::vector<cv::Vec4i> hough_lines;
-            cv::HoughLinesP(skel, hough_lines, 1, CV_PI / 180, 8, 10, 5);
-            
-            if (!hough_lines.empty()) {
-                // Score lines: length * angle alignment
-                struct ScoredLine { cv::Vec4i line; double length, score, angle; };
-                std::vector<ScoredLine> scored;
-                
-                for (const auto& hl : hough_lines) {
-                    double dx = hl[2] - hl[0], dy = hl[3] - hl[1];
+            std::vector<cv::Point> barrel_pts;
+            cv::findNonZero(barrel_mask, barrel_pts);
+
+            if (barrel_pts.size() > 20) {
+                // RANSAC line fit
+                int best_inliers = 0;
+                double best_vx = 0, best_vy = 0, best_cx = 0, best_cy = 0;
+                int iterations = 150;
+                double threshold = 2.5; // pixels
+
+                std::mt19937 rng(42); // deterministic seed
+                std::uniform_int_distribution<int> dist(0, (int)barrel_pts.size() - 1);
+
+                for (int iter = 0; iter < iterations; ++iter) {
+                    // Pick 2 random points
+                    int i1 = dist(rng), i2 = dist(rng);
+                    if (i1 == i2) continue;
+
+                    double dx = barrel_pts[i2].x - barrel_pts[i1].x;
+                    double dy = barrel_pts[i2].y - barrel_pts[i1].y;
                     double len = std::sqrt(dx*dx + dy*dy);
-                    double a = std::atan2(dy, dx);
-                    // === REDUCED REF_ANGLE BIAS (Feb 19, 2026) ===
-                    // angle_score range changed from 0.1-1.0 to 0.5-1.0.
-                    // The old 0.1 floor meant lines far from ref_angle were
-                    // penalized 10x, which pulled line selection toward board
-                    // center and shifted detected angles by 5-15 degrees.
-                    // The 0.5 floor still prefers ref-aligned lines but lets
-                    // the actual Hough evidence dominate.
-double angle_score = 0.5;
-                    if (ref_angle) {
-                        double diff_a = std::abs(a - *ref_angle);
-                        diff_a = std::min(diff_a, CV_PI - diff_a);
-                        angle_score = std::max(0.5, 0.5 + 0.5 * std::cos(diff_a));
+                    if (len < 5) continue;
+
+                    double nx = -dy / len, ny = dx / len; // normal
+
+                    // Count inliers
+                    int inliers = 0;
+                    for (const auto& p : barrel_pts) {
+                        double d = std::abs(nx * (p.x - barrel_pts[i1].x) + ny * (p.y - barrel_pts[i1].y));
+                        if (d <= threshold) inliers++;
                     }
-                    scored.push_back({hl, len, len * angle_score, a});
+
+                    if (inliers > best_inliers) {
+                        best_inliers = inliers;
+                        best_vx = dx / len;
+                        best_vy = dy / len;
+                        // Refit on inliers using fitLine for sub-pixel accuracy
+                        std::vector<cv::Point2f> inlier_pts;
+                        for (const auto& p : barrel_pts) {
+                            double d = std::abs(nx * (p.x - barrel_pts[i1].x) + ny * (p.y - barrel_pts[i1].y));
+                            if (d <= threshold) inlier_pts.push_back(cv::Point2f(p.x, p.y));
+                        }
+                        if (inlier_pts.size() > 5) {
+                            cv::Vec4f lp;
+                            cv::fitLine(inlier_pts, lp, cv::DIST_HUBER, 0, 0.01, 0.01);
+                            best_vx = lp[0]; best_vy = lp[1];
+                            best_cx = lp[2]; best_cy = lp[3];
+                        }
+                    }
                 }
-                
-                std::sort(scored.begin(), scored.end(),
-                    [](const auto& a, const auto& b) { return a.score > b.score; });
-                
-                // Average top-N Hough lines (up to 3) within 30 deg of best
-                double best_angle = scored[0].angle;
-                double avg_vx = 0, avg_vy = 0, total_weight = 0;
-                double max_len = 0;
-                int n_avg = 0;
-                for (int si = 0; si < (int)scored.size() && n_avg < 3; ++si) {
-                    double adiff = std::abs(scored[si].angle - best_angle);
-                    adiff = std::min(adiff, CV_PI - adiff);
-                    if (adiff > CV_PI / 6.0) continue;  // > 30 deg
-                    double dx_i = scored[si].line[2] - scored[si].line[0];
-                    double dy_i = scored[si].line[3] - scored[si].line[1];
-                    double n_i = std::sqrt(dx_i*dx_i + dy_i*dy_i);
-                    if (n_i <= 0) continue;
-                    double uvx = dx_i / n_i, uvy = dy_i / n_i;
-                    // Align direction with best line
-                    double dot_best = uvx * std::cos(best_angle) + uvy * std::sin(best_angle);
-                    if (dot_best < 0) { uvx = -uvx; uvy = -uvy; }
-                    avg_vx += uvx * scored[si].score;
-                    avg_vy += uvy * scored[si].score;
-                    total_weight += scored[si].score;
-                    max_len = std::max(max_len, scored[si].length);
-                    ++n_avg;
-                }
-                if (total_weight > 0) { avg_vx /= total_weight; avg_vy /= total_weight; }
-                double norm = std::sqrt(avg_vx*avg_vx + avg_vy*avg_vy);
-                if (norm > 0) {
-                    double vx = avg_vx / norm, vy = avg_vy / norm;
-                    if (vy < 0) { vx = -vx; vy = -vy; }
-                    
+
+                double inlier_ratio = (double)best_inliers / barrel_pts.size();
+
+                if (inlier_ratio >= 0.3) {
+                    // Orient direction: vy > 0 convention
+                    if (best_vy < 0) { best_vx = -best_vx; best_vy = -best_vy; }
+
+                    // Angle check against ref_angle (relaxed)
                     bool accept = true;
                     if (ref_angle) {
-                        double line_angle = std::atan2(vy, vx);
+                        double line_angle = std::atan2(best_vy, best_vx);
                         double angle_diff = std::abs(line_angle - *ref_angle);
                         if (angle_diff > CV_PI) angle_diff = 2 * CV_PI - angle_diff;
                         angle_diff = std::min(angle_diff, CV_PI - angle_diff);
-                        // Rejection threshold widened from 45 deg (PI/4) to 75 deg (5*PI/12).
-                    // The old 45 deg threshold rejected valid lines on angled darts.
-if (angle_diff > CV_PI * 5.0 / 12.0) accept = false;  // > 75-¦
+                        if (angle_diff > CV_PI * 75.0 / 180.0) accept = false;
                     }
-                    if (accept && max_len < 15) accept = false;
-                    
+
                     if (accept) {
-                        pca_line = PcaLine{vx, vy, barrel_info->pivot.x, barrel_info->pivot.y,
-                                           max_len, "barrel_hough"};
+                        pca_line = PcaLine{best_vx, best_vy, best_cx, best_cy,
+                                           (double)best_inliers, "barrel_ransac"};
                     }
                 }
             }
