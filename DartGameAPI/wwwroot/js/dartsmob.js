@@ -54,6 +54,11 @@ let selectedMode = 'Practice';
 let selectedBestOf = 5;
 let lookingForMatch = false;  // Looking for match toggle state
 
+// Leg-won flow: both conditions must be met before starting next leg
+let legWonBoardCleared = false;
+let legWonContinueClicked = false;
+let isLegWonState = false;
+
 // ==========================================================================
 // Initialization
 // ==========================================================================
@@ -341,9 +346,17 @@ function handleDartThrown(data) {
 }
 
 function handleBoardCleared(data) {
-    console.log('Board cleared - PPD stays visible until Next Player');
-    // Do NOT clear PPD boxes here - player just removed darts
-    // PPD and turn total stay visible until Next Player is pressed
+    console.log('Board cleared');
+    
+    // If we're in leg-won state, mark board as cleared and check if we can proceed
+    if (isLegWonState) {
+        console.log('Board cleared during leg-won state');
+        legWonBoardCleared = true;
+        checkLegWonReady();
+        return;
+    }
+    
+    // Normal flow: PPD stays visible until Next Player
 }
 
 function handleDartRemoved(data) {
@@ -649,6 +662,11 @@ function handleLegWon(data) {
 }
 
 function showLegWonModal(winnerName, legsWon, legsToWin, players) {
+    // Enter leg-won state - reset flags
+    isLegWonState = true;
+    legWonBoardCleared = false;
+    legWonContinueClicked = false;
+    
     let modal = document.getElementById('leg-won-modal');
     if (!modal) {
         modal = document.createElement('div');
@@ -656,25 +674,26 @@ function showLegWonModal(winnerName, legsWon, legsToWin, players) {
         modal.className = 'modal hidden';
         modal.innerHTML = `
             <div class="modal-content winner-content">
-                <h2 class="winner-title">🎯 LEG WON! 🎯</h2>
+                <h2 class="winner-title">\u{1F3AF} LEG WON! \u{1F3AF}</h2>
                 <div class="winner-name"></div>
                 <div class="leg-standings"></div>
+                <p id="leg-won-status" style="margin-top: 10px; color: #aaa; font-size: 0.9rem;">Remove darts and click Continue</p>
                 <button class="btn btn-primary" id="leg-won-ok" style="margin-top: 20px;">Continue</button>
             </div>
         `;
         document.body.appendChild(modal);
         
-        document.getElementById('leg-won-ok').addEventListener('click', async () => {
-            modal.classList.add('hidden');
-            // Refresh game state from server to get new leg
-            try {
-                const resp = await fetch('/api/games/board/' + boardId);
-                if (resp.ok) {
-                    currentGame = await resp.json();
-                    updateScoreboard();
-                    updateCurrentTurn();
-                }
-            } catch (e) { console.error('Failed to refresh game:', e); }
+        document.getElementById('leg-won-ok').addEventListener('click', () => {
+            console.log('Continue clicked during leg-won state');
+            legWonContinueClicked = true;
+            
+            // Update status text
+            const statusEl = document.getElementById('leg-won-status');
+            if (statusEl && !legWonBoardCleared) {
+                statusEl.textContent = 'Waiting for darts to be removed...';
+            }
+            
+            checkLegWonReady();
         });
     }
     
@@ -683,13 +702,51 @@ function showLegWonModal(winnerName, legsWon, legsToWin, players) {
     // Build standings
     const standings = players.map(p => 
         `${p.Name}: ${p.LegsWon} / ${legsToWin}`
-    ).join('  •  ');
+    ).join('  \u2022  ');
     modal.querySelector('.leg-standings').textContent = standings;
+    
+    // Reset status text
+    const statusEl = document.getElementById('leg-won-status');
+    if (statusEl) statusEl.textContent = 'Remove darts and click Continue';
     
     modal.classList.remove('hidden');
     
     if (audioSettings.mode === 'tts') {
         dartAudio.speak(`${winnerName} wins the leg! ${legsWon} of ${legsToWin}.`);
+    }
+}
+
+async function checkLegWonReady() {
+    if (!legWonBoardCleared || !legWonContinueClicked) {
+        console.log('Leg-won not ready:', { boardCleared: legWonBoardCleared, continueClicked: legWonContinueClicked });
+        return;
+    }
+    
+    console.log('Both conditions met - starting next leg');
+    
+    // Hide the modal
+    const modal = document.getElementById('leg-won-modal');
+    if (modal) modal.classList.add('hidden');
+    
+    // Reset flags
+    isLegWonState = false;
+    legWonBoardCleared = false;
+    legWonContinueClicked = false;
+    
+    // Call server to start next leg
+    try {
+        const resp = await fetch('/api/games/' + currentGame.id + '/next-leg', { method: 'POST' });
+        if (resp.ok) {
+            const data = await resp.json();
+            currentGame = data.game;
+            updateScoreboard();
+            clearCurrentTurn();
+            console.log('Next leg started successfully');
+        } else {
+            console.error('Failed to start next leg:', resp.status);
+        }
+    } catch (e) {
+        console.error('Error starting next leg:', e);
     }
 }
 

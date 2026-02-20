@@ -242,6 +242,14 @@ public class GamesController : ControllerBase
             await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
         }
+        else if (game != null && (game.EngineState == EngineState.LegEnded || game.EngineState == EngineState.SetEnded))
+        {
+            // Leg/set just ended - don't advance turn, just clear board and notify UI
+            _logger.LogInformation("Board cleared during LegEnded/SetEnded state - waiting for next-leg call");
+            await _hubContext.SendRebase(boardId);
+            await _hubContext.SendBoardCleared(boardId);
+            return Ok(new { message = "Board cleared (leg ended)", turnAdvanced = false, dartCount, legEnded = true });
+        }
         else if (game != null && isBustConfirmed)
         {
             _gameService.NextTurn(game);
