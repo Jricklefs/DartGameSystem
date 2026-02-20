@@ -248,6 +248,106 @@
                 display: none;
             }
         }
+
+        .game-card {
+            position: relative;
+        }
+        
+        .game-delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 36px;
+            height: 36px;
+            background: rgba(192, 57, 43, 0.3);
+            border: 1px solid rgba(192, 57, 43, 0.5);
+            border-radius: 50%;
+            color: #e74c3c;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+        
+        .game-delete-btn:hover {
+            background: rgba(192, 57, 43, 0.6);
+            color: #fff;
+            transform: scale(1.1);
+        }
+        
+        .game-timestamp {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.45);
+            margin-top: 2px;
+        }
+        
+        /* Delete confirm modal */
+        .delete-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .delete-modal-overlay.hidden {
+            display: none;
+        }
+        
+        .delete-modal-box {
+            background: #1a1a1a;
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            max-width: 360px;
+            width: 90%;
+        }
+        
+        .delete-modal-box h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            color: var(--gold);
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+        
+        .delete-modal-box p {
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 24px;
+        }
+        
+        .delete-modal-btns {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .delete-modal-btns button {
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            border: none;
+            min-width: 100px;
+        }
+        
+        .btn-delete-confirm {
+            background: #c0392b;
+            color: #fff;
+        }
+        
+        .btn-delete-cancel {
+            background: rgba(255,255,255,0.1);
+            color: var(--cream);
+            border: 1px solid rgba(255,255,255,0.3) !important;
+        }
     </style>
 </head>
 <body class="stats-page">
@@ -428,7 +528,8 @@
             }
 
             list.innerHTML = games.slice(0, 20).map(g => `
-                <div class="game-card">
+                <div class="game-card" id="game-card-${g.gameId}">
+                    <button class="game-delete-btn" onclick="confirmDeleteGame(${g.gameId})" title="Delete game">🗑️</button>
                     <div class="game-player ${g.winner === g.player1?.name ? 'winner' : ''}">
                         <div class="player-avatar">${(g.player1?.name || 'P1').charAt(0)}</div>
                         <div class="player-name">${g.player1?.name || 'Player 1'}</div>
@@ -436,6 +537,7 @@
                     <div class="game-vs">
                         <div class="game-score">${g.player1?.score || 0} - ${g.player2?.score || 0}</div>
                         <div class="game-meta">${g.gameMode || '501'} • ${formatDate(g.endedAt || g.date)}</div>
+                        <div class="game-timestamp">${formatTimestamp(g.startedAt || g.endedAt)}</div>
                     </div>
                     <div class="game-player right ${g.winner === g.player2?.name ? 'winner' : ''}">
                         <div class="player-avatar">${(g.player2?.name || 'P2').charAt(0)}</div>
@@ -457,7 +559,62 @@
             return d.toLocaleDateString();
         }
 
+        function formatTimestamp(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+                   ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
+        let pendingDeleteId = null;
+
+        function confirmDeleteGame(gameId) {
+            pendingDeleteId = gameId;
+            document.getElementById('delete-confirm-modal').classList.remove('hidden');
+        }
+
+        function cancelDelete() {
+            pendingDeleteId = null;
+            document.getElementById('delete-confirm-modal').classList.add('hidden');
+        }
+
+        async function executeDelete() {
+            if (!pendingDeleteId) return;
+            const gameId = pendingDeleteId;
+            document.getElementById('delete-confirm-modal').classList.add('hidden');
+            try {
+                const resp = await fetch(`/api/games/${gameId}`, { method: 'DELETE' });
+                if (resp.ok) {
+                    const card = document.getElementById('game-card-' + gameId);
+                    if (card) {
+                        card.style.transition = 'opacity 0.3s, transform 0.3s';
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateX(100px)';
+                        setTimeout(() => card.remove(), 300);
+                    }
+                } else {
+                    console.error('Delete failed:', await resp.text());
+                }
+            } catch (e) {
+                console.error('Delete error:', e);
+            }
+            pendingDeleteId = null;
+        }
+
         loadStats();
     </script>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="delete-modal-overlay hidden">
+        <div class="delete-modal-box">
+            <h3>DELETE GAME?</h3>
+            <p>This will permanently remove this game and all its data.</p>
+            <div class="delete-modal-btns">
+                <button class="btn-delete-cancel" onclick="cancelDelete()">CANCEL</button>
+                <button class="btn-delete-confirm" onclick="executeDelete()">DELETE</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

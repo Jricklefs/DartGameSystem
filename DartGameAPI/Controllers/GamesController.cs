@@ -111,8 +111,8 @@ public class GamesController : ControllerBase
         
         if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
         {
-            // Motion detected but no dart tip found — record as a miss (score 0)
-            _logger.LogInformation("[{RequestId}] No tip found — recording as MISS", requestId);
+            // Motion detected but no dart tip found ΓÇö record as a miss (score 0)
+            _logger.LogInformation("[{RequestId}] No tip found ΓÇö recording as MISS", requestId);
             var missDart = new DartThrow
             {
                 Index = dartsThisTurn.Count,
@@ -327,6 +327,7 @@ public class GamesController : ControllerBase
             {
                 g.gameId,
                 g.gameMode,
+                g.startedAt,
                 g.endedAt,
                 g.durationSeconds,
                 player1 = players.ElementAtOrDefault(0) is var p1 && p1 != null ? new { name = p1.Name, score = p1.IsWinner ? 3 : (3 - 1), isWinner = p1.IsWinner } : null,
@@ -530,6 +531,38 @@ public class GamesController : ControllerBase
         {
             return BadRequest(new { error = ex.Message, code = "GAME_ERROR" });
         }
+    }
+
+    /// <summary>
+    /// Delete a game and all associated data
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteGame(string id)
+    {
+        if (!Guid.TryParse(id, out var gameId))
+            return BadRequest(new { error = "Invalid game ID" });
+
+        var game = await _db.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+        if (game == null) return NotFound(new { error = "Game not found" });
+
+        // Delete throws via game players
+        var gamePlayerIds = await _db.GamePlayers.Where(gp => gp.GameId == gameId).Select(gp => gp.GamePlayerId).ToListAsync();
+        var throws = _db.Throws.Where(t => gamePlayerIds.Contains(t.GamePlayerId));
+        _db.Throws.RemoveRange(throws);
+
+        var gamePlayers = _db.GamePlayers.Where(gp => gp.GameId == gameId);
+        _db.GamePlayers.RemoveRange(gamePlayers);
+
+        // DartLocation uses string GameId
+        var gameIdStr = id;
+        var dartLocations = _db.DartLocations.Where(dl => dl.GameId == gameIdStr);
+        _db.DartLocations.RemoveRange(dartLocations);
+
+        _db.Games.Remove(game);
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Game {GameId} deleted", gameId);
+        return Ok(new { message = "Game deleted", gameId });
     }
 
     [HttpGet("{id}")]
