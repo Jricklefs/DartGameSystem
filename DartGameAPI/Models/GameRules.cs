@@ -2,8 +2,6 @@ namespace DartGameAPI.Models;
 
 /// <summary>
 /// Game rules configuration. Built from GameMode at game creation.
-/// Centralizes all game-mode-specific rules so game logic can read from one place.
-/// Extensible for future game modes (e.g., Around the World, Killer, etc.)
 /// </summary>
 public class GameRules
 {
@@ -21,6 +19,9 @@ public class GameRules
     
     /// <summary>Must start scoring on a double</summary>
     public bool RequireDoubleIn { get; set; } = false;
+
+    /// <summary>Must finish on a double or triple (Master Out)</summary>
+    public bool MasterOut { get; set; } = false;
     
     /// <summary>Which segments are in play (null = all). For Cricket: 15-20 + Bull</summary>
     public List<int>? ActiveSegments { get; set; } = null;
@@ -32,9 +33,7 @@ public class GameRules
     public string DisplayName { get; set; } = "Practice";
 
     /// <summary>
-    /// Build rules from a game mode. Central place for all mode-specific config.
-    /// When you add a new GameMode enum value, add a case here and all the rules
-    /// for that mode live in one place instead of scattered across services.
+    /// Build rules from a game mode.
     /// </summary>
     public static GameRules FromMode(GameMode mode, bool? requireDoubleOut = null)
     {
@@ -64,6 +63,14 @@ public class GameRules
                 RequireDoubleOut = false,
                 DisplayName = "Debug 20"
             },
+            GameMode.X01 => new GameRules
+            {
+                DartsPerTurn = 3,
+                StartingScore = 501, // Default, overridden by MatchConfig
+                Direction = ScoringDirection.CountDown,
+                RequireDoubleOut = requireDoubleOut ?? false,
+                DisplayName = "X01"
+            },
             GameMode.Cricket => new GameRules
             {
                 DartsPerTurn = 3,
@@ -81,7 +88,6 @@ public class GameRules
             }
         };
 
-        // Override double-out if explicitly set by the caller
         if (requireDoubleOut.HasValue)
             rules.RequireDoubleOut = requireDoubleOut.Value;
 
@@ -90,11 +96,10 @@ public class GameRules
 }
 
 /// <summary>
-/// Scoring direction — X01 counts down to zero, Practice/Cricket count up.
-/// Used by GameRules.Direction to drive scoring logic.
+/// Scoring direction
 /// </summary>
 public enum ScoringDirection
 {
-    CountUp,    // Practice: score accumulates from 0
-    CountDown   // X01: score decrements from StartingScore to 0
+    CountUp,
+    CountDown
 }

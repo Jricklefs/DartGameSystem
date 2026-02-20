@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +20,7 @@ public class GamesController : ControllerBase
     private readonly ILogger<GamesController> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly BenchmarkService _benchmark;
+    private readonly X01GameEngine _x01Engine;
 
     public GamesController(
         GameService gameService, 
@@ -28,7 +29,8 @@ public class GamesController : ControllerBase
         DartsMobDbContext db, 
         ILogger<GamesController> logger,
         IHttpClientFactory httpClientFactory,
-        BenchmarkService benchmark)
+        BenchmarkService benchmark,
+        X01GameEngine x01Engine)
     {
         _gameService = gameService;
         _dartDetect = dartDetect;
@@ -37,17 +39,13 @@ public class GamesController : ControllerBase
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _benchmark = benchmark;
+        _x01Engine = x01Engine;
     }
 
     // ===== HUB ENDPOINT - Receives images from DartSensor =====
 
     /// <summary>
     /// Hub detect endpoint - receives images from DartSensor, forwards to DartDetect.
-    /// Hub-and-spoke: Sensor â†’ GameAPI â†’ DetectAPI
-    /// 
-    /// DartSensor only calls this when motion detected (new dart landed).
-    /// DartDetect now handles differential detection and returns only the NEW dart.
-    /// We just need to score whatever DartDetect returns.
     /// </summary>
     [HttpPost("detect")]
     public async Task<ActionResult> Detect([FromBody] DetectRequest request)
@@ -57,38 +55,26 @@ public class GamesController : ControllerBase
         var requestId = request.RequestId ?? Guid.NewGuid().ToString()[..8];
         _logger.LogInformation("[TIMING][{RequestId}] DG: Received detect @ epoch={Epoch}", requestId, epochMs);
         
-        _logger.LogDebug("Received detect request with {Count} images from board {BoardId}", 
-            request.Images?.Count ?? 0, request.BoardId);
-
         var game = _gameService.GetGameForBoard(request.BoardId ?? "default");
         if (game == null)
-        {
             return Ok(new { message = "No active game", darts = new List<object>() });
-        }
 
         if (game.State != GameState.InProgress)
-        {
             return Ok(new { message = "Game not in progress", darts = new List<object>() });
-        }
 
         // === DART COUNT GUARD ===
-        // Reject detections if the turn already has the max number of darts.
-        // This prevents phantom dart 4+ from being scored when a dart is pulled
-        // and the sensor sees "new motion" while the board still has darts on it.
         var guardDarts = game.CurrentTurn?.Darts ?? new List<DartThrow>();
         if (guardDarts.Count >= game.DartsPerTurn)
         {
-            _logger.LogWarning("[GUARD] Rejected dart detection - turn already has {Count}/{Max} darts. Likely phantom from dart removal.",
+            _logger.LogWarning("[GUARD] Rejected dart detection - turn already has {Count}/{Max} darts.",
                 guardDarts.Count, game.DartsPerTurn);
             return Ok(new { message = "Turn complete - max darts reached", darts = new List<object>() });
         }
 
         // === BUST GUARD ===
-        // If the turn is busted, reject new detections until UI confirms the bust.
-        // The player may still be pulling darts, which triggers sensor motion.
-        if (game.CurrentTurn?.IsBusted == true)
+        if (game.CurrentTurn?.IsBusted == true || game.CurrentTurn?.BustPending == true)
         {
-            _logger.LogWarning("[GUARD] Rejected dart detection - turn is busted, waiting for UI confirmation.");
+            _logger.LogWarning("[GUARD] Rejected dart detection - turn is busted, waiting for confirmation.");
             return Ok(new { message = "Turn busted - waiting for confirmation", darts = new List<object>() });
         }
 
@@ -99,7 +85,6 @@ public class GamesController : ControllerBase
             Image = i.Image
         }).ToList() ?? new List<CameraImageDto>();
         
-        // Forward before images if provided (for clean diff detection)
         var beforeImages = request.BeforeImages?.Select(i => new CameraImageDto
         {
             CameraId = i.CameraId,
@@ -108,60 +93,35 @@ public class GamesController : ControllerBase
 
         if (beforeImages == null || beforeImages.Count == 0)
         {
-            _logger.LogWarning(
-                "[TIMING][{RequestId}] DG: Missing before images payload for board {BoardId} (cameraCount={CameraCount})",
-                requestId, request.BoardId ?? "default", images.Count);
-        }
-        else if (beforeImages.Count != images.Count)
-        {
-            _logger.LogWarning(
-                "[TIMING][{RequestId}] DG: before image count mismatch for board {BoardId} (current={CurrentCount}, before={BeforeCount})",
-                requestId, request.BoardId ?? "default", images.Count, beforeImages.Count);
+            _logger.LogWarning("[TIMING][{RequestId}] DG: Missing before images", requestId);
         }
 
-        // Get dart number for differential detection (darts already scored + 1)
         var dartsThisTurn = game.CurrentTurn?.Darts ?? new List<DartThrow>();
         var dartNumber = dartsThisTurn.Count + 1;
         var boardId = request.BoardId ?? "default";
 
-        // Update benchmark context for DartDetect (fire and forget)
         var player = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
         _ = UpdateBenchmarkContext(boardId, game.Id, game.CurrentRound, player?.Name);
 
         var ddStartEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        _logger.LogInformation("[TIMING][{RequestId}] DG: Calling DartDetect @ epoch={Epoch} (prep={Prep}ms)", 
-            requestId, ddStartEpoch, sw.ElapsedMilliseconds);
+        _logger.LogInformation("[TIMING][{RequestId}] DG: Calling DartDetect @ epoch={Epoch}", requestId, ddStartEpoch);
         var detectResult = await _dartDetect.DetectAsync(images, boardId, dartNumber, beforeImages);
         var ddEndEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var ddDuration = ddEndEpoch - ddStartEpoch;
-        _logger.LogInformation("[TIMING][{RequestId}] DG: DartDetect returned @ epoch={Epoch} (took={Took}ms)", 
-            requestId, ddEndEpoch, ddDuration);
+        _logger.LogInformation("[TIMING][{RequestId}] DG: DartDetect returned (took={Took}ms)", requestId, ddEndEpoch - ddStartEpoch);
         
         if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
         {
-            // Notify UI that motion was detected but no dart found
             await _hubContext.SendDartNotFound(boardId);
             return Ok(new { message = "No darts detected", darts = new List<object>() });
         }
 
-        _logger.LogDebug("DartDetect returned {TipCount} tip(s), turn has {DartCount} darts scored",
-            detectResult.Tips.Count, dartsThisTurn.Count);
-
-        // DartDetect now handles differential detection - it only returns the NEW dart(s).
-        // DartDetect already filters by YOLO confidence, so we trust what it returns.
-        // Just take the most confident tip.
-        var newTip = detectResult.Tips
-            .OrderByDescending(t => t.Confidence)
-            .FirstOrDefault();
-
+        var newTip = detectResult.Tips.OrderByDescending(t => t.Confidence).FirstOrDefault();
         if (newTip == null)
         {
-            // Notify UI that motion was detected but no new dart found
             await _hubContext.SendDartNotFound(boardId);
             return Ok(new { message = "No new darts", darts = new List<object>() });
         }
 
-        // Score the new dart
         var dart = new DartThrow
         {
             Index = dartsThisTurn.Count,
@@ -174,30 +134,41 @@ public class GamesController : ControllerBase
             Confidence = newTip.Confidence
         };
 
-        _gameService.ApplyManualDart(game, dart);
+        var dartResult = _gameService.ApplyManualDart(game, dart);
         await _hubContext.SendDartThrown(game.BoardId, dart, game);
 
-        // Save benchmark data (fire and forget)
+        // Save benchmark data
         if (_benchmark.IsEnabled)
         {
             var bmPlayer = player?.Name ?? "player";
-            var bmRound = game.CurrentRound;
-            var bmImages = request.Images;
-            var bmBeforeImages = request.BeforeImages;
             _ = Task.Run(() => _benchmark.SaveBenchmarkDataAsync(
-                requestId, dartNumber, boardId, game.Id, bmRound, bmPlayer,
-                bmImages, bmBeforeImages, newTip, detectResult));
+                requestId, dartNumber, boardId, game.Id, game.CurrentRound, bmPlayer,
+                request.Images, request.BeforeImages, newTip, detectResult));
         }
         
-        var totalMs = sw.ElapsedMilliseconds;
-        _logger.LogInformation("[TIMING][{RequestId}] DG: *** COMPLETE @ epoch={Epoch} | total={Total}ms (prep→DartDetect→score→SignalR) ***",
-            requestId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), totalMs);
-        _logger.LogInformation("New dart scored: {Zone} {Segment}x{Mult} = {Score}", 
-            dart.Zone, dart.Segment, dart.Multiplier, dart.Score);
+        _logger.LogInformation("[TIMING][{RequestId}] DG: COMPLETE total={Total}ms", requestId, sw.ElapsedMilliseconds);
 
+        // Handle game-ending / leg-winning results
         if (game.State == GameState.Finished)
         {
             await _hubContext.SendGameEnded(game.BoardId, game);
+        }
+        else if (dartResult?.Type == DartResultType.Bust)
+        {
+            // Notify UI about bust
+            await _hubContext.Clients.Group($"board:{game.BoardId}").SendAsync("BustDetected", new
+            {
+                playerId = dartResult.PendingBust?.PlayerId,
+                reason = dartResult.BustReason,
+                pendingBustId = dartResult.PendingBust?.Id,
+                game = new { game.Id, game.State, game.CurrentPlayerIndex }
+            });
+        }
+        else if (dartResult?.Type == DartResultType.LegWon)
+        {
+            var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
+            if (legWinner != null)
+                await _hubContext.SendLegWon(game.BoardId, legWinner.Name, legWinner.LegsWon, game.LegsToWin, game);
         }
         else if (game.LegWinnerId != null)
         {
@@ -208,7 +179,8 @@ public class GamesController : ControllerBase
 
         return Ok(new { 
             message = "Dart detected", 
-            darts = new[] { new { dart.Zone, dart.Score, dart.Segment, dart.Multiplier } }
+            darts = new[] { new { dart.Zone, dart.Score, dart.Segment, dart.Multiplier } },
+            result = dartResult?.Type.ToString()
         });
     }
 
@@ -223,7 +195,6 @@ public class GamesController : ControllerBase
 
     /// <summary>
     /// Event: Board cleared - triggers rebase and advances turn
-    /// When player clears board (pulls darts), their turn is over
     /// </summary>
     [HttpPost("events/clear")]
     public async Task<ActionResult> EventBoardClear([FromBody] BoardEventRequest request)
@@ -235,40 +206,30 @@ public class GamesController : ControllerBase
         var isBustConfirmed = previousTurn.IsBusted && previousTurn.BustConfirmed;
         
         _gameService.ClearBoard(boardId);
-        
-        // Clear detection cache
         _dartDetect.ClearBoard(boardId);
         
         if (game != null && game.State == GameState.Finished)
         {
-            // Game is over — just rebase sensor, don't advance turn or clear the winning display
             await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
-            _logger.LogInformation("Board cleared after game finished - no turn advance");
         }
         else if (game != null && isBustConfirmed)
         {
-            // Board cleared after confirmed bust — advance turn, resume sensor, rebase
             _gameService.NextTurn(game);
             await _hubContext.SendResumeDetection(boardId);
             var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
             await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
             await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
-            _logger.LogInformation("Board cleared after bust - turn advanced, sensor resumed");
         }
         else if (game != null && !previousTurn.IsBusted)
         {
-            // Normal board clear — advance turn (SendTurnEnded sends rebase)
             _gameService.NextTurn(game);
             await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
-            _logger.LogInformation("Board cleared - {DartCount} darts thrown, advancing to next player", dartCount);
         }
         else if (game != null)
         {
-            // Busted but NOT confirmed yet — just notify board cleared
             await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
-            _logger.LogInformation("Board cleared but bust not confirmed yet");
         }
         else
         {
@@ -300,7 +261,7 @@ public class GamesController : ControllerBase
         var today = DateTime.UtcNow.Date;
         
         var games = await _db.Games
-            .Where(g => g.GameState == 2) // Completed
+            .Where(g => g.GameState == 2)
             .OrderByDescending(g => g.EndedAt)
             .Take(count)
             .Select(g => new
@@ -348,11 +309,7 @@ public class GamesController : ControllerBase
         var gamesToday = await _db.Games.CountAsync(g => g.StartedAt >= today);
         var totalGames = await _db.Games.CountAsync();
 
-        return Ok(new { 
-            games = result, 
-            gamesToday, 
-            totalGames 
-        });
+        return Ok(new { games = result, gamesToday, totalGames });
     }
 
     /// <summary>
@@ -389,16 +346,14 @@ public class GamesController : ControllerBase
         board.IsCalibrated = request.IsCalibrated;
         board.LastCalibration = request.IsCalibrated ? DateTime.UtcNow : board.LastCalibration;
         if (request.CalibrationData != null)
-        {
             board.CalibrationData = request.CalibrationData;
-        }
 
         await _db.SaveChangesAsync();
         return Ok(new { message = "Calibration updated" });
     }
 
     /// <summary>
-    /// Pre-flight check - validate system is ready for a game
+    /// Pre-flight check
     /// </summary>
     [HttpGet("preflight/{boardId}")]
     public async Task<ActionResult<PreflightResult>> PreflightCheck(string boardId)
@@ -410,7 +365,6 @@ public class GamesController : ControllerBase
             .Select(c => new { c.CameraId, c.IsCalibrated, c.CalibrationQuality })
             .ToListAsync();
         
-        // Check sensor via HTTP health check - must be up AND cameras ready
         var sensorConnected = false;
         try
         {
@@ -422,50 +376,26 @@ public class GamesController : ControllerBase
                 sensorConnected = json.Contains("\"ready\"") && json.Contains("true");
             }
         }
-        catch { /* sensor not reachable */ }
-        var allCalibrated = cameras.All(c => c.IsCalibrated) && cameras.Count > 0;
+        catch { }
         
         var issues = new List<PreflightIssue>();
         
         if (board == null)
-        {
-            issues.Add(new PreflightIssue { 
-                Code = "BOARD_NOT_FOUND", 
-                Message = "Board not registered",
-                Severity = "error"
-            });
-        }
+            issues.Add(new PreflightIssue { Code = "BOARD_NOT_FOUND", Message = "Board not registered", Severity = "error" });
         
         if (cameras.Count == 0)
         {
-            issues.Add(new PreflightIssue { 
-                Code = "NO_CAMERAS", 
-                Message = "No cameras registered",
-                Severity = "error"
-            });
+            issues.Add(new PreflightIssue { Code = "NO_CAMERAS", Message = "No cameras registered", Severity = "error" });
         }
         else
         {
             var uncalibrated = cameras.Where(c => !c.IsCalibrated).Select(c => c.CameraId).ToList();
             if (uncalibrated.Any())
-            {
-                issues.Add(new PreflightIssue { 
-                    Code = "NOT_CALIBRATED", 
-                    Message = $"Cameras not calibrated: {string.Join(", ", uncalibrated)}",
-                    Severity = "error",
-                    Details = uncalibrated
-                });
-            }
+                issues.Add(new PreflightIssue { Code = "NOT_CALIBRATED", Message = $"Cameras not calibrated: {string.Join(", ", uncalibrated)}", Severity = "error", Details = uncalibrated });
         }
         
         if (!sensorConnected)
-        {
-            issues.Add(new PreflightIssue { 
-                Code = "SENSOR_DISCONNECTED", 
-                Message = "Sensor not connected",
-                Severity = "error"
-            });
-        }
+            issues.Add(new PreflightIssue { Code = "SENSOR_DISCONNECTED", Message = "Sensor not connected", Severity = "error" });
         
         return Ok(new PreflightResult
         {
@@ -479,7 +409,7 @@ public class GamesController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new game - validates cameras are calibrated and sensor is connected
+    /// Create a new game
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<Game>> CreateGame([FromBody] CreateGameRequest request)
@@ -488,11 +418,9 @@ public class GamesController : ControllerBase
         {
             var boardId = request.BoardId ?? "default";
             
-            // 1. Check board exists
             var board = await _db.Boards.FirstOrDefaultAsync(b => b.BoardId == boardId && b.IsActive);
             if (board == null)
             {
-                // Auto-create default board if it doesn't exist
                 if (boardId == "default")
                 {
                     board = new BoardEntity
@@ -509,44 +437,18 @@ public class GamesController : ControllerBase
                 }
                 else
                 {
-                    return NotFound(new { 
-                        error = "Board not found", 
-                        code = "BOARD_NOT_FOUND",
-                        boardId 
-                    });
+                    return NotFound(new { error = "Board not found", code = "BOARD_NOT_FOUND", boardId });
                 }
             }
             
-            // 2. Check cameras are registered
-            var cameras = await _db.Cameras
-                .Where(c => c.BoardId == boardId && c.IsActive)
-                .ToListAsync();
-            
+            var cameras = await _db.Cameras.Where(c => c.BoardId == boardId && c.IsActive).ToListAsync();
             if (cameras.Count == 0)
-            {
-                return BadRequest(new { 
-                    error = "No cameras registered", 
-                    code = "NO_CAMERAS",
-                    message = "Please register cameras in Settings before starting a game",
-                    boardId
-                });
-            }
+                return BadRequest(new { error = "No cameras registered", code = "NO_CAMERAS", message = "Please register cameras in Settings before starting a game", boardId });
             
-            // 3. Check all cameras are calibrated
             var uncalibrated = cameras.Where(c => !c.IsCalibrated).Select(c => c.CameraId).ToList();
             if (uncalibrated.Any())
-            {
-                return BadRequest(new { 
-                    error = "Cameras not calibrated", 
-                    code = "NOT_CALIBRATED",
-                    uncalibratedCameras = uncalibrated,
-                    message = $"Please calibrate cameras before starting: {string.Join(", ", uncalibrated)}",
-                    boardId
-                });
-            }
+                return BadRequest(new { error = "Cameras not calibrated", code = "NOT_CALIBRATED", uncalibratedCameras = uncalibrated, boardId });
             
-            // 4. Check sensor is connected
-            // Check sensor via HTTP
             var sensorUp = false;
             try
             {
@@ -560,22 +462,38 @@ public class GamesController : ControllerBase
             }
             catch { }
             if (!sensorUp)
+                return BadRequest(new { error = "Sensor not connected", code = "SENSOR_DISCONNECTED", boardId });
+            
+            _dartDetect.InitBoard(boardId);
+
+            Game game;
+            // Use full MatchConfig when X01-specific options are provided
+            if (request.StartingScore > 0 || request.DoubleIn || request.MasterOut || request.SetsEnabled ||
+                request.Mode == GameMode.X01)
             {
-                return BadRequest(new { 
-                    error = "Sensor not connected", 
-                    code = "SENSOR_DISCONNECTED",
-                    message = "DartSensor is not connected. Please start the sensor and wait for it to connect.",
-                    boardId
-                });
+                var config = new MatchConfig
+                {
+                    StartingScore = request.StartingScore > 0 ? request.StartingScore 
+                        : (request.Mode == GameMode.Game301 ? 301 : request.Mode == GameMode.Debug20 ? 20 : 501),
+                    DoubleIn = request.DoubleIn,
+                    DoubleOut = request.RequireDoubleOut,
+                    MasterOut = request.MasterOut,
+                    SetsEnabled = request.SetsEnabled,
+                    SetsToWin = request.SetsToWin,
+                    LegsPerSet = request.LegsPerSet,
+                    LegsToWin = (request.BestOf / 2) + 1,
+                    StartingPlayerRule = Enum.TryParse<StartingPlayerRule>(request.StartingPlayerRule, true, out var spr) 
+                        ? spr : Models.StartingPlayerRule.Alternate
+                };
+                game = _gameService.CreateGameWithConfig(boardId, config, request.PlayerNames);
+            }
+            else
+            {
+                game = _gameService.CreateGame(boardId, request.Mode, request.PlayerNames, request.BestOf, request.RequireDoubleOut);
             }
             
-            // 5. All checks passed - create the game
-            _dartDetect.InitBoard(boardId);
-            var game = _gameService.CreateGame(boardId, request.Mode, request.PlayerNames, request.BestOf, request.RequireDoubleOut);
-            
-            // 6. Notify connected clients AND sensor via SignalR
             await _hubContext.SendGameStarted(boardId, game);
-            _logger.LogInformation("Game {GameId} created on board {BoardId} - sensor notified", game.Id, boardId);
+            _logger.LogInformation("Game {GameId} created on board {BoardId}", game.Id, boardId);
             
             return Ok(game);
         }
@@ -585,9 +503,6 @@ public class GamesController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get game state
-    /// </summary>
     [HttpGet("{id}")]
     public ActionResult<Game> GetGame(string id)
     {
@@ -596,9 +511,6 @@ public class GamesController : ControllerBase
         return Ok(game);
     }
 
-    /// <summary>
-    /// Get current game for a board
-    /// </summary>
     [HttpGet("board/{boardId}")]
     public ActionResult<Game> GetGameForBoard(string boardId)
     {
@@ -607,26 +519,18 @@ public class GamesController : ControllerBase
         return Ok(game);
     }
 
-    /// <summary>
-    /// End a game
-    /// </summary>
     [HttpPost("{id}/end")]
     public async Task<ActionResult> EndGame(string id)
     {
         var game = _gameService.GetGame(id);
         if (game == null) return NotFound();
-        
-        var boardId = game.BoardId;
         _gameService.EndGame(id);
-        
-        // Notify connected clients
-        await _hubContext.SendGameEnded(boardId, game);
-        
+        await _hubContext.SendGameEnded(game.BoardId, game);
         return Ok(new { message = "Game ended" });
     }
 
     /// <summary>
-    /// Advance to next player's turn (Next button)
+    /// Advance to next player's turn
     /// </summary>
     [HttpPost("{id}/next-turn")]
     public async Task<ActionResult> NextTurn(string id)
@@ -637,22 +541,17 @@ public class GamesController : ControllerBase
             return BadRequest(new { error = "Game is not in progress" });
         
         var previousTurn = game.CurrentTurn ?? new Turn();
-        
         _gameService.NextTurn(game);
         
-        // Update benchmark context with new round/player
         var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
         _ = UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
         
-        // Notify connected clients that turn ended (this also sends Rebase to sensor via SignalR)
         await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
-        _logger.LogInformation("Turn ended on board {BoardId}, sensor rebase triggered via SignalR", game.BoardId);
-        
-        return Ok(new { game = game });
+        return Ok(new { game });
     }
 
     /// <summary>
-    /// Confirm bust and end turn (called after player acknowledges bust)
+    /// Confirm bust and end turn
     /// </summary>
     [HttpPost("{id}/confirm-bust")]
     public async Task<ActionResult> ConfirmBust(string id)
@@ -662,21 +561,71 @@ public class GamesController : ControllerBase
         if (game.State != GameState.InProgress)
             return BadRequest(new { error = "Game is not in progress" });
         
-        if (game.CurrentTurn == null || !game.CurrentTurn.IsBusted)
+        if (game.CurrentTurn == null || (!game.CurrentTurn.IsBusted && !game.CurrentTurn.BustPending && game.PendingBusts.Count == 0))
             return BadRequest(new { error = "Current turn is not busted" });
         
         _gameService.ConfirmBust(game);
-        
-        // Pause sensor detection — player is about to pull darts, don't detect that as new darts.
-        // Detection resumes when board is cleared (EventBoardClear).
         await _hubContext.SendPauseDetection(game.BoardId);
-        _logger.LogInformation("Bust confirmed on board {BoardId}, sensor paused until board clear", game.BoardId);
+        _logger.LogInformation("Bust confirmed on board {BoardId}", game.BoardId);
         
-        return Ok(new { game = game });
+        return Ok(new { game });
     }
 
     /// <summary>
-    /// Clear the board (darts removed) - triggers rebase
+    /// Override a pending bust with a corrected dart
+    /// </summary>
+    [HttpPost("{id}/override-bust")]
+    public async Task<ActionResult> OverrideBust(string id, [FromBody] OverrideBustRequest request)
+    {
+        var game = _gameService.GetGame(id);
+        if (game == null) return NotFound();
+        if (!game.IsX01Engine) return BadRequest(new { error = "Not an X01 game" });
+        
+        var pendingBust = game.PendingBusts.FirstOrDefault(b => b.Id == request.PendingBustId);
+        if (pendingBust == null) return BadRequest(new { error = "No pending bust found" });
+        
+        var correctedDart = new DartThrow
+        {
+            Segment = request.Segment,
+            Multiplier = request.Multiplier,
+            Zone = GetZoneName(request.Segment, request.Multiplier),
+            Score = request.Segment * request.Multiplier,
+            Confidence = 1.0
+        };
+        
+        var result = _x01Engine.OverrideBustWithCorrectedDart(game, request.PendingBustId, correctedDart);
+        
+        await _hubContext.SendDartThrown(game.BoardId, correctedDart, game);
+        
+        if (game.State == GameState.Finished)
+            await _hubContext.SendGameEnded(game.BoardId, game);
+        
+        return Ok(new { result = result.Type.ToString(), game });
+    }
+
+    /// <summary>
+    /// Start next leg after a leg has been won
+    /// </summary>
+    [HttpPost("{id}/next-leg")]
+    public async Task<ActionResult> NextLeg(string id)
+    {
+        var game = _gameService.GetGame(id);
+        if (game == null) return NotFound();
+        
+        _gameService.StartNextLeg(game);
+        
+        await _hubContext.Clients.Group($"board:{game.BoardId}").SendAsync("LegStarted", new
+        {
+            game.CurrentLeg,
+            currentPlayer = game.CurrentPlayer?.Name,
+            game
+        });
+        
+        return Ok(new { game });
+    }
+
+    /// <summary>
+    /// Clear the board
     /// </summary>
     [HttpPost("board/{boardId}/clear")]
     public async Task<ActionResult> ClearBoard(string boardId)
@@ -687,36 +636,29 @@ public class GamesController : ControllerBase
         
         _gameService.ClearBoard(boardId);
         
-        // If turn was complete (3 darts), advance to next player
         if (turnWasComplete && game != null)
         {
             _gameService.NextTurn(game);
-
-            // Update benchmark context with new round/player - MUST complete before rebase
             var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
             await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
         }
         
-        // Tell sensor to rebase via SignalR (AFTER context is updated)
         await _hubContext.SendRebase(boardId);
         
-        // Notify clients
         if (turnWasComplete && game != null)
         {
             await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
-            _logger.LogInformation("Board {BoardId} cleared, turn complete - advancing to next player", boardId);
         }
         else
         {
             await _hubContext.SendBoardCleared(boardId);
-            _logger.LogInformation("Board {BoardId} cleared (mid-turn), rebase triggered", boardId);
         }
         
         return Ok(new { message = "Board cleared", turnAdvanced = turnWasComplete });
     }
 
     /// <summary>
-    /// Manual dart entry (for testing without cameras)
+    /// Manual dart entry
     /// </summary>
     [HttpPost("{id}/manual")]
     public async Task<ActionResult<ThrowResult>> ManualThrow(string id, [FromBody] ManualThrowRequest request)
@@ -733,19 +675,14 @@ public class GamesController : ControllerBase
             Multiplier = request.Multiplier,
             Zone = GetZoneName(request.Segment, request.Multiplier),
             Score = request.Segment * request.Multiplier,
-            XMm = 0,
-            YMm = 0,
             Confidence = 1.0
         };
 
-        _gameService.ApplyManualDart(game, dart);
-        
+        var dartResult = _gameService.ApplyManualDart(game, dart);
         await _hubContext.SendDartThrown(game.BoardId, dart, game);
         
         if (game.State == GameState.Finished)
-        {
             await _hubContext.SendGameEnded(game.BoardId, game);
-        }
         else if (game.LegWinnerId != null)
         {
             var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
@@ -772,7 +709,6 @@ public class GamesController : ControllerBase
             return BadRequest(new { error = "Invalid dart index" });
 
         var oldDart = game.CurrentTurn.Darts[request.DartIndex];
-        var oldScore = oldDart.Score;
         
         var newDart = new DartThrow
         {
@@ -787,29 +723,20 @@ public class GamesController : ControllerBase
         };
 
         _gameService.CorrectDart(game, request.DartIndex, newDart);
-        
-        _logger.LogInformation("Corrected dart {Index}: {OldZone}={OldScore} -> {NewZone}={NewScore}", 
-            request.DartIndex, oldDart.Zone, oldScore, newDart.Zone, newDart.Score);
 
-        // Record correction for benchmark analysis (fire and forget)
-        _ = RecordBenchmarkCorrection(game, request.DartIndex, oldDart, newDart);
-
-        // Save correction to local benchmark files
         if (_benchmark.IsEnabled)
         {
             var corrPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex)?.Name ?? "player";
-            var corrRound = game.CurrentRound;
-            var corrDartNum = request.DartIndex + 1;
             _ = Task.Run(() => _benchmark.SaveCorrectionAsync(
-                game.BoardId, game.Id, corrRound, corrPlayer, corrDartNum, oldDart, newDart));
+                game.BoardId, game.Id, game.CurrentRound, corrPlayer, request.DartIndex + 1, oldDart, newDart));
         }
+
+        _ = RecordBenchmarkCorrection(game, request.DartIndex, oldDart, newDart);
 
         await _hubContext.SendDartThrown(game.BoardId, newDart, game);
         
         if (game.State == GameState.Finished)
-        {
             await _hubContext.SendGameEnded(game.BoardId, game);
-        }
         else if (game.LegWinnerId != null)
         {
             var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
@@ -821,70 +748,7 @@ public class GamesController : ControllerBase
     }
 
     /// <summary>
-    /// Record dart correction to DartDetect benchmark system
-    /// </summary>
-    private async Task RecordBenchmarkCorrection(Game game, int dartIndex, DartThrow oldDart, DartThrow newDart)
-    {
-        try
-        {
-            var dartNumber = dartIndex + 1;
-            _logger.LogInformation("Recording benchmark correction for dart {DartNumber}: {OldSeg}x{OldMult} -> {NewSeg}x{NewMult}", 
-                dartNumber, oldDart.Segment, oldDart.Multiplier, newDart.Segment, newDart.Multiplier);
-            
-            using var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(2);
-            
-            var payload = new
-            {
-                dart_number = dartNumber,
-                game_id = game.Id,
-                original_segment = oldDart.Segment,
-                original_multiplier = oldDart.Multiplier,
-                corrected_segment = newDart.Segment,
-                corrected_multiplier = newDart.Multiplier
-            };
-            
-            var response = await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/benchmark/correction", payload);
-            _logger.LogInformation("Benchmark correction response: {StatusCode}", response.StatusCode);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to record benchmark correction: {Error}", ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Update benchmark context in DartDetect for proper file organization
-    /// </summary>
-    private async Task UpdateBenchmarkContext(string boardId, string gameId, int round, string? playerName)
-    {
-        try
-        {
-            using var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(2);
-            
-            var payload = new
-            {
-                board_id = boardId,
-                game_id = gameId,
-                round_num = round,
-                player_name = playerName ?? "player"
-            };
-            
-            _logger.LogInformation("Setting benchmark context: board={BoardId}, game={GameId}, round={Round}, player={Player}", 
-                boardId, gameId, round, playerName ?? "player");
-            
-            var response = await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/benchmark/context", payload);
-            _logger.LogInformation("Benchmark context response: {StatusCode}", response.StatusCode);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to update benchmark context: {Error}", ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Remove a false dart from the current turn (phantom detection)
+    /// Remove a false dart from the current turn
     /// </summary>
     [HttpPost("{id}/remove-dart")]
     public async Task<ActionResult<RemoveDartResult>> RemoveDart(string id, [FromBody] RemoveDartRequest request)
@@ -901,40 +765,27 @@ public class GamesController : ControllerBase
         var removedDart = _gameService.RemoveDart(game, request.DartIndex);
         if (removedDart == null)
             return BadRequest(new { error = "Failed to remove dart" });
-        
-        _logger.LogInformation("Removed false dart {Index}: {Zone}={Score}", 
-            request.DartIndex, removedDart.Zone, removedDart.Score);
 
-        // Exclude from benchmark data in DartDetect
         try
         {
             using var httpClient = new HttpClient();
-            var excludePayload = new
-            {
-                game_id = id,
-                dart_index = request.DartIndex,
-                reason = "false_detection_removed"
-            };
+            var excludePayload = new { game_id = id, dart_index = request.DartIndex, reason = "false_detection_removed" };
             var json = System.Text.Json.JsonSerializer.Serialize(excludePayload);
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             var dartDetectUrl = Environment.GetEnvironmentVariable("DARTDETECT_URL") ?? "http://localhost:8000";
             await httpClient.PostAsync($"{dartDetectUrl}/v1/benchmark/exclude-dart", content);
-            _logger.LogInformation("Excluded dart from benchmark data");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to exclude dart from benchmark (non-fatal)");
+            _logger.LogWarning(ex, "Failed to exclude dart from benchmark");
         }
 
-        // Notify clients about the update
         await _hubContext.SendDartRemoved(game.BoardId, removedDart, game);
-
         return Ok(new RemoveDartResult { RemovedDart = removedDart, Game = game });
     }
 
     /// <summary>
-    /// Benchmark detect endpoint - runs detection without requiring an active game.
-    /// Used for replay testing against the native C++ detection library.
+    /// Benchmark detect endpoint
     /// </summary>
     [HttpPost("benchmark/detect")]
     public async Task<ActionResult> BenchmarkDetect([FromBody] DetectRequest request)
@@ -942,39 +793,20 @@ public class GamesController : ControllerBase
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var requestId = request.RequestId ?? Guid.NewGuid().ToString()[..8];
 
-        var images = request.Images?.Select(i => new CameraImageDto
-        {
-            CameraId = i.CameraId,
-            Image = i.Image
-        }).ToList() ?? new List<CameraImageDto>();
-
-        var beforeImages = request.BeforeImages?.Select(i => new CameraImageDto
-        {
-            CameraId = i.CameraId,
-            Image = i.Image
-        }).ToList();
+        var images = request.Images?.Select(i => new CameraImageDto { CameraId = i.CameraId, Image = i.Image }).ToList() ?? new List<CameraImageDto>();
+        var beforeImages = request.BeforeImages?.Select(i => new CameraImageDto { CameraId = i.CameraId, Image = i.Image }).ToList();
 
         var boardId = request.BoardId ?? "default";
         var detectResult = await _dartDetect.DetectAsync(images, boardId, 1, beforeImages);
 
-        var totalMs = sw.ElapsedMilliseconds;
-
         if (detectResult == null || detectResult.Tips == null || !detectResult.Tips.Any())
-        {
-            return Ok(new { 
-                message = "No darts detected", 
-                darts = new List<object>(),
-                processingMs = totalMs,
-                requestId
-            });
-        }
+            return Ok(new { message = "No darts detected", darts = new List<object>(), processingMs = sw.ElapsedMilliseconds, requestId });
 
         var tip = detectResult.Tips.OrderByDescending(t => t.Confidence).First();
-
         return Ok(new {
             message = "Dart detected",
             darts = new[] { new { tip.Zone, tip.Score, tip.Segment, tip.Multiplier, tip.Confidence } },
-            processingMs = totalMs,
+            processingMs = sw.ElapsedMilliseconds,
             requestId,
             isNative = _dartDetect is NativeDartDetectService
         });
@@ -994,6 +826,44 @@ public class GamesController : ControllerBase
             _ => "single"
         };
     }
+
+    private async Task RecordBenchmarkCorrection(Game game, int dartIndex, DartThrow oldDart, DartThrow newDart)
+    {
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(2);
+            var payload = new
+            {
+                dart_number = dartIndex + 1,
+                game_id = game.Id,
+                original_segment = oldDart.Segment,
+                original_multiplier = oldDart.Multiplier,
+                corrected_segment = newDart.Segment,
+                corrected_multiplier = newDart.Multiplier
+            };
+            await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/benchmark/correction", payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to record benchmark correction: {Error}", ex.Message);
+        }
+    }
+
+    private async Task UpdateBenchmarkContext(string boardId, string gameId, int round, string? playerName)
+    {
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(2);
+            var payload = new { board_id = boardId, game_id = gameId, round_num = round, player_name = playerName ?? "player" };
+            await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/benchmark/context", payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to update benchmark context: {Error}", ex.Message);
+        }
+    }
 }
 
 // === Request/Response DTOs ===
@@ -1002,8 +872,8 @@ public class DetectRequest
 {
     public string? BoardId { get; set; }
     public List<ImagePayload>? Images { get; set; }
-    public List<ImagePayload>? BeforeImages { get; set; }  // Frames before dart landed
-    public string? RequestId { get; set; }  // For cross-API timing correlation
+    public List<ImagePayload>? BeforeImages { get; set; }
+    public string? RequestId { get; set; }
 }
 
 public class ImagePayload
@@ -1030,6 +900,14 @@ public class CreateGameRequest
     public List<string> PlayerNames { get; set; } = new();
     public int BestOf { get; set; } = 5;
     public bool RequireDoubleOut { get; set; } = false;
+    // New X01 config options
+    public bool DoubleIn { get; set; } = false;
+    public bool MasterOut { get; set; } = false;
+    public bool SetsEnabled { get; set; } = false;
+    public int SetsToWin { get; set; } = 3;
+    public int LegsPerSet { get; set; } = 3;
+    public int StartingScore { get; set; } = 0;  // 0 = use mode default
+    public string StartingPlayerRule { get; set; } = "Alternate";
 }
 
 public class ManualThrowRequest
@@ -1060,6 +938,13 @@ public class RemoveDartResult
 {
     public DartThrow? RemovedDart { get; set; }
     public Game Game { get; set; } = null!;
+}
+
+public class OverrideBustRequest
+{
+    public string PendingBustId { get; set; } = string.Empty;
+    public int Segment { get; set; }
+    public int Multiplier { get; set; } = 1;
 }
 
 public class BoardDto

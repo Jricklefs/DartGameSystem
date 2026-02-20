@@ -1,3 +1,5 @@
+using DartGameAPI.Services;
+
 namespace DartGameAPI.Models;
 
 /// <summary>
@@ -41,20 +43,42 @@ public class Turn
     public bool IsComplete => Darts.Count >= 3;
     
     /// <summary>
-    /// True if this turn resulted in a bust (score went negative, to 1, or 0 without double)
-    /// When true, UI should show "BUSTED" and allow correction before proceeding
+    /// True if this turn resulted in a bust
     /// </summary>
     public bool IsBusted { get; set; } = false;
     
     /// <summary>
-    /// Score before bust (so we can revert if bust is corrected)
+    /// Score before bust (so we can revert)
     /// </summary>
     public int ScoreBeforeBust { get; set; }
 
     /// <summary>
-    /// True after UI confirms bust — waiting for board clear to advance turn
+    /// True after UI confirms bust
     /// </summary>
     public bool BustConfirmed { get; set; } = false;
+
+    // === New X01 engine fields ===
+
+    /// <summary>
+    /// Player's score at the START of this turn (before any darts).
+    /// Used for bust revert and correction recompute.
+    /// </summary>
+    public int TurnStartScore { get; set; }
+
+    /// <summary>
+    /// Total points scored this turn (computed from darts)
+    /// </summary>
+    public int TurnTotalPoints => Darts.Sum(d => d.Score);
+
+    /// <summary>
+    /// Whether a bust is pending confirmation
+    /// </summary>
+    public bool BustPending { get; set; } = false;
+
+    /// <summary>
+    /// Whether this turn is currently active
+    /// </summary>
+    public bool IsTurnActive { get; set; } = false;
 }
 
 /// <summary>
@@ -68,18 +92,32 @@ public class Player
     public int DartsThrown { get; set; }
     public int LegsWon { get; set; } = 0;
     public List<Turn> Turns { get; set; } = new();
+
+    // === New X01 engine fields ===
+
+    /// <summary>
+    /// Whether the player has "doubled in" (for Double-In games).
+    /// Always true when Double-In is not required.
+    /// </summary>
+    public bool IsIn { get; set; } = true;
+
+    /// <summary>
+    /// Sets won (when sets are enabled in match config)
+    /// </summary>
+    public int SetsWon { get; set; } = 0;
 }
 
 /// <summary>
-/// Game modes
+/// Game modes. X01 is the generic mode; legacy Game501/Game301/Debug20 map to X01 + StartingScore.
 /// </summary>
 public enum GameMode
 {
     Practice,   // No rules, just scoring
-    Game501,    // Start at 501, get to exactly 0 with double out
-    Game301,    // Start at 301
-    Debug20,    // Start at 20, for fast testing
-    Cricket     // Hit 15-20 and bulls
+    Game501,    // Start at 501 (legacy, maps to X01)
+    Game301,    // Start at 301 (legacy, maps to X01)
+    Debug20,    // Start at 20 (legacy, maps to X01)
+    Cricket,    // Hit 15-20 and bulls
+    X01         // Generic X01 — uses MatchConfig for StartingScore and all options
 }
 
 /// <summary>
@@ -109,38 +147,56 @@ public class Game
     public string? WinnerId { get; set; }
     
     // Legs (best of N)
-    public int LegsToWin { get; set; } = 3;  // Best of 5 = first to 3
+    public int LegsToWin { get; set; } = 3;
     
     // Checkout rules
-    // TODO: migrate to Rules.RequireDoubleOut — kept in sync during migration
-    public bool RequireDoubleOut { get; set; } = false;  // Default: straight out
+    public bool RequireDoubleOut { get; set; } = false;
     public int CurrentLeg { get; set; } = 1;
-    public string? LegWinnerId { get; set; }  // Who won the current/last leg
+    public string? LegWinnerId { get; set; }
     
-    // Round tracking (one round = each player throws once)
+    // Round tracking
     public int CurrentRound { get; set; } = 1;
 
-    /// <summary>
-    /// Max darts per turn. Comes from game mode rules. Default 3.
-    /// TODO: migrate to Rules.DartsPerTurn — kept in sync during migration
-    /// </summary>
+    /// <summary>Max darts per turn.</summary>
     public int DartsPerTurn { get; set; } = 3;
 
-    /// <summary>
-    /// Centralized game rules built from GameMode at creation time.
-    /// Contains all mode-specific config (starting score, dart count, double-out, etc.)
-    /// New code should read from Rules instead of the individual properties above.
-    /// </summary>
+    /// <summary>Centralized game rules</summary>
     public GameRules Rules { get; set; } = new();
     
-    // Known dart positions on board (to detect new vs existing)
+    // Known dart positions on board
     public List<KnownDart> KnownDarts { get; set; } = new();
     
     public Player? CurrentPlayer => Players.Count > CurrentPlayerIndex 
         ? Players[CurrentPlayerIndex] 
         : null;
         
-    public int TotalLegs => (LegsToWin * 2) - 1;  // Best of 5 = 5 total possible
+    public int TotalLegs => (LegsToWin * 2) - 1;
+
+    // === New X01 engine fields ===
+
+    /// <summary>
+    /// Full match configuration for X01 games.
+    /// Null for legacy/Practice/Cricket games.
+    /// </summary>
+    public MatchConfig? MatchConfig { get; set; }
+
+    /// <summary>
+    /// Current state of the X01 engine state machine
+    /// </summary>
+    public EngineState EngineState { get; set; } = EngineState.MatchNotStarted;
+
+    /// <summary>
+    /// Pending busts awaiting confirmation or correction
+    /// </summary>
+    public List<PendingBust> PendingBusts { get; set; } = new();
+
+    /// <summary>
+    /// Whether this game is using the new X01 engine
+    /// </summary>
+    public bool IsX01Engine => Mode == GameMode.X01 ||
+                               Mode == GameMode.Game501 ||
+                               Mode == GameMode.Game301 ||
+                               Mode == GameMode.Debug20;
 }
 
 /// <summary>
