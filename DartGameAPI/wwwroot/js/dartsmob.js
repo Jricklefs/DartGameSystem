@@ -104,14 +104,16 @@ function initTheme() {
     ];
     
     if (backgrounds.length > 0) {
-        setBackground(backgrounds[0]);
+        // Shuffle backgrounds randomly
+        const shuffled = [...backgrounds].sort(() => Math.random() - 0.5);
+        setBackground(shuffled[0]);
         
         // Start slideshow if enabled
-        if (theme.slideshow !== false && backgrounds.length > 1) {
+        if (theme.slideshow !== false && shuffled.length > 1) {
             let idx = 0;
             setInterval(() => {
-                idx = (idx + 1) % backgrounds.length;
-                setBackground(backgrounds[idx]);
+                idx = (idx + 1) % shuffled.length;
+                setBackground(shuffled[idx]);
             }, theme.slideshowSpeed || 30000);
         }
     }
@@ -157,6 +159,7 @@ async function initConnection() {
     connection.on('GameEnded', handleGameEnded);
     connection.on('TurnEnded', handleTurnEnded);
     connection.on('DartNotFound', handleDartNotFound);
+    connection.on('LegWon', handleLegWon);
 
     try {
         await connection.start();
@@ -631,6 +634,56 @@ function openCorrectionForDart(dartIndex) {
     }
 }
 
+function handleLegWon(data) {
+    console.log('🎯 Leg won!', data);
+    
+    // Update player leg counts in local state
+    if (currentGame && data.game?.Players) {
+        data.game.Players.forEach(p => {
+            const local = currentGame.players?.find(lp => lp.id === p.Id);
+            if (local) local.legsWon = p.LegsWon;
+        });
+    }
+    
+    showLegWonModal(data.winnerName, data.legsWon, data.legsToWin, data.game?.Players || []);
+}
+
+function showLegWonModal(winnerName, legsWon, legsToWin, players) {
+    let modal = document.getElementById('leg-won-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'leg-won-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content winner-content">
+                <h2 class="winner-title">🎯 LEG WON! 🎯</h2>
+                <div class="winner-name"></div>
+                <div class="leg-standings"></div>
+                <button class="btn btn-primary" id="leg-won-ok" style="margin-top: 20px;">Continue</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        document.getElementById('leg-won-ok').addEventListener('click', () => {
+            modal.classList.remove('show');
+        });
+    }
+    
+    modal.querySelector('.winner-name').textContent = winnerName;
+    
+    // Build standings
+    const standings = players.map(p => 
+        `${p.Name}: ${p.LegsWon} / ${legsToWin}`
+    ).join('  •  ');
+    modal.querySelector('.leg-standings').textContent = standings;
+    
+    modal.classList.add('show');
+    
+    if (audioSettings.mode === 'tts') {
+        dartAudio.speak(`${winnerName} wins the leg! ${legsWon} of ${legsToWin}.`);
+    }
+}
+
 function showWinnerModal(winner) {
     // Create modal if it doesn't exist
     let modal = document.getElementById('winner-modal');
@@ -821,6 +874,7 @@ const gameConfig = {
     x01: {
         label: '🔢 X01',
         variants: [
+            { value: '20', label: '🐛 Debug 20' },
             { value: '301', label: '301' },
             { value: '501', label: '501' },
             { value: '701', label: '701' },
@@ -999,6 +1053,7 @@ function getSelectedGameMode() {
     const gameVariant = variant || config?.defaultVariant || '501';
     
     if (category === 'x01') {
+        if (gameVariant === '20') return 'Debug20';
         return `Game${gameVariant}`;
     } else {
         return gameVariant;
@@ -1074,6 +1129,9 @@ function formatMode(mode) {
         mode = String(mode || '');
     }
     
+    // Handle Debug mode
+    if (mode === 'Debug20') return '🐛 Debug 20';
+
     // Handle X01 games
     const x01Match = mode.match(/^Game(\d+)$/);
     if (x01Match) return x01Match[1];

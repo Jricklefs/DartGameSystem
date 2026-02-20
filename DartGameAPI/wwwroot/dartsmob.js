@@ -808,6 +808,7 @@ const gameConfig = {
     x01: {
         label: '🔢 X01',
         variants: [
+            { value: '20', label: '🐛 Debug 20' },
             { value: '301', label: '301' },
             { value: '501', label: '501' },
             { value: '701', label: '701' },
@@ -986,6 +987,7 @@ function getSelectedGameMode() {
     const gameVariant = variant || config?.defaultVariant || '501';
     
     if (category === 'x01') {
+        if (gameVariant === '20') return 'Debug20';
         return `Game${gameVariant}`;
     } else {
         return gameVariant;
@@ -1060,6 +1062,9 @@ function formatMode(mode) {
     if (typeof mode !== 'string') {
         mode = String(mode || '');
     }
+    
+    // Handle Debug mode
+    if (mode === 'Debug20') return '🐛 Debug 20';
     
     // Handle X01 games
     const x01Match = mode.match(/^Game(\d+)$/);

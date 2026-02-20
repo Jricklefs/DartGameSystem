@@ -148,6 +148,38 @@ public static class GameHubExtensions
     }
 
     /// <summary>
+    /// Tell sensor to pause motion detection (e.g., bust confirmed, player pulling darts)
+    /// </summary>
+    public static async Task SendPauseDetection(this IHubContext<GameHub> hub, string boardId)
+    {
+        var connId = GameHub.GetSensorConnectionId(boardId);
+        if (connId != null)
+        {
+            await hub.Clients.Client(connId).SendAsync("PauseDetection", boardId);
+        }
+        else
+        {
+            await hub.Clients.Group($"sensor:{boardId}").SendAsync("PauseDetection", boardId);
+        }
+    }
+
+    /// <summary>
+    /// Tell sensor to resume motion detection (e.g., board cleared after bust)
+    /// </summary>
+    public static async Task SendResumeDetection(this IHubContext<GameHub> hub, string boardId)
+    {
+        var connId = GameHub.GetSensorConnectionId(boardId);
+        if (connId != null)
+        {
+            await hub.Clients.Client(connId).SendAsync("ResumeDetection", boardId);
+        }
+        else
+        {
+            await hub.Clients.Group($"sensor:{boardId}").SendAsync("ResumeDetection", boardId);
+        }
+    }
+
+    /// <summary>
     /// Notify clients that a dart was thrown
     /// </summary>
     public static async Task SendDartThrown(this IHubContext<GameHub> hub, string boardId, DartThrow dart, Game game)
@@ -309,7 +341,7 @@ public static class GameHubExtensions
     /// <summary>
     /// Notify clients that a turn ended
     /// </summary>
-    public static async Task SendTurnEnded(this IHubContext<GameHub> hub, string boardId, Game game, Turn turn)
+    public static async Task SendTurnEnded(this IHubContext<GameHub> hub, string boardId, Game game, Turn turn, bool skipRebase = false)
     {
         await hub.Clients.Group($"board:{boardId}").SendAsync("TurnEnded", new
         {
@@ -350,7 +382,10 @@ public static class GameHubExtensions
             }
         });
         
-        // Tell sensor to rebase (darts should be removed)
-        await hub.SendRebase(boardId);
+        // Tell sensor to rebase (darts should be removed) — unless caller handles it
+        if (!skipRebase)
+        {
+            await hub.SendRebase(boardId);
+        }
     }
 }
