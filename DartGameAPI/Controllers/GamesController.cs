@@ -232,7 +232,6 @@ public class GamesController : ControllerBase
         var game = _gameService.GetGameForBoard(boardId);
         var previousTurn = game?.CurrentTurn ?? new Turn();
         var dartCount = previousTurn.Darts?.Count ?? 0;
-        var isBustConfirmed = previousTurn.IsBusted && previousTurn.BustConfirmed;
         
         _gameService.ClearBoard(boardId);
         _dartDetect.ClearBoard(boardId);
@@ -242,23 +241,38 @@ public class GamesController : ControllerBase
             await _hubContext.SendRebase(boardId);
             await _hubContext.SendBoardCleared(boardId);
         }
-        else if (game != null && isBustConfirmed)
+        else if (game != null && previousTurn.IsBusted)
         {
-            _gameService.NextTurn(game);
-            await _hubContext.SendResumeDetection(boardId);
-            var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
-            await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
-            await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
-        }
-        else if (game != null && !previousTurn.IsBusted)
-        {
-            _gameService.NextTurn(game);
-            await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+            // Bust is active — record that board is cleared
+            previousTurn.BustBoardCleared = true;
+            _logger.LogInformation("Board cleared during bust on board {BoardId}", boardId);
+            
+            // Notify UI that board is cleared (for status text update)
+            await _hubContext.Clients.Group($"board:{boardId}").SendAsync("BustBoardCleared", new
+            {
+                boardId,
+                playerId = previousTurn.PlayerId
+            });
+            
+            // If bust is also confirmed, advance turn now
+            if (previousTurn.BustConfirmed)
+            {
+                _logger.LogInformation("Bust already confirmed, advancing turn");
+                _gameService.NextTurn(game);
+                await _hubContext.SendResumeDetection(boardId);
+                var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
+                await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
+                await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+                return Ok(new { message = "Board cleared", turnAdvanced = true, dartCount });
+            }
+            
+            return Ok(new { message = "Board cleared during bust, waiting for confirm", turnAdvanced = false, dartCount });
         }
         else if (game != null)
         {
-            await _hubContext.SendRebase(boardId);
-            await _hubContext.SendBoardCleared(boardId);
+            // Normal (non-bust) board clear — advance turn
+            _gameService.NextTurn(game);
+            await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
         }
         else
         {
@@ -266,7 +280,7 @@ public class GamesController : ControllerBase
             await _hubContext.SendBoardCleared(boardId);
         }
         
-        return Ok(new { message = "Board cleared", turnAdvanced = game != null && (isBustConfirmed || !previousTurn.IsBusted), dartCount });
+        return Ok(new { message = "Board cleared", turnAdvanced = game != null && !previousTurn.IsBusted, dartCount });
     }
 
     /// <summary>
@@ -626,20 +640,34 @@ public class GamesController : ControllerBase
         if (game.CurrentTurn == null || (!game.CurrentTurn.IsBusted && !game.CurrentTurn.BustPending && game.PendingBusts.Count == 0))
             return BadRequest(new { error = "Current turn is not busted" });
         
-        var previousTurn = game.CurrentTurn ?? new Turn();
+        var turn = game.CurrentTurn!;
         _gameService.ConfirmBust(game);
-        _logger.LogInformation("Bust confirmed on board {BoardId}, advancing turn and resuming sensor", game.BoardId);
+        turn.BustConfirmed = true;
+        _logger.LogInformation("Bust confirmed on board {BoardId}", game.BoardId);
         
-        // Advance to next player's turn and resume detection
-        // (board is typically already clear by the time the player confirms the bust)
-        _gameService.NextTurn(game);
-        await _hubContext.SendResumeDetection(game.BoardId);
+        // Check if board is already cleared — if so, advance turn now
+        if (turn.BustBoardCleared)
+        {
+            _logger.LogInformation("Board already cleared, advancing turn and resuming sensor");
+            var previousTurn = turn;
+            _gameService.NextTurn(game);
+            await _hubContext.SendResumeDetection(game.BoardId);
+            
+            var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
+            await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
+            await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+            
+            return Ok(new { game, turnAdvanced = true });
+        }
         
-        var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
-        await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
-        await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
+        // Board not yet cleared — notify UI, wait for board clear event
+        await _hubContext.Clients.Group($"board:{game.BoardId}").SendAsync("BustConfirmedWaitingForClear", new
+        {
+            playerId = turn.PlayerId,
+            message = "Bust confirmed — pull darts to continue"
+        });
         
-        return Ok(new { game });
+        return Ok(new { game, turnAdvanced = false, waitingForBoardClear = true });
     }
 
     /// <summary>
@@ -779,6 +807,8 @@ public class GamesController : ControllerBase
         if (request.DartIndex < 0 || request.DartIndex >= game.CurrentTurn.Darts.Count)
             return BadRequest(new { error = "Invalid dart index" });
 
+        var wasBusted = game.CurrentTurn.IsBusted;
+        var boardAlreadyCleared = game.CurrentTurn.BustBoardCleared;
         var oldDart = game.CurrentTurn.Darts[request.DartIndex];
         
         var newDart = new DartThrow
@@ -819,12 +849,51 @@ public class GamesController : ControllerBase
 
         // Check if correction resulted in checkout or match end
         if (game.State == GameState.Finished)
+        {
             await _hubContext.SendGameEnded(game.BoardId, game);
+        }
         else if (correctionResult?.Type == DartResultType.LegWon || game.LegWinnerId != null)
         {
             var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
             if (legWinner != null)
                 await _hubContext.SendLegWon(game.BoardId, legWinner.Name, legWinner.LegsWon, game.LegsToWin, game);
+        }
+        else if (wasBusted)
+        {
+            // Was busted before correction — check if still busted
+            if (game.CurrentTurn!.IsBusted)
+            {
+                // Still busted after correction
+                await _hubContext.Clients.Group($"board:{game.BoardId}").SendAsync("BustStillActive", new
+                {
+                    playerId = game.CurrentTurn.PlayerId,
+                    message = "Still busted after correction"
+                });
+            }
+            else
+            {
+                // No longer busted! Clear bust flags
+                game.CurrentTurn.BustPending = false;
+                game.CurrentTurn.BustConfirmed = false;
+                game.PendingBusts.Clear();
+                game.EngineState = EngineState.InTurnAwaitingThrow;
+                
+                _logger.LogInformation("Correction cleared bust on board {BoardId}", game.BoardId);
+                
+                await _hubContext.Clients.Group($"board:{game.BoardId}").SendAsync("BustCancelled", new
+                {
+                    playerId = game.CurrentTurn.PlayerId,
+                    boardCleared = boardAlreadyCleared,
+                    message = "Bust cleared by correction"
+                });
+                
+                // If board was already cleared (scenario 6), rebase sensor baselines
+                if (boardAlreadyCleared)
+                {
+                    game.CurrentTurn.BustBoardCleared = false;
+                    await _hubContext.SendRebase(game.BoardId);
+                }
+            }
         }
 
         return Ok(new ThrowResult { NewDart = newDart, Game = game });

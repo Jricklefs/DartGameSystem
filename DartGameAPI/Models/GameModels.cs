@@ -66,6 +66,9 @@ public class Turn
 
     /// <summary>Whether a bust is pending confirmation for this turn</summary>
     public bool BustPending { get; set; }
+
+    /// <summary>Whether the board has been cleared during a bust (darts pulled)</summary>
+    public bool BustBoardCleared { get; set; }
 }
 
 /// <summary>
