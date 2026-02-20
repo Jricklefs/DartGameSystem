@@ -722,7 +722,18 @@ public class GamesController : ControllerBase
             Confidence = 1.0
         };
 
-        _gameService.CorrectDart(game, request.DartIndex, newDart);
+        // Route through X01 engine for X01 games, fallback to GameService for others
+        DartResult correctionResult = null;
+        if (game.IsX01Engine)
+        {
+            var currentPlayer = game.CurrentPlayer;
+            if (currentPlayer != null)
+                correctionResult = _x01Engine.CorrectDart(game, currentPlayer.Id, request.DartIndex, newDart);
+        }
+        else
+        {
+            _gameService.CorrectDart(game, request.DartIndex, newDart);
+        }
 
         if (_benchmark.IsEnabled)
         {
@@ -734,10 +745,11 @@ public class GamesController : ControllerBase
         _ = RecordBenchmarkCorrection(game, request.DartIndex, oldDart, newDart);
 
         await _hubContext.SendDartThrown(game.BoardId, newDart, game);
-        
+
+        // Check if correction resulted in checkout or match end
         if (game.State == GameState.Finished)
             await _hubContext.SendGameEnded(game.BoardId, game);
-        else if (game.LegWinnerId != null)
+        else if (correctionResult?.Type == DartResultType.LegWon || game.LegWinnerId != null)
         {
             var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
             if (legWinner != null)
