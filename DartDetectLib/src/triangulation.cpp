@@ -94,6 +94,7 @@ TpsTransform build_tps_transform(const CameraCalibration& cal)
         if (!ring.ellipse->has_value()) continue;
         const auto& ell = ring.ellipse->value();
         
+        // Boundary angles (20 points at segment boundaries)
         for (int idx = 0; idx < 20; ++idx) {
             auto px_pt = sample_ellipse_at_angle(ell, cal.segment_angles[idx], bcx, bcy);
             if (!px_pt) continue;
@@ -103,6 +104,28 @@ TpsTransform build_tps_transform(const CameraCalibration& cal)
             
             int board_idx = ((idx - seg20_idx) % 20 + 20) % 20;
             double angle_cw_deg = board_idx * 18.0 - 9.0;
+            double angle_cw_rad = angle_cw_deg * CV_PI / 180.0;
+            dst_x.push_back(ring.norm_radius * std::sin(angle_cw_rad));
+            dst_y.push_back(ring.norm_radius * std::cos(angle_cw_rad));
+        }
+        
+        // Midpoint angles (20 points between each pair of boundary angles)
+        for (int idx = 0; idx < 20; ++idx) {
+            int next_idx = (idx + 1) % 20;
+            double mid_angle = (cal.segment_angles[idx] + cal.segment_angles[next_idx]) / 2.0;
+            // Handle wraparound (angles near 0/2pi boundary)
+            if (std::abs(cal.segment_angles[next_idx] - cal.segment_angles[idx]) > CV_PI) {
+                mid_angle += CV_PI;
+                if (mid_angle > 2.0 * CV_PI) mid_angle -= 2.0 * CV_PI;
+            }
+            auto px_pt = sample_ellipse_at_angle(ell, mid_angle, bcx, bcy);
+            if (!px_pt) continue;
+            
+            src_x.push_back(px_pt->x);
+            src_y.push_back(px_pt->y);
+            
+            int board_idx = ((idx - seg20_idx) % 20 + 20) % 20;
+            double angle_cw_deg = board_idx * 18.0;  // midpoint = boundary + 9deg, so board_idx*18 - 9 + 9
             double angle_cw_rad = angle_cw_deg * CV_PI / 180.0;
             dst_x.push_back(ring.norm_radius * std::sin(angle_cw_rad));
             dst_y.push_back(ring.norm_radius * std::cos(angle_cw_rad));
