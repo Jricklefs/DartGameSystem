@@ -162,7 +162,7 @@ public class GamesController : ControllerBase
             var bmPlayer = player?.Name ?? "player";
             _ = Task.Run(() => _benchmark.SaveBenchmarkDataAsync(
                 requestId, dartNumber, boardId, game.Id, game.CurrentRound, bmPlayer,
-                request.Images, request.BeforeImages, newTip, detectResult));
+                request.BeforeImages, request.Images, newTip, detectResult));  // BeforeImages=raw(with dart), Images=previous(before dart)
         }
         
         _logger.LogInformation("[TIMING][{RequestId}] DG: COMPLETE total={Total}ms", requestId, sw.ElapsedMilliseconds);
