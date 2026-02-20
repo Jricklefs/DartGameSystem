@@ -109,6 +109,37 @@ TpsTransform build_tps_transform(const CameraCalibration& cal)
         }
     }
     
+    // Add midpoint angles (between boundary angles) for each ring - 40 total angles per ring
+    for (const auto& ring : rings) {
+        if (!ring.ellipse->has_value()) continue;
+        const auto& ell = ring.ellipse->value();
+        
+        for (int idx = 0; idx < 20; ++idx) {
+            int next_idx = (idx + 1) % 20;
+            // Midpoint angle between two boundary angles
+            double a1 = cal.segment_angles[idx];
+            double a2 = cal.segment_angles[next_idx];
+            // Handle wrap-around
+            double diff = a2 - a1;
+            if (diff > CV_PI) diff -= 2 * CV_PI;
+            if (diff < -CV_PI) diff += 2 * CV_PI;
+            double mid_angle = a1 + diff / 2.0;
+            
+            auto px_pt = sample_ellipse_at_angle(ell, mid_angle, bcx, bcy);
+            if (!px_pt) continue;
+            
+            src_x.push_back(px_pt->x);
+            src_y.push_back(px_pt->y);
+            
+            // Board-space: midpoint is at the center of the segment
+            int board_idx = ((idx - seg20_idx) % 20 + 20) % 20;
+            double angle_cw_deg = board_idx * 18.0;  // center of segment (boundary is at -9, next at +9, mid at 0)
+            double angle_cw_rad = angle_cw_deg * CV_PI / 180.0;
+            dst_x.push_back(ring.norm_radius * std::sin(angle_cw_rad));
+            dst_y.push_back(ring.norm_radius * std::cos(angle_cw_rad));
+        }
+    }
+    
     // Add mid-ring interpolated control points for smoother TPS in gap regions
     // Mid bull-to-triple_inner and mid triple_outer-to-double_inner
     struct MidRingConfig {
@@ -138,6 +169,33 @@ TpsTransform build_tps_transform(const CameraCalibration& cal)
         }
     }
 
+    // Add midpoint angles for mid-ring interpolated control points
+    for (const auto& mr : mid_rings) {
+        if (!mr.inner_ell->has_value() || !mr.outer_ell->has_value()) continue;
+        const auto& ell_in = mr.inner_ell->value();
+        const auto& ell_out = mr.outer_ell->value();
+        for (int idx = 0; idx < 20; ++idx) {
+            int next_idx = (idx + 1) % 20;
+            double a1 = cal.segment_angles[idx];
+            double a2 = cal.segment_angles[next_idx];
+            double diff = a2 - a1;
+            if (diff > CV_PI) diff -= 2 * CV_PI;
+            if (diff < -CV_PI) diff += 2 * CV_PI;
+            double mid_angle = a1 + diff / 2.0;
+            
+            auto pt_in = sample_ellipse_at_angle(ell_in, mid_angle, bcx, bcy);
+            auto pt_out = sample_ellipse_at_angle(ell_out, mid_angle, bcx, bcy);
+            if (!pt_in || !pt_out) continue;
+            src_x.push_back((pt_in->x + pt_out->x) / 2.0);
+            src_y.push_back((pt_in->y + pt_out->y) / 2.0);
+            int board_idx = ((idx - seg20_idx) % 20 + 20) % 20;
+            double angle_cw_deg = board_idx * 18.0;
+            double angle_cw_rad = angle_cw_deg * CV_PI / 180.0;
+            dst_x.push_back(mr.norm_radius * std::sin(angle_cw_rad));
+            dst_y.push_back(mr.norm_radius * std::cos(angle_cw_rad));
+        }
+    }
+    
     // Add center anchor
     src_x.push_back(bcx); src_y.push_back(bcy);
     dst_x.push_back(0.0); dst_y.push_back(0.0);
@@ -283,7 +341,7 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
         auto cal_it = calibrations.find(cam_id);
         if (cal_it == calibrations.end()) continue;
         
-        TpsTransform tps = build_tps_transform(cal_it->second);
+        const TpsTransform& tps = cal_it->second.tps_cache;
         if (!tps.valid) continue;
         
         double vx = det.pca_line->vx, vy = det.pca_line->vy;

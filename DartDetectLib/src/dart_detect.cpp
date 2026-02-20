@@ -197,6 +197,11 @@ DD_API int dd_init(const char* calibration_json)
         return -1;
     }
     
+    // Precompute TPS transforms for each camera (expensive, do once)
+    for (auto& [cam_id, cal] : g_calibrations) {
+        cal.tps_cache = build_tps_transform(cal);
+    }
+    
     g_initialized = true;
     return 0;
 }
