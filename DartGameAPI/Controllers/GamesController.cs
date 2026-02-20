@@ -593,9 +593,18 @@ public class GamesController : ControllerBase
         if (game.CurrentTurn == null || (!game.CurrentTurn.IsBusted && !game.CurrentTurn.BustPending && game.PendingBusts.Count == 0))
             return BadRequest(new { error = "Current turn is not busted" });
         
+        var previousTurn = game.CurrentTurn ?? new Turn();
         _gameService.ConfirmBust(game);
-        await _hubContext.SendPauseDetection(game.BoardId);
-        _logger.LogInformation("Bust confirmed on board {BoardId}", game.BoardId);
+        _logger.LogInformation("Bust confirmed on board {BoardId}, advancing turn and resuming sensor", game.BoardId);
+        
+        // Advance to next player's turn and resume detection
+        // (board is typically already clear by the time the player confirms the bust)
+        _gameService.NextTurn(game);
+        await _hubContext.SendResumeDetection(game.BoardId);
+        
+        var currentPlayer = game.Players.ElementAtOrDefault(game.CurrentPlayerIndex);
+        await UpdateBenchmarkContext(game.BoardId, game.Id, game.CurrentRound, currentPlayer?.Name);
+        await _hubContext.SendTurnEnded(game.BoardId, game, previousTurn);
         
         return Ok(new { game });
     }
