@@ -759,6 +759,9 @@ async function startGame() {
                 playerNames: players,
                 bestOf: selectedBestOf,
                 requireDoubleOut: rules['double-out'] ?? false,
+                startingScore: getSelectedStartingScore(),
+                doubleIn: rules['double-in'] ?? false,
+                masterOut: rules['master-out'] ?? false,
                 rules: rules
             })
         });
@@ -877,7 +880,11 @@ const gameConfig = {
             { value: '20', label: '🐛 Debug 20' },
             { value: '301', label: '301' },
             { value: '501', label: '501' },
+            { value: '401', label: '401' },
+            { value: '601', label: '601' },
             { value: '701', label: '701' },
+            { value: '801', label: '801' },
+            { value: '901', label: '901' },
             { value: '1001', label: '1001' }
         ],
         defaultVariant: '501',
@@ -1048,16 +1055,21 @@ function getSelectedGameMode() {
     const category = document.getElementById('game-category')?.value || 'x01';
     const variant = document.getElementById('game-variant')?.value;
     const config = gameConfig[category];
-    
-    // Use variant if selected, otherwise default
     const gameVariant = variant || config?.defaultVariant || '501';
-    
     if (category === 'x01') {
         if (gameVariant === '20') return 'Debug20';
-        return `Game${gameVariant}`;
+        return 'X01';
     } else {
         return gameVariant;
     }
+}
+
+function getSelectedStartingScore() {
+    const category = document.getElementById('game-category')?.value || 'x01';
+    if (category !== 'x01') return 0;
+    const variant = document.getElementById('game-variant')?.value || '501';
+    if (variant === '20') return 20;
+    return parseInt(variant) || 501;
 }
 
 function getSelectedRules() {
