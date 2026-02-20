@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DartDetectLib - Internal header (not exported)
  * 
  * Shared types and function declarations for internal modules.
@@ -27,12 +27,12 @@ static const int SEGMENT_ORDER[20] = {
 };
 
 // Standard dartboard radii (mm from center)
-static const double BULLSEYE_RADIUS_MM     = 6.35;
-static const double OUTER_BULL_RADIUS_MM   = 16.0;
-static const double TRIPLE_INNER_RADIUS_MM = 99.0;
-static const double TRIPLE_OUTER_RADIUS_MM = 107.0;
-static const double DOUBLE_INNER_RADIUS_MM = 162.0;
-static const double DOUBLE_OUTER_RADIUS_MM = 170.0;
+static const double BULLSEYE_RADIUS_MM     = 7.75;  // +1.4mm wire width
+static const double OUTER_BULL_RADIUS_MM   = 17.4;  // +1.4mm wire width
+static const double TRIPLE_INNER_RADIUS_MM = 97.6;  // -1.4mm wire width (expand triple inward)
+static const double TRIPLE_OUTER_RADIUS_MM = 108.4; // +1.4mm wire width (expand triple outward)
+static const double DOUBLE_INNER_RADIUS_MM = 160.6; // -1.4mm wire width (expand double inward)
+static const double DOUBLE_OUTER_RADIUS_MM = 171.4; // +1.4mm wire width (expand double outward)
 
 // Normalized radii (relative to outer double = 1.0)
 static const double BULLSEYE_NORM     = BULLSEYE_RADIUS_MM / DOUBLE_OUTER_RADIUS_MM;
