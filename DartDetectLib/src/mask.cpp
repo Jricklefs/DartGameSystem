@@ -108,16 +108,18 @@ MotionMaskResult compute_motion_mask(
 // This function duplicates the hysteresis logic for pixel classification,
 // so it needs the same kernel sizes to produce consistent masks.
 // See compute_motion_mask() comment for full rationale.
+// Overload accepting pre-computed motion mask (Phase 2: avoid duplicate mask computation)
 PixelSegmentation compute_pixel_segmentation(
     const cv::Mat& current,
     const cv::Mat& previous,
     const std::vector<cv::Mat>& prev_dart_masks,
     int threshold,
-    int blur_size)
+    int blur_size,
+    const MotionMaskResult* precomputed_mmr)
 {
     PixelSegmentation seg;
     
-    // Grayscale + blur
+    // Grayscale + blur (always needed for signed_diff classification)
     cv::Mat gray_curr, gray_prev, blur_curr, blur_prev;
     if (current.channels() == 3)
         cv::cvtColor(current, gray_curr, cv::COLOR_BGR2GRAY);
@@ -129,37 +131,42 @@ PixelSegmentation compute_pixel_segmentation(
     cv::GaussianBlur(gray_curr, blur_curr, cv::Size(blur_size, blur_size), 0);
     cv::GaussianBlur(gray_prev, blur_prev, cv::Size(blur_size, blur_size), 0);
     
-    // Signed difference
+    // Signed difference (needed for appeared/disappeared classification)
     cv::Mat signed_diff;
     blur_curr.convertTo(signed_diff, CV_16S);
     cv::Mat prev16;
     blur_prev.convertTo(prev16, CV_16S);
     signed_diff -= prev16;
     
-    // Compute full motion mask with hysteresis (same as compute_motion_mask)
-    cv::Mat diff;
-    cv::absdiff(blur_curr, blur_prev, diff);
-    cv::Mat mask_high, mask_low;
-    cv::threshold(diff, mask_high, threshold, 255, cv::THRESH_BINARY);
-    cv::threshold(diff, mask_low, std::max(5, threshold / 3), 255, cv::THRESH_BINARY);
-    
-    cv::Mat close_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
-    cv::morphologyEx(mask_low, mask_low, cv::MORPH_CLOSE, close_kern);
-    
-    cv::Mat seed = mask_high.clone();
-    cv::Mat dil_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
-    for (int i = 0; i < 50; ++i) {
-        cv::Mat expanded, new_pixels;
-        cv::dilate(seed, expanded, dil_kern);
-        cv::bitwise_and(expanded, mask_low, new_pixels);
-        cv::Mat diff_check;
-        cv::compare(new_pixels, seed, diff_check, cv::CMP_NE);
-        if (cv::countNonZero(diff_check) == 0) break;
-        seed = new_pixels;
+    if (precomputed_mmr && !precomputed_mmr->mask.empty()) {
+        // Use pre-computed motion mask (saves 15-25ms per camera for dart 2+)
+        seg.full_motion_mask = precomputed_mmr->mask.clone();
+    } else {
+        // Compute full motion mask with hysteresis (same as compute_motion_mask)
+        cv::Mat diff;
+        cv::absdiff(blur_curr, blur_prev, diff);
+        cv::Mat mask_high, mask_low;
+        cv::threshold(diff, mask_high, threshold, 255, cv::THRESH_BINARY);
+        cv::threshold(diff, mask_low, std::max(5, threshold / 3), 255, cv::THRESH_BINARY);
+        
+        cv::Mat close_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+        cv::morphologyEx(mask_low, mask_low, cv::MORPH_CLOSE, close_kern);
+        
+        cv::Mat seed = mask_high.clone();
+        cv::Mat dil_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+        for (int i = 0; i < 50; ++i) {
+            cv::Mat expanded, new_pixels;
+            cv::dilate(seed, expanded, dil_kern);
+            cv::bitwise_and(expanded, mask_low, new_pixels);
+            cv::Mat diff_check;
+            cv::compare(new_pixels, seed, diff_check, cv::CMP_NE);
+            if (cv::countNonZero(diff_check) == 0) break;
+            seed = new_pixels;
+        }
+        
+        cv::Mat open_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+        cv::morphologyEx(seed, seg.full_motion_mask, cv::MORPH_OPEN, open_kern);
     }
-    
-    cv::Mat open_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
-    cv::morphologyEx(seed, seg.full_motion_mask, cv::MORPH_OPEN, open_kern);
     
     int h = seg.full_motion_mask.rows;
     int w = seg.full_motion_mask.cols;
