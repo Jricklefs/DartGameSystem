@@ -54,6 +54,9 @@ let selectedMode = 'Practice';
 let selectedBestOf = 5;
 let lookingForMatch = false;  // Looking for match toggle state
 
+// Bust flow state machine
+let bustState = { active: false, confirmed: false, boardCleared: false };
+
 // ==========================================================================
 // Initialization
 // ==========================================================================
@@ -91,7 +94,7 @@ function initTheme() {
     // Apply tagline
     const taglineEl = document.getElementById('app-tagline');
     if (taglineEl && theme.tagline) {
-        taglineEl.textContent = `— ${theme.tagline} —`;
+        taglineEl.textContent = `ï¿½ ${theme.tagline} ï¿½`;
     }
     
     // Apply background
@@ -164,6 +167,7 @@ async function initConnection() {
     connection.on('BustConfirmedWaitingForClear', handleBustConfirmedWaitingForClear);
     connection.on('BustBoardCleared', handleBustBoardCleared);
     connection.on('BustCancelled', handleBustCancelled);
+    connection.on('BustStillActive', handleBustStillActive);
 
     try {
         await connection.start();
@@ -468,7 +472,7 @@ function updateCurrentTurn() {
             console.log(`[updateCurrentTurn] slot ${i} = ${darts[i].score}`);
         } else {
             slot.classList.remove('hit');
-            slot.textContent = '—';
+            slot.textContent = 'ï¿½';
         }
     });
     
@@ -480,7 +484,7 @@ function updateCurrentTurn() {
 function clearCurrentTurn() {
     document.querySelectorAll('.dart-slot').forEach(slot => {
         slot.classList.remove('hit');
-        slot.textContent = '—';
+        slot.textContent = 'ï¿½';
     });
     document.getElementById('turn-score').textContent = '0';
 }
@@ -532,21 +536,19 @@ function showBustPopup(dart) {
 }
 
 function showBustModal() {
-    // Remove existing modal if any
     document.getElementById('bust-modal')?.remove();
     
     const turn = currentGame?.currentTurn;
     const darts = turn?.darts || [];
     const player = currentGame?.players?.[currentGame.currentPlayerIndex];
     
-    // Build darts list HTML
     let dartsHtml = '';
     darts.forEach((d, i) => {
         const dartText = formatDartShort(d);
         dartsHtml += `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #222; border-radius: 8px; margin-bottom: 8px;">
                 <span style="font-size: 1.3rem; color: var(--paper);">Dart ${i + 1}: <strong>${dartText}</strong> (${d.score})</span>
-                <button onclick="openCorrectionForDart(${i})" style="background: #d4af37; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">?? Correct</button>
+                <button onclick="openCorrectionForDart(${i})" style="background: #d4af37; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">Correct</button>
             </div>
         `;
     });
@@ -561,25 +563,85 @@ function showBustModal() {
     `;
     modal.innerHTML = `
         <div style="background: linear-gradient(180deg, #2a1a1a 0%, #1a0a0a 100%); border: 3px solid #ff4444; border-radius: 16px; padding: 30px; max-width: 500px; width: 100%; text-align: center;">
-            <h1 style="color: #ff4444; font-size: 3rem; margin: 0 0 10px 0; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em; text-shadow: 0 0 20px rgba(255,68,68,0.5);">?? BUSTED! ??</h1>
+            <h1 style="color: #ff4444; font-size: 3rem; margin: 0 0 10px 0; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em; text-shadow: 0 0 20px rgba(255,68,68,0.5);">BUSTED!</h1>
             <p style="color: var(--paper-muted); margin: 0 0 20px 0;">${player?.name || 'Player'} - Score reverted to ${turn?.scoreBeforeBust || player?.score}</p>
             
             <div style="margin-bottom: 20px; text-align: left;">
                 ${dartsHtml || '<p style="color: var(--paper-muted);">No darts recorded</p>'}
             </div>
             
-            <p style="color: #ffaa00; margin-bottom: 20px; font-size: 0.95rem;">
-                ?? Remove your darts from the board.<br>
-                You can correct any dart before confirming.
+            <p id="bust-status-text" style="color: #ffaa00; margin-bottom: 20px; font-size: 0.95rem;">
+                Pull darts and confirm bust to continue
             </p>
             
             <button id="confirm-bust-btn" onclick="confirmBust()" style="background: linear-gradient(180deg, #ff5555 0%, #cc3333 100%); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-size: 1.3rem; font-weight: bold; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em;">
-                ? CONFIRM BUST
+                CONFIRM BUST
             </button>
         </div>
     `;
     
     document.body.appendChild(modal);
+    updateBustStatusText();
+}
+
+function updateBustStatusText() {
+    const el = document.getElementById('bust-status-text');
+    if (!el) return;
+    
+    if (bustState.confirmed && bustState.boardCleared) {
+        el.textContent = 'Advancing to next player...';
+        el.style.color = '#44ff44';
+    } else if (bustState.confirmed && !bustState.boardCleared) {
+        el.textContent = 'Bust confirmed \u2713 \u2014 pull darts to continue';
+        el.style.color = '#ffaa00';
+    } else if (!bustState.confirmed && bustState.boardCleared) {
+        el.textContent = 'Darts cleared \u2713 \u2014 confirm bust to continue';
+        el.style.color = '#ffaa00';
+    } else {
+        el.textContent = 'Pull darts and confirm bust to continue';
+        el.style.color = '#ffaa00';
+    }
+}
+
+function handleBustDetected(data) {
+    console.log('Bust detected:', data);
+    bustState = { active: true, confirmed: false, boardCleared: false };
+    if (currentGame) {
+        // Update local game state
+        if (data.game) Object.assign(currentGame, data.game);
+        updateScoreboard();
+        updateCurrentTurn();
+    }
+    showBustModal();
+    setTimeout(() => speakBust(), 300);
+}
+
+function handleBustConfirmedWaitingForClear(data) {
+    console.log('Bust confirmed, waiting for clear:', data);
+    bustState.confirmed = true;
+    updateBustStatusText();
+}
+
+function handleBustBoardCleared(data) {
+    console.log('Board cleared during bust:', data);
+    bustState.boardCleared = true;
+    updateBustStatusText();
+}
+
+function handleBustCancelled(data) {
+    console.log('Bust cancelled (correction cleared bust):', data);
+    bustState = { active: false, confirmed: false, boardCleared: false };
+    document.getElementById('bust-modal')?.remove();
+    if (currentGame) {
+        updateScoreboard();
+        updateCurrentTurn();
+    }
+}
+
+function handleBustStillActive(data) {
+    console.log('Bust still active after correction:', data);
+    // Re-show bust modal with updated darts
+    showBustModal();
 }
 
 function formatDartShort(dart) {
@@ -687,7 +749,7 @@ function showLegWonModal(winnerName, legsWon, legsToWin, players) {
     // Build standings
     const standings = players.map(p => 
         `${p.Name}: ${p.LegsWon} / ${legsToWin}`
-    ).join('  •  ');
+    ).join('  ï¿½  ');
     modal.querySelector('.leg-standings').textContent = standings;
     
     modal.classList.remove('hidden');
@@ -1318,7 +1380,7 @@ function getSegmentAndScore() {
     
     const segment = parseInt(correctionInput, 10);
     if (isNaN(segment) || segment < 1 || segment > 20) {
-        return { segment: 0, score: 0, display: '—' };
+        return { segment: 0, score: 0, display: 'ï¿½' };
     }
     
     const score = segment * correctionMultiplier;
@@ -1333,7 +1395,7 @@ function updateCorrectionDisplay() {
     const { display, score } = getSegmentAndScore();
     
     if (correctionInput === '' && correctionMultiplier === 1) {
-        displayEl.textContent = '—';
+        displayEl.textContent = 'ï¿½';
     } else {
         // Show S12, D20, T19, BULL, D-BULL, MISS
         displayEl.textContent = display;
@@ -1351,7 +1413,7 @@ function openCorrectionModal(dartIndex) {
     document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
     
     document.getElementById('correction-dart-num').textContent = dartIndex + 1;
-    document.getElementById('correction-input-display').textContent = '—';
+    document.getElementById('correction-input-display').textContent = 'ï¿½';
     
     document.getElementById('dart-correction-modal')?.classList.remove('hidden');
 }
@@ -2134,7 +2196,7 @@ function displayOpenMatches(matches) {
         <div class="open-match" onclick="joinOnlineMatch('${m.matchCode}')">
             <div class="match-info">
                 <span class="match-host">${escapeHtml(m.hostName)}'s Game</span>
-                <span class="match-mode">${formatMode(m.gameMode)} • Best of ${m.bestOf}</span>
+                <span class="match-mode">${formatMode(m.gameMode)} ï¿½ Best of ${m.bestOf}</span>
             </div>
             <button class="btn-join">Join</button>
         </div>
