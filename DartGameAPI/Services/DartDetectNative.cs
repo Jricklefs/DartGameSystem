@@ -147,6 +147,29 @@ public class DetectionResult
     public double TotalError { get; set; }
     public string? Error { get; set; }
     public Dictionary<string, CameraVote>? PerCamera { get; set; }
+    
+    [System.Text.Json.Serialization.JsonPropertyName("coords_x")]
+    public double CoordsX { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("coords_y")]
+    public double CoordsY { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("debug_lines")]
+    public Dictionary<string, CamDebugInfo>? DebugLines { get; set; }
+}
+
+public class CamDebugInfo
+{
+    [System.Text.Json.Serialization.JsonPropertyName("ls_x")]
+    public double LsX { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("ls_y")]
+    public double LsY { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("le_x")]
+    public double LeX { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("le_y")]
+    public double LeY { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("tip_nx")]
+    public double TipNx { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("tip_ny")]
+    public double TipNy { get; set; }
 }
 
 /// <summary>

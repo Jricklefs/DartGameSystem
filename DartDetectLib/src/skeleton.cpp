@@ -107,6 +107,8 @@ void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
 #include <set>
 #include <numeric>
 #include <random>
+#include <queue>
+#include <map>
 
 // ============================================================================
 // Helper: Find flight blob (largest contour)
@@ -542,6 +544,142 @@ DetectionResult detect_dart(
                     if (vy < 0) { vx = -vx; vy = -vy; }
                     pca_line = PcaLine{vx, vy, barrel_info->pivot.x, barrel_info->pivot.y,
                                        (double)b_pts.size(), "barrel_fitline"};
+                }
+            }
+        }
+        
+        // === Barrel-width-profiled fitLine (between RANSAC and Hough fallback) ===
+        if (!pca_line) {
+            cv::Mat skel_bw;
+            zhangSuenThinning(motion_mask, skel_bw);
+            
+            // Find skeleton points
+            std::vector<cv::Point> skel_pts;
+            cv::findNonZero(skel_bw, skel_pts);
+            
+            if ((int)skel_pts.size() > 20) {
+                // Build adjacency set for fast lookup
+                std::set<std::pair<int,int>> skel_set;
+                for (const auto& p : skel_pts)
+                    skel_set.insert({p.y, p.x});
+                
+                // Find endpoints (pixels with exactly 1 skeleton neighbor)
+                std::vector<cv::Point> endpoints;
+                for (const auto& p : skel_pts) {
+                    int n = 0;
+                    for (int dy = -1; dy <= 1; ++dy)
+                        for (int dx = -1; dx <= 1; ++dx)
+                            if ((dy || dx) && skel_set.count({p.y+dy, p.x+dx}))
+                                ++n;
+                    if (n == 1) endpoints.push_back(p);
+                }
+                
+                // BFS from each endpoint to find longest path
+                std::vector<cv::Point> best_path;
+                
+                for (const auto& start : endpoints) {
+                    // BFS tracking paths
+                    std::map<std::pair<int,int>, int> dist;
+                    std::map<std::pair<int,int>, std::pair<int,int>> parent;
+                    std::queue<std::pair<int,int>> bfs_q;
+                    std::pair<int,int> sk(start.y, start.x);
+                    dist[sk] = 0;
+                    parent[sk] = std::make_pair(-1, -1);
+                    bfs_q.push(sk);
+                    std::pair<int,int> farthest = sk;
+                    int max_dist = 0;
+                    
+                    while (!bfs_q.empty()) {
+                        auto cur_node = bfs_q.front(); bfs_q.pop();
+                        int cy = cur_node.first, cx = cur_node.second;
+                        int d = dist[std::make_pair(cy, cx)];
+                        if (d > max_dist) { max_dist = d; farthest = std::make_pair(cy, cx); }
+                        
+                        for (int dy = -1; dy <= 1; ++dy)
+                            for (int dx = -1; dx <= 1; ++dx) {
+                                if (!dy && !dx) continue;
+                                std::pair<int,int> nk(cy+dy, cx+dx);
+                                if (skel_set.count(nk) && !dist.count(nk)) {
+                                    dist[nk] = d + 1;
+                                    parent[nk] = std::make_pair(cy, cx);
+                                    bfs_q.push(nk);
+                                }
+                            }
+                    }
+                    
+                    // Reconstruct path
+                    if (max_dist > (int)best_path.size()) {
+                        std::vector<cv::Point> path_pts;
+                        auto cur_trace = farthest;
+                        while (cur_trace.first >= 0) {
+                            path_pts.push_back(cv::Point(cur_trace.second, cur_trace.first));
+                            cur_trace = parent[cur_trace];
+                        }
+                        if ((int)path_pts.size() > (int)best_path.size())
+                            best_path = path_pts;
+                    }
+                }
+                
+                // Measure perpendicular width along path
+                if ((int)best_path.size() > 20) {
+                    const int window = 15;
+                    const int width_thresh = 20;
+                    std::vector<cv::Point2f> barrel_pts_bw;
+                    int h = motion_mask.rows, w = motion_mask.cols;
+                    
+                    for (int i = 0; i < (int)best_path.size(); ++i) {
+                        int x0 = best_path[i].x, y0 = best_path[i].y;
+                        
+                        // Local direction from path window
+                        int i0 = std::max(0, i - window);
+                        int i1 = std::min((int)best_path.size() - 1, i + window);
+                        double ldx = best_path[i1].x - best_path[i0].x;
+                        double ldy = best_path[i1].y - best_path[i0].y;
+                        double ll = std::sqrt(ldx*ldx + ldy*ldy);
+                        if (ll < 1) continue;
+                        
+                        // Perpendicular direction
+                        double px = -ldy / ll, py = ldx / ll;
+                        
+                        // Measure width in perpendicular direction
+                        int count = 1;
+                        for (int sign : {1, -1}) {
+                            for (int t = 1; t < 80; ++t) {
+                                int nx = (int)std::round(x0 + sign * px * t);
+                                int ny = (int)std::round(y0 + sign * py * t);
+                                if (nx < 0 || nx >= w || ny < 0 || ny >= h || 
+                                    motion_mask.at<uchar>(ny, nx) == 0) break;
+                                ++count;
+                            }
+                        }
+                        
+                        if (count < width_thresh) {
+                            barrel_pts_bw.push_back(cv::Point2f((float)x0, (float)y0));
+                        }
+                    }
+                    
+                    // Fit line through barrel points
+                    if ((int)barrel_pts_bw.size() > 15) {
+                        cv::Vec4f lp;
+                        cv::fitLine(barrel_pts_bw, lp, cv::DIST_HUBER, 0, 0.01, 0.01);
+                        double bvx = lp[0], bvy = lp[1], bcx = lp[2], bcy = lp[3];
+                        if (bvy < 0) { bvx = -bvx; bvy = -bvy; }
+                        
+                        // Accept if angle is reasonable vs ref_angle
+                        bool accept = true;
+                        if (ref_angle) {
+                            double la = std::atan2(bvy, bvx);
+                            double ad = std::abs(la - *ref_angle);
+                            if (ad > CV_PI) ad = 2*CV_PI - ad;
+                            ad = std::min(ad, CV_PI - ad);
+                            if (ad > CV_PI * 75.0 / 180.0) accept = false;
+                        }
+                        
+                        if (accept) {
+                            pca_line = PcaLine{bvx, bvy, bcx, bcy,
+                                               (double)barrel_pts_bw.size(), "barrel_width_fit"};
+                        }
+                    }
                 }
             }
         }
