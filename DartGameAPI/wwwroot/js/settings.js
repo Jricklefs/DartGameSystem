@@ -1742,7 +1742,7 @@ async function loadBenchmarkGames() {
     if (!gamesList) return;
     
     try {
-        const response = await fetch(`${DART_DETECT_URL}/v1/benchmark/games`);
+        const response = await fetch(`/api/benchmark/games`);
         const data = await response.json();
         
         if (!data.games || data.games.length === 0) {
@@ -1815,7 +1815,7 @@ async function showGameDetails(boardId, gameId) {
     content.innerHTML = '<p>Loading...</p>';
     
     try {
-        const response = await fetch(`${DART_DETECT_URL}/v1/benchmark/games/${boardId}/${gameId}/darts`);
+        const response = await fetch(`/api/benchmark/games/${boardId}/${gameId}/darts`);
         const data = await response.json();
         
         if (!data.darts || data.darts.length === 0) {
@@ -1833,7 +1833,7 @@ async function showGameDetails(boardId, gameId) {
         let html = `<h3 style="color: var(--gold);">Game: ${gameId}</h3>`;
         
         for (const [round, darts] of Object.entries(byRound)) {
-            html += `<h4 style="color: var(--paper); margin-top: 15px;">${round}</h4>`;
+            html += `<h4 style="color: var(--paper); margin-top: 15px; display: flex; align-items: center; gap: 10px;">${round} <button onclick="event.stopPropagation(); deleteRound('${boardId}', '${gameId}', '${round}')" style="background: none; border: 1px solid #666; border-radius: 4px; color: #f44336; cursor: pointer; font-size: 0.8rem; padding: 2px 6px;" title="Delete round">&#128465;</button></h4>`;
             html += `<div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
             
             for (const dart of darts) {
@@ -1849,7 +1849,7 @@ async function showGameDetails(boardId, gameId) {
                 
                 // Find cam0 debug image
                 const debugImg = dart.images?.find(i => i.includes('cam0_debug')) || dart.images?.[0];
-                const imgUrl = debugImg ? `${DART_DETECT_URL}/v1/benchmark/image/${boardId}/${gameId}/${dart.round}/${dart.dart}/${debugImg}` : '';
+                const imgUrl = debugImg ? `/api/benchmark/image/${boardId}/${gameId}/${dart.round}/${dart.dart}/${debugImg}` : '';
                 
                 html += `
                     <div style="background: #1a1a1a; border: 2px solid ${borderColor}; border-radius: 8px; padding: 10px; width: 180px;">
@@ -3336,7 +3336,7 @@ async function executeDelete() {
     const modal = document.getElementById('delete-confirm-modal');
     if (modal) modal.classList.add('hidden');
     try {
-        const resp = await fetch(`/api/games/${pendingDeleteGame}`, { method: 'DELETE' });
+        const resp = await fetch(`/api/benchmark/games/${pendingDeleteBoard}/${pendingDeleteGame}`, { method: 'DELETE' });
         if (resp.ok) {
             loadBenchmarkGames();
         } else {
