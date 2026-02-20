@@ -131,6 +131,16 @@ public class GamesController : ControllerBase
                 _gameService.ApplyManualDart(game, missDart);
             
             await _hubContext.SendDartThrown(game.BoardId, missDart, game);
+
+            // Save benchmark data for misses too
+            if (_benchmark.IsEnabled)
+            {
+                var bmPlayer = player?.Name ?? "player";
+                _ = Task.Run(() => _benchmark.SaveBenchmarkDataAsync(
+                    requestId, dartNumber, boardId, game.Id, game.CurrentRound, bmPlayer,
+                    request.BeforeImages, request.Images, null, detectResult));
+            }
+
             return Ok(new { message = "Miss recorded", darts = new[] { new { missDart.Zone, missDart.Score, missDart.Segment, missDart.Multiplier } } });
         }
 
