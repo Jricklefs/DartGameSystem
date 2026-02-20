@@ -44,6 +44,7 @@ DD_API int dd_init(const char* calibration_json);
  * @param dart_number 1-based dart number in the current turn (1, 2, or 3)
  * @param board_id Board identifier string
  * @param num_cameras Number of cameras (typically 3)
+ * @param camera_ids Array of camera ID strings aligned to image arrays
  * @param current_images Array of pointers to JPEG/PNG encoded image bytes per camera
  * @param current_sizes Array of byte sizes for each current image
  * @param before_images Array of pointers to baseline image bytes per camera
@@ -59,6 +60,7 @@ DD_API const char* dd_detect(
     int dart_number,
     const char* board_id,
     int num_cameras,
+    const char** camera_ids,
     const unsigned char** current_images,
     const int* current_sizes,
     const unsigned char** before_images,

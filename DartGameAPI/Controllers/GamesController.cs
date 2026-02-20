@@ -106,6 +106,19 @@ public class GamesController : ControllerBase
             Image = i.Image
         }).ToList();
 
+        if (beforeImages == null || beforeImages.Count == 0)
+        {
+            _logger.LogWarning(
+                "[TIMING][{RequestId}] DG: Missing before images payload for board {BoardId} (cameraCount={CameraCount})",
+                requestId, request.BoardId ?? "default", images.Count);
+        }
+        else if (beforeImages.Count != images.Count)
+        {
+            _logger.LogWarning(
+                "[TIMING][{RequestId}] DG: before image count mismatch for board {BoardId} (current={CurrentCount}, before={BeforeCount})",
+                requestId, request.BoardId ?? "default", images.Count, beforeImages.Count);
+        }
+
         // Get dart number for differential detection (darts already scored + 1)
         var dartsThisTurn = game.CurrentTurn?.Darts ?? new List<DartThrow>();
         var dartNumber = dartsThisTurn.Count + 1;

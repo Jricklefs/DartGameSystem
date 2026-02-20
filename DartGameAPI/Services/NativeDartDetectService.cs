@@ -66,7 +66,7 @@ public class NativeDartDetectService : IDartDetectService
                 // Warmup: JIT-compile the P/Invoke path so first real dart has no delay
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 var dummyImg = new byte[][] { new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 } }; // minimal bytes
-                try { DartDetectNative.Detect(1, "warmup", dummyImg, dummyImg); } catch { }
+                try { DartDetectNative.Detect(1, "warmup", new List<string> { "cam0" }, dummyImg, dummyImg); } catch { }
                 DartDetectNative.ClearBoard("warmup");
                 _logger.LogInformation("DartDetectLib P/Invoke warmup complete ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             }
@@ -99,20 +99,110 @@ public class NativeDartDetectService : IDartDetectService
 
         try
         {
-            int numCameras = images.Count;
-            var currentBytes = new byte[numCameras][];
-            var beforeBytes = new byte[numCameras][];
-
-            for (int i = 0; i < numCameras; i++)
+            if (images.Count == 0)
             {
-                currentBytes[i] = Convert.FromBase64String(images[i].Image);
-                beforeBytes[i] = beforeImages != null && i < beforeImages.Count
-                    ? Convert.FromBase64String(beforeImages[i].Image)
-                    : Array.Empty<byte>();
+                _logger.LogWarning("[NATIVE][{BoardId}][Dart{DartNumber}] DetectAsync called with no current images", boardId, dartNumber);
+                return Task.FromResult<DetectResponse?>(null);
+            }
+
+            var beforeByCamera = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (beforeImages == null || beforeImages.Count == 0)
+            {
+                _logger.LogWarning("[NATIVE][{BoardId}][Dart{DartNumber}] Missing before images payload in NativeDartDetectService.DetectAsync", boardId, dartNumber);
+            }
+            else
+            {
+                if (beforeImages.Count != images.Count)
+                {
+                    _logger.LogWarning(
+                        "[NATIVE][{BoardId}][Dart{DartNumber}] before image count mismatch in NativeDartDetectService.DetectAsync: current={CurrentCount}, before={BeforeCount}",
+                        boardId, dartNumber, images.Count, beforeImages.Count);
+                }
+
+                foreach (var before in beforeImages)
+                {
+                    if (!string.IsNullOrWhiteSpace(before.CameraId))
+                    {
+                        beforeByCamera[before.CameraId] = before.Image;
+                    }
+                }
+            }
+
+            var cameraIds = new List<string>(images.Count);
+            var currentBytes = new List<byte[]>(images.Count);
+            var beforeBytes = new List<byte[]>(images.Count);
+            var missingBeforeCount = 0;
+            var invalidBeforeCount = 0;
+            var invalidCurrentCount = 0;
+
+            foreach (var image in images)
+            {
+                if (string.IsNullOrWhiteSpace(image.CameraId))
+                {
+                    invalidCurrentCount++;
+                    _logger.LogError("[NATIVE][{BoardId}][Dart{DartNumber}] Skipping current image with missing CameraId", boardId, dartNumber);
+                    continue;
+                }
+
+                byte[] current;
+                try
+                {
+                    current = Convert.FromBase64String(image.Image);
+                }
+                catch (FormatException ex)
+                {
+                    invalidCurrentCount++;
+                    _logger.LogError(ex,
+                        "[NATIVE][{BoardId}][Dart{DartNumber}][{CameraId}] Invalid current image base64 in NativeDartDetectService.DetectAsync",
+                        boardId, dartNumber, image.CameraId);
+                    continue;
+                }
+
+                byte[] before;
+                if (!beforeByCamera.TryGetValue(image.CameraId, out var beforeB64))
+                {
+                    missingBeforeCount++;
+                    before = current; // Degrade gracefully instead of sending invalid/empty baseline.
+                    _logger.LogWarning(
+                        "[NATIVE][{BoardId}][Dart{DartNumber}][{CameraId}] Missing before image; falling back to current image baseline",
+                        boardId, dartNumber, image.CameraId);
+                }
+                else
+                {
+                    try
+                    {
+                        before = Convert.FromBase64String(beforeB64);
+                    }
+                    catch (FormatException ex)
+                    {
+                        invalidBeforeCount++;
+                        before = current; // Fallback keeps detection path alive.
+                        _logger.LogWarning(ex,
+                            "[NATIVE][{BoardId}][Dart{DartNumber}][{CameraId}] Invalid before image base64; falling back to current image baseline",
+                            boardId, dartNumber, image.CameraId);
+                    }
+                }
+
+                cameraIds.Add(image.CameraId);
+                currentBytes.Add(current);
+                beforeBytes.Add(before);
+            }
+
+            if (currentBytes.Count == 0)
+            {
+                _logger.LogError("[NATIVE][{BoardId}][Dart{DartNumber}] No valid current images after decode; detection aborted", boardId, dartNumber);
+                return Task.FromResult<DetectResponse?>(null);
+            }
+
+            if (missingBeforeCount > 0 || invalidBeforeCount > 0 || invalidCurrentCount > 0)
+            {
+                _logger.LogWarning(
+                    "[NATIVE][{BoardId}][Dart{DartNumber}] Image payload issues in NativeDartDetectService.DetectAsync: missingBefore={MissingBefore}, invalidBefore={InvalidBefore}, invalidCurrent={InvalidCurrent}, usableCameras={Usable}",
+                    boardId, dartNumber, missingBeforeCount, invalidBeforeCount, invalidCurrentCount, currentBytes.Count);
             }
 
             var decodeMs = sw.ElapsedMilliseconds;
-            var result = DartDetectNative.Detect(dartNumber, boardId, currentBytes, beforeBytes);
+            var result = DartDetectNative.Detect(dartNumber, boardId, cameraIds, currentBytes.ToArray(), beforeBytes.ToArray());
             var totalMs = sw.ElapsedMilliseconds;
 
             _logger.LogInformation("[TIMING] Native detect: b64decode={DecodeMs}ms, total={TotalMs}ms", decodeMs, totalMs);

@@ -62,7 +62,7 @@ catch (DllNotFoundException)
 // NOTE: DartSensorClient removed - sensor communication now via SignalR
 // Sensor connects to GameHub and receives StartGame/StopGame/Rebase events
 
-// Benchmark service\nvar benchmarkSettings = new BenchmarkSettings();\nbuilder.Configuration.GetSection(Benchmark).Bind(benchmarkSettings);\nbuilder.Services.AddSingleton(benchmarkSettings);\nbuilder.Services.AddSingleton<BenchmarkService>();\n\n// Benchmark service
+// Benchmark service
 var benchmarkSettings = new BenchmarkSettings();
 builder.Configuration.GetSection("Benchmark").Bind(benchmarkSettings);
 builder.Services.AddSingleton(benchmarkSettings);
