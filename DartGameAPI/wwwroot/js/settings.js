@@ -1776,11 +1776,13 @@ async function loadBenchmarkGames() {
         gamesList.innerHTML = data.games.map(game => `
             <div class="game-item" style="background: #0a0a0a; border: 1px solid #333; border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: pointer;"
                  onclick="showGameDetails('${game.board_id}', '${game.game_id}')">
+                <button class="game-delete-btn" onclick="event.stopPropagation(); confirmDeleteGame('${game.board_id}', '${game.game_id}')" title="Delete game">🗑️</button>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <span style="color: var(--gold); font-weight: bold;">${game.game_id}</span>
                         <span style="color: var(--paper-muted); margin-left: 10px;">Board: ${game.board_id}</span>
                     </div>
+                        <div class="game-timestamp">${game.timestamp ? new Date(game.timestamp).toLocaleString() : ''}</div>
                     <div style="text-align: right;">
                         <span style="color: ${game.accuracy >= 90 ? '#4caf50' : game.accuracy >= 70 ? '#ff9800' : '#f44336'}; font-size: 1.2rem; font-weight: bold;">
                             ${game.accuracy}%
@@ -3314,53 +3316,35 @@ if (document.readyState === 'loading') {
     initTuning();
 }
 
-// ============================================================================
-// Game Delete + Timestamp Functions
-// ============================================================================
-
-let pendingDeleteGameId = null;
-
-function confirmDeleteGame(gameId) {
-    pendingDeleteGameId = gameId;
-    document.getElementById('delete-confirm-modal').classList.remove('hidden');
+// Game delete functions
+let pendingDeleteBoard = null;
+let pendingDeleteGame = null;
+function confirmDeleteGame(boardId, gameId) {
+    pendingDeleteBoard = boardId;
+    pendingDeleteGame = gameId;
+    const modal = document.getElementById('delete-confirm-modal');
+    if (modal) modal.classList.remove('hidden');
 }
-
 function cancelDelete() {
-    pendingDeleteGameId = null;
-    document.getElementById('delete-confirm-modal').classList.add('hidden');
+    pendingDeleteBoard = null;
+    pendingDeleteGame = null;
+    const modal = document.getElementById('delete-confirm-modal');
+    if (modal) modal.classList.add('hidden');
 }
-
 async function executeDelete() {
-    if (!pendingDeleteGameId) return;
-    const gameId = pendingDeleteGameId;
-    document.getElementById('delete-confirm-modal').classList.add('hidden');
+    if (!pendingDeleteGame) return;
+    const modal = document.getElementById('delete-confirm-modal');
+    if (modal) modal.classList.add('hidden');
     try {
-        const resp = await fetch(`/api/games/${gameId}`, { method: 'DELETE' });
+        const resp = await fetch(`/api/games/${pendingDeleteGame}`, { method: 'DELETE' });
         if (resp.ok) {
-            const card = document.getElementById('game-card-' + gameId);
-            if (card) {
-                card.style.transition = 'opacity 0.3s, transform 0.3s';
-                card.style.opacity = '0';
-                card.style.transform = 'translateX(100px)';
-                setTimeout(() => card.remove(), 300);
-            }
-            // Reload benchmark games after deletion
-            setTimeout(() => loadBenchmarkGames(), 500);
+            loadBenchmarkGames();
         } else {
             console.error('Delete failed:', await resp.text());
-            alert('Failed to delete game');
         }
     } catch (e) {
         console.error('Delete error:', e);
-        alert('Error deleting game: ' + e.message);
     }
-    pendingDeleteGameId = null;
-}
-
-function formatTimestamp(dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
-           ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    pendingDeleteBoard = null;
+    pendingDeleteGame = null;
 }
