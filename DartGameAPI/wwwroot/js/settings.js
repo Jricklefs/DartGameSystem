@@ -3348,3 +3348,20 @@ async function executeDelete() {
     pendingDeleteBoard = null;
     pendingDeleteGame = null;
 }
+
+// Round delete function
+async function deleteRound(boardId, gameId, roundFolder) {
+    if (!confirm(`Delete ${roundFolder}? This cannot be undone.`)) return;
+    try {
+        const resp = await fetch(`/api/benchmark/rounds/${boardId}/${gameId}/${encodeURIComponent(roundFolder)}`, { method: 'DELETE' });
+        if (resp.ok) {
+            showGameDetails(boardId, gameId); // refresh the detail view
+        } else {
+            console.error('Delete round failed:', await resp.text());
+            alert('Failed to delete round');
+        }
+    } catch (e) {
+        console.error('Delete round error:', e);
+        alert('Error deleting round: ' + e.message);
+    }
+}
