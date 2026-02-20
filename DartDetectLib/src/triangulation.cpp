@@ -295,6 +295,7 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
         bool tip_reliable;
         double tip_dist;
         double mask_quality;
+        double detection_quality;  // Phase 4A: combined quality weight
     };
     
     std::map<std::string, CamLine> cam_lines;
@@ -352,11 +353,18 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         double tip_dist = std::sqrt(tip_n.x * tip_n.x + tip_n.y * tip_n.y);
         bool tip_reliable = tip_dist <= 1.2;
         
+        // Phase 4A: Compute detection quality weight
+        double dq_inlier = std::max(0.3, std::min(1.0, det.ransac_inlier_ratio));
+        double dq_pixels = std::min(1.0, det.barrel_pixel_count / 200.0);
+        double dq_aspect = std::min(1.0, det.barrel_aspect_ratio / 8.0);
+        double detection_quality = 0.5 * dq_inlier + 0.3 * dq_pixels + 0.2 * dq_aspect;
+        detection_quality = std::max(0.1, detection_quality);
+
         cam_lines[cam_id] = CamLine{
             p1_n, p2_n, tip_n,
             Point2f(det.tip->x, det.tip->y),
             std::move(tps), vote, tip_reliable, tip_dist,
-            det.mask_quality
+            det.mask_quality, detection_quality
         };
     }
     
@@ -389,12 +397,15 @@ const TpsTransform& tps = cal_it->second.tps_cache;
             
             if (!ix) continue;
             
-            double e1 = std::sqrt(
+            double e1_raw = std::sqrt(
                 (ix->x - l1.tip_normalized.x) * (ix->x - l1.tip_normalized.x) +
                 (ix->y - l1.tip_normalized.y) * (ix->y - l1.tip_normalized.y));
-            double e2 = std::sqrt(
+            double e2_raw = std::sqrt(
                 (ix->x - l2.tip_normalized.x) * (ix->x - l2.tip_normalized.x) +
                 (ix->y - l2.tip_normalized.y) * (ix->y - l2.tip_normalized.y));
+            // Phase 4A: Scale errors inversely by detection quality
+            double e1 = e1_raw / std::max(0.1, l1.detection_quality);
+            double e2 = e2_raw / std::max(0.1, l2.detection_quality);
             
             // Score in normalized board space
             double ix_dist = std::sqrt(ix->x * ix->x + ix->y * ix->y);
@@ -425,15 +436,21 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         cam_votes[cam_id] = data.vote.segment;
     }
     
-    // Count votes
+    // Phase 4A: Count votes weighted by detection quality
+    std::map<int, double> vote_weights;
     std::map<int, int> vote_counts;
-    for (const auto& [_, seg] : cam_votes) vote_counts[seg]++;
+    for (const auto& [cam_id, seg] : cam_votes) {
+        vote_counts[seg]++;
+        vote_weights[seg] += cam_lines[cam_id].detection_quality;
+    }
     
     int most_common_seg = 0, most_common_count = 0;
+    double most_common_weight = 0.0;
     for (const auto& [seg, cnt] : vote_counts) {
-        if (cnt > most_common_count) {
+        if (cnt > most_common_count || (cnt == most_common_count && vote_weights[seg] > most_common_weight)) {
             most_common_seg = seg;
             most_common_count = cnt;
+            most_common_weight = vote_weights[seg];
         }
     }
     

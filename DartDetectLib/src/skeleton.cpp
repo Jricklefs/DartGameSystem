@@ -498,14 +498,23 @@ DetectionResult detect_dart(
                         Point2f(best->pvx, best->pvy),
                         best->area
                     };
+                    result.barrel_aspect_ratio = best->aspect;
                 }
             }
         }
         
+        // === Phase 4A: Erode barrel mask before fitting ===
+        cv::Mat barrel_mask_eroded;
+        if (!barrel_mask.empty()) {
+            cv::Mat erode_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+            cv::erode(barrel_mask, barrel_mask_eroded, erode_kern);
+            if (cv::countNonZero(barrel_mask_eroded) < 20) barrel_mask_eroded = barrel_mask;
+        }
+
         // === Barrel RANSAC line fitting ===
         if (!barrel_mask.empty() && barrel_info) {
             std::vector<cv::Point> barrel_pts;
-            cv::findNonZero(barrel_mask, barrel_pts);
+            cv::findNonZero(barrel_mask_eroded, barrel_pts);
 
             if (barrel_pts.size() > 20) {
                 double best_cost = 1e18;
@@ -603,6 +612,8 @@ DetectionResult detect_dart(
                     if (accept) {
                         pca_line = PcaLine{best_vx, best_vy, best_cx, best_cy,
                                            (double)best_inliers, "barrel_ransac"};
+                        result.ransac_inlier_ratio = inlier_ratio;
+                        result.barrel_pixel_count = (int)barrel_pts.size();
                     }
                 }
             }

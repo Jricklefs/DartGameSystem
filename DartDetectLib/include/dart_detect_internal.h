@@ -123,6 +123,11 @@ struct DetectionResult {
     double view_quality = 0.5;
     double mask_quality = 1.0;
     cv::Mat motion_mask;  // for board cache
+
+    // Phase 4A: Detection quality metrics for consensus weighting
+    double ransac_inlier_ratio = 0.0;
+    int barrel_pixel_count = 0;
+    double barrel_aspect_ratio = 0.0;
 };
 
 struct ScoreResult {
