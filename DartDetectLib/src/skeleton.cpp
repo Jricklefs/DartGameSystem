@@ -462,11 +462,15 @@ DetectionResult detect_dart(
             cv::findNonZero(barrel_mask, barrel_pts);
 
             if (barrel_pts.size() > 20) {
-                // RANSAC line fit
+                // MSAC (M-estimator SAmple Consensus) line fit
+                // Uses capped squared distance instead of binary inlier counting,
+                // which naturally finds the barrel centerline even with wide barrels.
+                double best_cost = 1e18;
                 int best_inliers = 0;
                 double best_vx = 0, best_vy = 0, best_cx = 0, best_cy = 0;
                 int iterations = 150;
-                double threshold = 2.5; // pixels
+                double threshold = 6.0; // pixels — captures full barrel width
+                double T2 = threshold * threshold;
 
                 std::mt19937 rng(42); // deterministic seed
                 std::uniform_int_distribution<int> dist(0, (int)barrel_pts.size() - 1);
@@ -483,14 +487,17 @@ DetectionResult detect_dart(
 
                     double nx = -dy / len, ny = dx / len; // normal
 
-                    // Count inliers
+                    // MSAC scoring: sum of min(d^2, T^2)
+                    double cost = 0;
                     int inliers = 0;
                     for (const auto& p : barrel_pts) {
                         double d = std::abs(nx * (p.x - barrel_pts[i1].x) + ny * (p.y - barrel_pts[i1].y));
+                        cost += std::min(d * d, T2);
                         if (d <= threshold) inliers++;
                     }
 
-                    if (inliers > best_inliers) {
+                    if (cost < best_cost) {
+                        best_cost = cost;
                         best_inliers = inliers;
                         best_vx = dx / len;
                         best_vy = dy / len;

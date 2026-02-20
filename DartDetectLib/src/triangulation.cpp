@@ -259,10 +259,22 @@ std::optional<Point2f> intersect_lines_2d(
     double x3, double y3, double x4, double y4)
 {
     double denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-    if (std::abs(denom) < 1e-10) return std::nullopt;
+    double len1 = std::hypot(x2 - x1, y2 - y1);
+    double len2 = std::hypot(x4 - x3, y4 - y3);
+    if (len1 < 1e-12 || len2 < 1e-12) return std::nullopt;
+    
+    // Reject near-parallel lines: sin(crossing angle) < 0.26 (~15 degrees)
+    double sin_angle = std::abs(denom) / (len1 * len2);
+    if (sin_angle < 0.26) return std::nullopt;
     
     double t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
-    return Point2f(x1 + t * (x2 - x1), y1 + t * (y2 - y1));
+    double ix = x1 + t * (x2 - x1);
+    double iy = y1 + t * (y2 - y1);
+    
+    // Reject intersections far off the board (>1.5 board radii)
+    if (std::hypot(ix, iy) > 1.5) return std::nullopt;
+    
+    return Point2f(ix, iy);
 }
 
 // ============================================================================
@@ -301,14 +313,37 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         double vx = det.pca_line->vx, vy = det.pca_line->vy;
         double x0 = det.pca_line->x0, y0 = det.pca_line->y0;
         
-        // Two points on PCA line in pixel space
-        Point2f p1_px(x0 - vx * 200, y0 - vy * 200);
-        Point2f p2_px(det.tip->x, det.tip->y);
+        // Multi-point TPS line sampling: warp ~21 points along barrel,
+        // then fitLine in normalized space for accurate warped direction.
+        int img_w = 0, img_h = 0;
+        for (int si = 0; si < tps.src_points.rows; ++si) {
+            img_w = std::max(img_w, (int)(tps.src_points.at<double>(si, 0) * 1.2));
+            img_h = std::max(img_h, (int)(tps.src_points.at<double>(si, 1) * 1.2));
+        }
+        if (img_w < 100) img_w = 1920;
+        if (img_h < 100) img_h = 1080;
         
-        // Warp to normalized space
-        Point2f p1_n = warp_point(tps, p1_px.x, p1_px.y);
-        Point2f p2_n = warp_point(tps, p2_px.x, p2_px.y);
+        double extent = 200.0;
+        std::vector<cv::Point2f> warped_sample_pts;
+        const int N_SAMPLES = 21;
+        for (int t = 0; t < N_SAMPLES; ++t) {
+            double frac = (double)t / (N_SAMPLES - 1);
+            double dist_back = extent * (1.0 - frac);
+            double px = det.tip->x - vx * dist_back;
+            double py = det.tip->y - vy * dist_back;
+            px = std::max(0.0, std::min(px, (double)(img_w - 1)));
+            py = std::max(0.0, std::min(py, (double)(img_h - 1)));
+            Point2f wp = warp_point(tps, px, py);
+            warped_sample_pts.push_back(cv::Point2f(wp.x, wp.y));
+        }
+        
         Point2f tip_n = warp_point(tps, det.tip->x, det.tip->y);
+        cv::Vec4f warped_line_fit;
+        cv::fitLine(warped_sample_pts, warped_line_fit, cv::DIST_HUBER, 0, 0.01, 0.01);
+        double wvx = warped_line_fit[0], wvy = warped_line_fit[1];
+        
+        Point2f p2_n = tip_n;
+        Point2f p1_n(tip_n.x - wvx * 2.0, tip_n.y - wvy * 2.0);
         
         // Per-camera vote using ellipse scoring
         ScoreResult vote = score_from_ellipse_calibration(
