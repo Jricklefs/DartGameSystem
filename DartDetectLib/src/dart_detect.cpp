@@ -14,6 +14,7 @@
 #include <future>
 #include <sstream>
 #include <cstring>
+#include <iostream>
 
 // Simple JSON builder (avoids external dependency)
 #include <vector>
@@ -49,9 +50,6 @@ static std::string json_double(const std::string& key, double val) {
 // JSON Parsing (minimal, handles our calibration format)
 // ============================================================================
 
-// Simple JSON value extractor (handles nested objects, arrays, strings, numbers)
-// This is intentionally minimal - just enough for calibration data.
-
 static std::string extract_json_value(const std::string& json, const std::string& key) {
     std::string search = "\"" + key + "\"";
     size_t pos = json.find(search);
@@ -61,7 +59,6 @@ static std::string extract_json_value(const std::string& json, const std::string
     if (pos == std::string::npos) return "";
     ++pos;
     
-    // Skip whitespace
     while (pos < json.length() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\n' || json[pos] == '\r'))
         ++pos;
     
@@ -69,13 +66,11 @@ static std::string extract_json_value(const std::string& json, const std::string
     
     char first = json[pos];
     if (first == '"') {
-        // String value
         size_t end = json.find('"', pos + 1);
         if (end == std::string::npos) return "";
         return json.substr(pos + 1, end - pos - 1);
     }
     if (first == '[' || first == '{') {
-        // Array or object - find matching bracket
         char open = first, close = (first == '[') ? ']' : '}';
         int depth = 1;
         size_t i = pos + 1;
@@ -86,7 +81,6 @@ static std::string extract_json_value(const std::string& json, const std::string
         }
         return json.substr(pos, i - pos);
     }
-    // Number or literal
     size_t end = json.find_first_of(",}] \t\n\r", pos);
     if (end == std::string::npos) end = json.length();
     return json.substr(pos, end - pos);
@@ -96,7 +90,6 @@ static std::vector<double> parse_double_array(const std::string& arr) {
     std::vector<double> result;
     size_t pos = 0;
     while (pos < arr.length()) {
-        // Skip non-digit chars
         while (pos < arr.length() && arr[pos] != '-' && arr[pos] != '.' && !std::isdigit(arr[pos]))
             ++pos;
         if (pos >= arr.length()) break;
@@ -119,7 +112,6 @@ static std::optional<EllipseData> parse_ellipse(const std::string& json, const s
     std::string val = extract_json_value(json, key);
     if (val.empty() || val == "null") return std::nullopt;
     
-    // Format: [[cx,cy],[w,h],rotation]
     auto nums = parse_double_array(val);
     if (nums.size() < 5) return std::nullopt;
     
@@ -131,22 +123,18 @@ static std::optional<EllipseData> parse_ellipse(const std::string& json, const s
 }
 
 static bool parse_camera_calibration(const std::string& json, CameraCalibration& cal) {
-    // Center
     std::string center_str = extract_json_value(json, "center");
     auto center_nums = parse_double_array(center_str);
     if (center_nums.size() < 2) return false;
     cal.center = Point2f(center_nums[0], center_nums[1]);
     
-    // Segment angles
     std::string angles_str = extract_json_value(json, "segment_angles");
     cal.segment_angles = parse_double_array(angles_str);
     if (cal.segment_angles.size() < 20) return false;
     
-    // Segment 20 index
     std::string s20 = extract_json_value(json, "segment_20_index");
     if (!s20.empty()) cal.segment_20_index = std::stoi(s20);
     
-    // Ellipses
     cal.outer_double_ellipse = parse_ellipse(json, "outer_double_ellipse");
     cal.inner_double_ellipse = parse_ellipse(json, "inner_double_ellipse");
     cal.outer_triple_ellipse = parse_ellipse(json, "outer_triple_ellipse");
@@ -160,7 +148,6 @@ static bool parse_camera_calibration(const std::string& json, CameraCalibration&
 bool parse_calibrations(const std::string& json,
                         std::map<std::string, CameraCalibration>& out)
 {
-    // Find each camera key ("cam0", "cam1", "cam2")
     for (const char* cam : {"cam0", "cam1", "cam2"}) {
         std::string cam_json = extract_json_value(json, cam);
         if (cam_json.empty()) continue;
@@ -172,6 +159,39 @@ bool parse_calibrations(const std::string& json,
     }
     return !out.empty();
 }
+
+// ============================================================================
+// Phase 3: Compute board ROI from outer double ellipse
+// ============================================================================
+#ifdef ENABLE_ROI_CROP
+static cv::Rect compute_board_roi(const CameraCalibration& cal, int img_width, int img_height) {
+    if (!cal.outer_double_ellipse) return cv::Rect(0, 0, img_width, img_height);
+    
+    const auto& ell = *cal.outer_double_ellipse;
+    // Sample ellipse at many angles to find bounding box
+    double min_x = 1e9, max_x = -1e9, min_y = 1e9, max_y = -1e9;
+    double a = ell.width / 2.0, b = ell.height / 2.0;
+    double rot = ell.rotation_deg * CV_PI / 180.0;
+    double cos_r = std::cos(rot), sin_r = std::sin(rot);
+    
+    for (int i = 0; i < 360; ++i) {
+        double theta = i * CV_PI / 180.0;
+        double x = ell.cx + a * std::cos(theta) * cos_r - b * std::sin(theta) * sin_r;
+        double y = ell.cy + a * std::cos(theta) * sin_r + b * std::sin(theta) * cos_r;
+        min_x = std::min(min_x, x); max_x = std::max(max_x, x);
+        min_y = std::min(min_y, y); max_y = std::max(max_y, y);
+    }
+    
+    // Add 50px margin
+    int margin = 50;
+    int x0 = std::max(0, (int)std::floor(min_x) - margin);
+    int y0 = std::max(0, (int)std::floor(min_y) - margin);
+    int x1 = std::min(img_width, (int)std::ceil(max_x) + margin);
+    int y1 = std::min(img_height, (int)std::ceil(max_y) + margin);
+    
+    return cv::Rect(x0, y0, x1 - x0, y1 - y0);
+}
+#endif
 
 // ============================================================================
 // Image Decoding
@@ -199,13 +219,40 @@ DD_API int dd_init(const char* calibration_json)
     }
     
     // === TPS PRECOMPUTATION (Feb 19, 2026) ===
-    // Moved TPS transform building from per-detection (in triangulate_with_line_intersection)
-    // to here at init time. The TPS solve is O(n^3) where n=~161 control points, which was
-    // adding 500ms+ per dart detection. Computing once at startup and caching in
-    // CameraCalibration::tps_cache reduced average detection time from 300ms to 178ms.
-// Precompute TPS transforms for each camera (expensive, do once)
     for (auto& [cam_id, cal] : g_calibrations) {
         cal.tps_cache = build_tps_transform(cal);
+        
+        // Phase 3 (Change 3): Validate segment_angles monotonicity
+        if (cal.segment_angles.size() >= 20) {
+            // Normalize all angles to [0, 2*pi)
+            for (auto& a : cal.segment_angles) {
+                while (a < 0) a += 2.0 * CV_PI;
+                while (a >= 2.0 * CV_PI) a -= 2.0 * CV_PI;
+            }
+            // Verify monotonically increasing
+            bool monotonic = true;
+            for (int i = 1; i < (int)cal.segment_angles.size(); ++i) {
+                // Allow wraparound at last->first boundary, but consecutive should increase
+                if (cal.segment_angles[i] <= cal.segment_angles[i - 1]) {
+                    // Check if it's the wraparound point (one allowed)
+                    // Count how many decreases there are
+                    monotonic = false;
+                    break;
+                }
+            }
+            if (!monotonic) {
+                // Count actual wraparound points (should be at most 1)
+                int wraps = 0;
+                for (int i = 1; i < (int)cal.segment_angles.size(); ++i) {
+                    if (cal.segment_angles[i] < cal.segment_angles[i - 1]) wraps++;
+                }
+                if (wraps > 1) {
+                    std::cerr << "[DartDetect] WARNING: segment_angles for " << cam_id
+                              << " are not monotonically increasing (" << wraps
+                              << " wraparound points, expected at most 1)" << std::endl;
+                }
+            }
+        }
     }
     
     g_initialized = true;
@@ -222,8 +269,6 @@ DD_API const char* dd_detect(
     const unsigned char** before_images,
     const int* before_sizes)
 {
-    // Phase 2: Only lock for reading shared calibration state, not full detection
-    // g_calibrations is read-only after init, BoardCache has its own mutex
     if (!g_initialized || num_cameras <= 0) {
         char* err = new char[64];
         std::strcpy(err, "{\"error\":\"not initialized\"}");
@@ -238,8 +283,6 @@ DD_API const char* dd_detect(
     std::string bid(board_id ? board_id : "default");
     auto& cache = g_board_caches[bid];
     
-    // Detect per camera — PARALLEL (Phase 2, Feb 20 2026)
-    // Each detect_dart() is independent; only triangulation needs all results.
     struct CameraTask {
         std::string cam_id;
         int index;
@@ -258,7 +301,6 @@ DD_API const char* dd_detect(
         tasks.push_back({cam_id, i, cal_it->second});
     }
 
-    // Launch all camera detections concurrently
     struct CameraResult {
         std::string cam_id;
         DetectionResult det;
@@ -268,19 +310,67 @@ DD_API const char* dd_detect(
     for (const auto& task : tasks) {
         futures.push_back(std::async(std::launch::async,
             [&, task]() -> std::optional<CameraResult> {
-                // Decode images (per-thread, no shared state)
                 cv::Mat current = decode_image(current_images[task.index], current_sizes[task.index]);
                 cv::Mat before = decode_image(before_images[task.index], before_sizes[task.index]);
                 if (current.empty() || before.empty()) return std::nullopt;
 
-                // Get previous dart masks (BoardCache has its own mutex)
+                // Phase 3 (Change 4): Compute resolution scale from image height
+                double res_scale = compute_resolution_scale(current.rows);
+                
+                // Phase 3 (Change 1): Board ROI cropping
+                Point2f detect_center = task.cal.center;
+                cv::Rect roi(0, 0, current.cols, current.rows);
+#ifdef ENABLE_ROI_CROP
+                if (task.cal.outer_double_ellipse) {
+                    roi = compute_board_roi(task.cal, current.cols, current.rows);
+                    // Crop images to ROI
+                    current = current(roi).clone();
+                    before = before(roi).clone();
+                    // Offset board center into ROI space
+                    detect_center = Point2f(task.cal.center.x - roi.x, task.cal.center.y - roi.y);
+                }
+#endif
+
                 std::vector<cv::Mat> prev_masks;
                 if (dart_number > 1) {
                     prev_masks = cache.get_masks(task.cam_id);
+#ifdef ENABLE_ROI_CROP
+                    // Crop previous masks to same ROI
+                    if (task.cal.outer_double_ellipse) {
+                        for (auto& pm : prev_masks) {
+                            if (!pm.empty() && pm.rows > roi.y + roi.height && pm.cols > roi.x + roi.width) {
+                                pm = pm(roi).clone();
+                            }
+                        }
+                    }
+#endif
                 }
 
                 DetectionResult det = detect_dart(
-                    current, before, task.cal.center, prev_masks, 15);
+                    current, before, detect_center, prev_masks, 15, res_scale);
+
+#ifdef ENABLE_ROI_CROP
+                // Transform tip back to full-image space
+                if (det.tip && task.cal.outer_double_ellipse) {
+                    det.tip = Point2f(det.tip->x + roi.x, det.tip->y + roi.y);
+                }
+                // Transform PCA line origin back to full-image space
+                if (det.pca_line && task.cal.outer_double_ellipse) {
+                    det.pca_line->x0 += roi.x;
+                    det.pca_line->y0 += roi.y;
+                }
+                // Motion mask needs to be full-size for board cache
+                if (!det.motion_mask.empty() && task.cal.outer_double_ellipse) {
+                    cv::Mat full_mask = cv::Mat::zeros(roi.y + roi.height + 50, roi.x + roi.width + 50, CV_8U);
+                    // Ensure full_mask is large enough
+                    int full_h = std::max(full_mask.rows, roi.y + det.motion_mask.rows);
+                    int full_w = std::max(full_mask.cols, roi.x + det.motion_mask.cols);
+                    full_mask = cv::Mat::zeros(full_h, full_w, CV_8U);
+                    det.motion_mask.copyTo(full_mask(cv::Rect(roi.x, roi.y,
+                        det.motion_mask.cols, det.motion_mask.rows)));
+                    det.motion_mask = full_mask;
+                }
+#endif
 
                 if (det.tip) {
                     return CameraResult{task.cam_id, det, task.cal};
@@ -289,7 +379,6 @@ DD_API const char* dd_detect(
             }));
     }
 
-    // Collect results (sequential barrier)
     std::map<std::string, DetectionResult> camera_results;
     std::map<std::string, CameraCalibration> active_cals;
     for (auto& f : futures) {
@@ -300,7 +389,6 @@ DD_API const char* dd_detect(
         }
     }
     
-    // Store per-camera masks so multi-dart segmentation stays camera-specific.
     for (const auto& [cam_id, det] : camera_results) {
         if (!det.motion_mask.empty()) {
             cache.add_mask(cam_id, det.motion_mask);
@@ -312,7 +400,6 @@ DD_API const char* dd_detect(
     json << "{";
     
     if (camera_results.size() >= 2) {
-        // Triangulate
         auto tri = triangulate_with_line_intersection(camera_results, active_cals);
         
         if (tri) {
@@ -323,7 +410,6 @@ DD_API const char* dd_detect(
                  << json_double("confidence", tri->confidence) << ","
                  << json_double("total_error", tri->total_error);
             
-            // Per-camera votes
             json << ",\"per_camera\":{";
             bool first = true;
             for (const auto& [cam_id, vote] : tri->per_camera) {
@@ -338,12 +424,10 @@ DD_API const char* dd_detect(
             }
             json << "}";
         } else {
-            // Triangulation failed - use best single camera
             goto single_camera;
         }
     } else if (camera_results.size() == 1) {
         single_camera:
-        // Single camera: use ellipse scoring
         auto& [cam_id, det] = *camera_results.begin();
         auto cal_it = active_cals.find(cam_id);
         if (cal_it != active_cals.end() && det.tip) {
@@ -363,7 +447,6 @@ DD_API const char* dd_detect(
                  << json_double("confidence", 0.0);
         }
     } else {
-        // No detections
         json << json_int("segment", 0) << ","
              << json_int("multiplier", 0) << ","
              << json_int("score", 0) << ","
@@ -373,7 +456,6 @@ DD_API const char* dd_detect(
     
     json << "}";
     
-    // Copy to heap for caller to free
     std::string result = json.str();
     char* out = new char[result.length() + 1];
     std::strcpy(out, result.c_str());

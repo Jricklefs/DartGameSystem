@@ -20,13 +20,36 @@
 //
 // Current best: 91/101 (90%) across 3 benchmark games, ~178ms avg
 // Remaining errors: genuine wire-boundary darts (ring boundary + adjacent segment)
+//
+// Phase 3 changes (Feb 20, 2026):
+//   - RANSAC angle tolerance: 75 -> 60 degrees (Change 2)
+//   - Zhang-Suen thinning: bounding-rect optimization + ptr access (Change 5)
+//   - Width profiling: pre-bucket dart pixels by row/col (Change 6)
+//   - Resolution-adaptive thresholds via scale factor (Change 4)
 
 #include "dart_detect_internal.h"
 // Zhang-Suen thinning (replaces cv::ximgproc::thinning to avoid contrib dependency)
+// Phase 3: Optimized — compute bounding rect of non-zero pixels, iterate only within it,
+// use ptr<uchar> row access instead of .at<uchar>(row, col) for inner loop.
 namespace {
 void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
     src.copyTo(dst);
     dst /= 255;  // Work with 0/1 values
+    
+    // Phase 3: Compute bounding rect of non-zero pixels to limit iteration
+    cv::Rect bounds;
+    {
+        std::vector<cv::Point> nz;
+        cv::findNonZero(dst, nz);
+        if (nz.empty()) { dst *= 255; return; }
+        bounds = cv::boundingRect(nz);
+        // Expand by 1 pixel for neighbor access, clamp to image
+        int r0 = std::max(1, bounds.y - 1);
+        int r1 = std::min(dst.rows - 2, bounds.y + bounds.height + 1);
+        int c0 = std::max(1, bounds.x - 1);
+        int c1 = std::min(dst.cols - 2, bounds.x + bounds.width + 1);
+        bounds = cv::Rect(c0, r0, c1 - c0, r1 - r0);
+    }
     
     cv::Mat prev = cv::Mat::zeros(dst.size(), CV_8UC1);
     cv::Mat marker;
@@ -36,18 +59,22 @@ void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
         
         // Sub-iteration 1
         marker = cv::Mat::zeros(dst.size(), CV_8UC1);
-        for (int i = 1; i < dst.rows - 1; i++) {
-            for (int j = 1; j < dst.cols - 1; j++) {
-                if (dst.at<uchar>(i, j) != 1) continue;
+        for (int i = bounds.y; i < bounds.y + bounds.height; i++) {
+            const uchar* row_prev = dst.ptr<uchar>(i - 1);
+            const uchar* row_curr = dst.ptr<uchar>(i);
+            const uchar* row_next = dst.ptr<uchar>(i + 1);
+            uchar* mark_row = marker.ptr<uchar>(i);
+            for (int j = bounds.x; j < bounds.x + bounds.width; j++) {
+                if (row_curr[j] != 1) continue;
                 
-                uchar p2 = dst.at<uchar>(i-1, j);
-                uchar p3 = dst.at<uchar>(i-1, j+1);
-                uchar p4 = dst.at<uchar>(i, j+1);
-                uchar p5 = dst.at<uchar>(i+1, j+1);
-                uchar p6 = dst.at<uchar>(i+1, j);
-                uchar p7 = dst.at<uchar>(i+1, j-1);
-                uchar p8 = dst.at<uchar>(i, j-1);
-                uchar p9 = dst.at<uchar>(i-1, j-1);
+                uchar p2 = row_prev[j];
+                uchar p3 = row_prev[j+1];
+                uchar p4 = row_curr[j+1];
+                uchar p5 = row_next[j+1];
+                uchar p6 = row_next[j];
+                uchar p7 = row_next[j-1];
+                uchar p8 = row_curr[j-1];
+                uchar p9 = row_prev[j-1];
                 
                 int B = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
                 if (B < 2 || B > 6) continue;
@@ -60,25 +87,29 @@ void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
                 if (p2 * p4 * p6 != 0) continue;
                 if (p4 * p6 * p8 != 0) continue;
                 
-                marker.at<uchar>(i, j) = 1;
+                mark_row[j] = 1;
             }
         }
         dst -= marker;
         
         // Sub-iteration 2
         marker = cv::Mat::zeros(dst.size(), CV_8UC1);
-        for (int i = 1; i < dst.rows - 1; i++) {
-            for (int j = 1; j < dst.cols - 1; j++) {
-                if (dst.at<uchar>(i, j) != 1) continue;
+        for (int i = bounds.y; i < bounds.y + bounds.height; i++) {
+            const uchar* row_prev = dst.ptr<uchar>(i - 1);
+            const uchar* row_curr = dst.ptr<uchar>(i);
+            const uchar* row_next = dst.ptr<uchar>(i + 1);
+            uchar* mark_row = marker.ptr<uchar>(i);
+            for (int j = bounds.x; j < bounds.x + bounds.width; j++) {
+                if (row_curr[j] != 1) continue;
                 
-                uchar p2 = dst.at<uchar>(i-1, j);
-                uchar p3 = dst.at<uchar>(i-1, j+1);
-                uchar p4 = dst.at<uchar>(i, j+1);
-                uchar p5 = dst.at<uchar>(i+1, j+1);
-                uchar p6 = dst.at<uchar>(i+1, j);
-                uchar p7 = dst.at<uchar>(i+1, j-1);
-                uchar p8 = dst.at<uchar>(i, j-1);
-                uchar p9 = dst.at<uchar>(i-1, j-1);
+                uchar p2 = row_prev[j];
+                uchar p3 = row_prev[j+1];
+                uchar p4 = row_curr[j+1];
+                uchar p5 = row_next[j+1];
+                uchar p6 = row_next[j];
+                uchar p7 = row_next[j-1];
+                uchar p8 = row_curr[j-1];
+                uchar p9 = row_prev[j-1];
                 
                 int B = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
                 if (B < 2 || B > 6) continue;
@@ -91,7 +122,7 @@ void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
                 if (p2 * p4 * p8 != 0) continue;
                 if (p2 * p6 * p8 != 0) continue;
                 
-                marker.at<uchar>(i, j) = 1;
+                mark_row[j] = 1;
             }
         }
         dst -= marker;
@@ -143,7 +174,6 @@ static std::optional<FlightBlob> find_flight_blob(const cv::Mat& mask, int min_a
 // ============================================================================
 // Helper: Sub-pixel tip refinement
 // ============================================================================
-// Bilinear interpolation helper for subpixel gradient sampling
 static double bilinear_sample(const cv::Mat& gray, double px, double py) {
     int x0 = (int)std::floor(px), y0 = (int)std::floor(py);
     int x1 = x0 + 1, y1 = y0 + 1;
@@ -157,14 +187,10 @@ static double bilinear_sample(const cv::Mat& gray, double px, double py) {
 }
 
 // Direction-constrained tip refinement (Phase 2, Feb 20 2026)
-// Walks along barrel direction to find strongest gradient (true tip edge),
-// instead of snapping to nearest Canny edge (which often hits lateral barrel edge).
-// When barrel direction (vx,vy) is available, searches only along that axis.
-// Returns true subpixel Point2f via bilinear gradient interpolation.
 static Point2f refine_tip_subpixel(Point2f tip, const cv::Mat& gray, const cv::Mat& mask, int roi_size = 10,
                                     double barrel_vx = 0.0, double barrel_vy = 0.0)
 {
-    (void)mask; (void)roi_size; // kept for signature compatibility
+    (void)mask; (void)roi_size;
     int h = gray.rows, w = gray.cols;
     int walk_px = 20;
     double best_grad = 0.0;
@@ -172,10 +198,8 @@ static Point2f refine_tip_subpixel(Point2f tip, const cv::Mat& gray, const cv::M
 
     double blen = std::sqrt(barrel_vx*barrel_vx + barrel_vy*barrel_vy);
     if (blen > 0.1) {
-        // Normalize barrel direction
         double dvx = barrel_vx / blen;
         double dvy = barrel_vy / blen;
-        // Walk along barrel direction +/- walk_px from tip
         for (int step = -walk_px; step <= walk_px; ++step) {
             double px = tip.x + dvx * step;
             double py = tip.y + dvy * step;
@@ -186,10 +210,8 @@ static Point2f refine_tip_subpixel(Point2f tip, const cv::Mat& gray, const cv::M
             if (grad > best_grad) { best_grad = grad; best_pt = Point2f(px, py); }
         }
     } else {
-        // No barrel direction available � search cross pattern
         for (int step = -walk_px; step <= walk_px; ++step) {
             for (int perp = -2; perp <= 2; ++perp) {
-                // Horizontal walk
                 double px_h = tip.x + step, py_h = tip.y + perp;
                 if (px_h >= 2 && py_h >= 2 && px_h < w-2 && py_h < h-2) {
                     double gx = bilinear_sample(gray, px_h+1, py_h) - bilinear_sample(gray, px_h-1, py_h);
@@ -197,7 +219,6 @@ static Point2f refine_tip_subpixel(Point2f tip, const cv::Mat& gray, const cv::M
                     double grad = gx*gx + gy*gy;
                     if (grad > best_grad) { best_grad = grad; best_pt = Point2f(px_h, py_h); }
                 }
-                // Vertical walk
                 double px_v = tip.x + perp, py_v = tip.y + step;
                 if (px_v >= 2 && py_v >= 2 && px_v < w-2 && py_v < h-2) {
                     double gx = bilinear_sample(gray, px_v+1, py_v) - bilinear_sample(gray, px_v-1, py_v);
@@ -220,9 +241,20 @@ DetectionResult detect_dart(
     const cv::Mat& previous_frame,
     Point2f board_center,
     const std::vector<cv::Mat>& prev_dart_masks,
-    int diff_threshold)
+    int diff_threshold,
+    double resolution_scale)
 {
     DetectionResult result;
+    
+    // Phase 3: Resolution-scaled constants
+    double rs = (resolution_scale > 0.01) ? resolution_scale : 1.0;
+    int blob_chain_dist = scale_px(BLOB_CHAIN_DIST_BASE, rs);
+    int morph_close_k = scale_px_odd(MORPH_CLOSE_KERNEL_SIZE_BASE, rs);
+    double mask_quality_thr = scale_d(MASK_QUALITY_THRESHOLD_BASE, rs * rs); // area scales quadratically
+    double barrel_width_max = scale_d(BARREL_WIDTH_MAX_BASE, rs);
+    double dart_length_min = scale_d(DART_LENGTH_MIN_BASE, rs);
+    double ransac_threshold = scale_d(RANSAC_THRESHOLD_BASE, rs);
+    double ransac_min_pair = scale_d(RANSAC_MIN_PAIR_DIST_BASE, rs);
     
     // Step 1: Motion mask
     auto mmr = compute_motion_mask(current_frame, previous_frame, 5, diff_threshold);
@@ -251,7 +283,6 @@ DetectionResult detect_dart(
     cv::findContours(motion_mask.clone(), contours_dist, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
     
     if ((int)contours_dist.size() > 1) {
-        // Compute centroids
         struct CentroidInfo { double cx, cy; bool valid; };
         std::vector<CentroidInfo> centroids(contours_dist.size());
         for (size_t i = 0; i < contours_dist.size(); ++i) {
@@ -263,7 +294,6 @@ DetectionResult detect_dart(
             }
         }
         
-        // Find largest contour as seed
         int largest_idx = 0;
         for (size_t i = 1; i < contours_dist.size(); ++i) {
             if (cv::contourArea(contours_dist[i]) > cv::contourArea(contours_dist[largest_idx]))
@@ -280,7 +310,7 @@ DetectionResult detect_dart(
                     if (!centroids[j].valid) continue;
                     double dx = centroids[i].cx - centroids[j].cx;
                     double dy = centroids[i].cy - centroids[j].cy;
-                    if (std::sqrt(dx*dx + dy*dy) <= BLOB_CHAIN_DIST) {
+                    if (std::sqrt(dx*dx + dy*dy) <= blob_chain_dist) {
                         chained.insert((int)i);
                         changed = true;
                         break;
@@ -300,13 +330,13 @@ DetectionResult detect_dart(
     // Step 3c: Morphological closing to bridge barrel gaps
     cv::Mat pre_close_mask = motion_mask.clone();
     cv::Mat morph_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE,
-        cv::Size(MORPH_CLOSE_KERNEL_SIZE, MORPH_CLOSE_KERNEL_SIZE));
+        cv::Size(morph_close_k, morph_close_k));
     cv::morphologyEx(motion_mask, motion_mask, cv::MORPH_CLOSE, morph_kern);
     
     // Mask quality
     int mask_pixels = cv::countNonZero(motion_mask);
-    if (mask_pixels > 12000) {
-        result.mask_quality = std::min(1.0, 8000.0 / mask_pixels);
+    if (mask_pixels > (int)mask_quality_thr) {
+        result.mask_quality = std::min(1.0, (mask_quality_thr * 2.0 / 3.0) / mask_pixels);
     }
     result.mask_quality = std::max(0.1, result.mask_quality);
     
@@ -315,12 +345,10 @@ DetectionResult detect_dart(
     std::optional<Point2f> flight_centroid;
     std::optional<BarrelInfo> barrel_info;
     
-    // Find flight blob
     auto flight = find_flight_blob(motion_mask, 80);
     if (flight) {
         flight_centroid = flight->centroid;
     } else {
-        // Fallback: mean of all mask pixels
         std::vector<cv::Point> pts;
         cv::findNonZero(motion_mask, pts);
         if (!pts.empty()) {
@@ -330,7 +358,6 @@ DetectionResult detect_dart(
         }
     }
     
-    // Reference direction: flight toward board center
     std::optional<double> ref_angle;
     if (flight_centroid) {
         double rdx = board_center.x - flight_centroid->x;
@@ -350,15 +377,6 @@ DetectionResult detect_dart(
             
             if ((int)dart_pts.size() > 100) {
                 // === DUAL-AXIS BARREL SPLITTING (Feb 19, 2026) ===
-                // Original code only did row-based width profiling, which assumed
-                // the dart enters from the top of the frame. This fails for angled
-                // darts (especially on side-mounted cameras) where the barrel runs
-                // more horizontally. Now we try both row-based and column-based
-                // width profiling and pick whichever yields a barrel with better
-                // aspect ratio (more elongated = more correct split).
-// Dual-axis barrel splitting: try row-based and column-based,
-                // pick whichever yields a more elongated (better) barrel.
-                
                 struct SplitResult {
                     cv::Mat mask;
                     double aspect;
@@ -370,24 +388,25 @@ DetectionResult detect_dart(
                     SplitResult sr;
                     sr.aspect = 0; sr.area = 0;
                     
-                    int p_min = rows ? dart_pts[0].y : dart_pts[0].x;
-                    int p_max = p_min;
+                    // Phase 3 (Change 6): Pre-bucket dart pixels by row or column
+                    // instead of scanning all points per row/col line
+                    std::map<int, std::pair<int,int>> axis_minmax; // pv -> (s_min, s_max)
                     for (const auto& pt : dart_pts) {
                         int pv = rows ? pt.y : pt.x;
-                        p_min = std::min(p_min, pv);
-                        p_max = std::max(p_max, pv);
+                        int ss = rows ? pt.x : pt.y;
+                        auto it = axis_minmax.find(pv);
+                        if (it == axis_minmax.end()) {
+                            axis_minmax[pv] = {ss, ss};
+                        } else {
+                            it->second.first = std::min(it->second.first, ss);
+                            it->second.second = std::max(it->second.second, ss);
+                        }
                     }
                     
-                    // Width profile along primary axis
+                    // Build width profile from pre-bucketed data
                     std::vector<std::pair<int,int>> widths;
-                    for (int pv = p_min; pv <= p_max; ++pv) {
-                        int s_min = (int)1e6, s_max = -1;
-                        for (const auto& pt : dart_pts) {
-                            int pp = rows ? pt.y : pt.x;
-                            int ss = rows ? pt.x : pt.y;
-                            if (pp == pv) { s_min = std::min(s_min, ss); s_max = std::max(s_max, ss); }
-                        }
-                        int w = (s_max >= 0) ? (s_max - s_min + 1) : 0;
+                    for (auto& [pv, mm] : axis_minmax) {
+                        int w = mm.second - mm.first + 1;
                         widths.push_back({pv, w});
                     }
                     if (widths.empty()) return sr;
@@ -396,12 +415,10 @@ DetectionResult detect_dart(
                     for (auto& [pv,w] : widths) max_w = std::max(max_w, w);
                     double thr = max_w * 0.5;
                     
-                    // Determine scan direction from flight toward board
                     double fc = rows ? flight->centroid.y : flight->centroid.x;
                     double bc = rows ? board_center.y : board_center.x;
                     bool reverse = (fc > bc);
                     
-                    // Find junction (wide->narrow transition)
                     auto find_junc = [&](bool rev) -> int {
                         bool in_fl = false;
                         if (!rev) {
@@ -422,7 +439,6 @@ DetectionResult detect_dart(
                     if (junc < 0) junc = find_junc(!reverse);
                     if (junc < 0) return sr;
                     
-                    // Build barrel mask
                     sr.mask = motion_mask.clone();
                     if (rows) {
                         if (!reverse)
@@ -445,7 +461,6 @@ DetectionResult detect_dart(
                     for (auto& p : bp) { bxs += p.x; bys += p.y; }
                     sr.bcx = bxs/bp.size(); sr.bcy = bys/bp.size();
                     
-                    // Pivot at junction edge
                     double pvs = 0; int pvc = 0;
                     for (auto& p : bp) {
                         int pv = rows ? p.y : p.x;
@@ -454,7 +469,6 @@ DetectionResult detect_dart(
                     if (rows) { sr.pvx = pvc>0 ? pvs/pvc : sr.bcx; sr.pvy = (double)junc; }
                     else      { sr.pvx = (double)junc; sr.pvy = pvc>0 ? pvs/pvc : sr.bcy; }
                     
-                    // Aspect ratio
                     if ((int)bp.size() >= 5) {
                         cv::RotatedRect rr = cv::minAreaRect(bp);
                         double ls = std::max(rr.size.width, rr.size.height);
@@ -467,15 +481,12 @@ DetectionResult detect_dart(
                 auto sr_row = try_axis(true);
                 auto sr_col = try_axis(false);
                 
-                // Pick better barrel (higher aspect = more elongated)
                 SplitResult* best = nullptr;
                 if (sr_row.area > 0 && sr_col.area > 0)
                     best = (sr_row.aspect >= sr_col.aspect) ? &sr_row : &sr_col;
                 else if (sr_row.area > 0) best = &sr_row;
                 else if (sr_col.area > 0) best = &sr_col;
                 
-                // Reject barrel splits that are not elongated enough
-                // (aspect < 2.5 means still blobby, not a real barrel)
                 if (best && best->aspect < 2.5) {
                     best = nullptr;
                 }
@@ -497,32 +508,27 @@ DetectionResult detect_dart(
             cv::findNonZero(barrel_mask, barrel_pts);
 
             if (barrel_pts.size() > 20) {
-                // MSAC (M-estimator SAmple Consensus) line fit
-                // Uses capped squared distance instead of binary inlier counting,
-                // which naturally finds the barrel centerline even with wide barrels.
                 double best_cost = 1e18;
                 int best_inliers = 0;
                 double best_vx = 0, best_vy = 0, best_cx = 0, best_cy = 0;
                 int iterations = 150;
-                double threshold = 6.0; // pixels — captures full barrel width
+                double threshold = ransac_threshold;
                 double T2 = threshold * threshold;
 
-                std::mt19937 rng(42); // deterministic seed
+                std::mt19937 rng(42);
                 std::uniform_int_distribution<int> dist(0, (int)barrel_pts.size() - 1);
 
                 for (int iter = 0; iter < iterations; ++iter) {
-                    // Pick 2 random points
                     int i1 = dist(rng), i2 = dist(rng);
                     if (i1 == i2) continue;
 
                     double dx = barrel_pts[i2].x - barrel_pts[i1].x;
                     double dy = barrel_pts[i2].y - barrel_pts[i1].y;
                     double len = std::sqrt(dx*dx + dy*dy);
-                    if (len < 20) continue;  // Phase 2: wider pair distance for better angle constraint
+                    if (len < ransac_min_pair) continue;  // Phase 3: scaled min pair distance
 
-                    double nx = -dy / len, ny = dx / len; // normal
+                    double nx = -dy / len, ny = dx / len;
 
-                    // MSAC scoring: sum of min(d^2, T^2)
                     double cost = 0;
                     int inliers = 0;
                     for (const auto& p : barrel_pts) {
@@ -536,7 +542,6 @@ DetectionResult detect_dart(
                         best_inliers = inliers;
                         best_vx = dx / len;
                         best_vy = dy / len;
-                        // Refit on inliers using fitLine for sub-pixel accuracy
                         std::vector<cv::Point2f> inlier_pts;
                         for (const auto& p : barrel_pts) {
                             double d = std::abs(nx * (p.x - barrel_pts[i1].x) + ny * (p.y - barrel_pts[i1].y));
@@ -551,7 +556,7 @@ DetectionResult detect_dart(
                     }
                 }
 
-                // lo-RANSAC: final refit-rescore on all inliers from best model (Phase 2)
+                // lo-RANSAC final refit (Phase 2)
                 if (best_inliers > 5) {
                     double fnx = -best_vy, fny = best_vx;
                     std::vector<cv::Point2f> final_inliers;
@@ -563,7 +568,6 @@ DetectionResult detect_dart(
                         cv::Vec4f lp;
                         cv::fitLine(final_inliers, lp, cv::DIST_HUBER, 0, 0.01, 0.01);
                         double re_vx = lp[0], re_vy = lp[1], re_cx = lp[2], re_cy = lp[3];
-                        // Rescore with refitted model
                         double re_nx = -re_vy, re_ny = re_vx;
                         double re_cost = 0;
                         int re_inliers = 0;
@@ -584,17 +588,16 @@ DetectionResult detect_dart(
                 double inlier_ratio = (double)best_inliers / barrel_pts.size();
 
                 if (inlier_ratio >= 0.3) {
-                    // Orient direction: vy > 0 convention
                     if (best_vy < 0) { best_vx = -best_vx; best_vy = -best_vy; }
 
-                    // Angle check against ref_angle (relaxed)
+                    // Phase 3 (Change 2): Angle tolerance 75 -> 60 degrees
                     bool accept = true;
                     if (ref_angle) {
                         double line_angle = std::atan2(best_vy, best_vx);
                         double angle_diff = std::abs(line_angle - *ref_angle);
                         if (angle_diff > CV_PI) angle_diff = 2 * CV_PI - angle_diff;
                         angle_diff = std::min(angle_diff, CV_PI - angle_diff);
-                        if (angle_diff > CV_PI * 75.0 / 180.0) accept = false;
+                        if (angle_diff > CV_PI * 60.0 / 180.0) accept = false;
                     }
 
                     if (accept) {
@@ -625,17 +628,14 @@ DetectionResult detect_dart(
             cv::Mat skel_bw;
             zhangSuenThinning(motion_mask, skel_bw);
             
-            // Find skeleton points
             std::vector<cv::Point> skel_pts;
             cv::findNonZero(skel_bw, skel_pts);
             
             if ((int)skel_pts.size() > 20) {
-                // Build adjacency set for fast lookup
                 std::set<std::pair<int,int>> skel_set;
                 for (const auto& p : skel_pts)
                     skel_set.insert({p.y, p.x});
                 
-                // Find endpoints (pixels with exactly 1 skeleton neighbor)
                 std::vector<cv::Point> endpoints;
                 for (const auto& p : skel_pts) {
                     int n = 0;
@@ -646,16 +646,14 @@ DetectionResult detect_dart(
                     if (n == 1) endpoints.push_back(p);
                 }
                 
-                // BFS from each endpoint to find longest path
                 std::vector<cv::Point> best_path;
                 
                 for (const auto& start : endpoints) {
-                    // BFS tracking paths
-                    std::map<std::pair<int,int>, int> dist;
+                    std::map<std::pair<int,int>, int> dist_map;
                     std::map<std::pair<int,int>, std::pair<int,int>> parent;
                     std::queue<std::pair<int,int>> bfs_q;
                     std::pair<int,int> sk(start.y, start.x);
-                    dist[sk] = 0;
+                    dist_map[sk] = 0;
                     parent[sk] = std::make_pair(-1, -1);
                     bfs_q.push(sk);
                     std::pair<int,int> farthest = sk;
@@ -664,22 +662,21 @@ DetectionResult detect_dart(
                     while (!bfs_q.empty()) {
                         auto cur_node = bfs_q.front(); bfs_q.pop();
                         int cy = cur_node.first, cx = cur_node.second;
-                        int d = dist[std::make_pair(cy, cx)];
+                        int d = dist_map[std::make_pair(cy, cx)];
                         if (d > max_dist) { max_dist = d; farthest = std::make_pair(cy, cx); }
                         
                         for (int dy = -1; dy <= 1; ++dy)
                             for (int dx = -1; dx <= 1; ++dx) {
                                 if (!dy && !dx) continue;
                                 std::pair<int,int> nk(cy+dy, cx+dx);
-                                if (skel_set.count(nk) && !dist.count(nk)) {
-                                    dist[nk] = d + 1;
+                                if (skel_set.count(nk) && !dist_map.count(nk)) {
+                                    dist_map[nk] = d + 1;
                                     parent[nk] = std::make_pair(cy, cx);
                                     bfs_q.push(nk);
                                 }
                             }
                     }
                     
-                    // Reconstruct path
                     if (max_dist > (int)best_path.size()) {
                         std::vector<cv::Point> path_pts;
                         auto cur_trace = farthest;
@@ -695,14 +692,25 @@ DetectionResult detect_dart(
                 // Measure perpendicular width along path
                 if ((int)best_path.size() > 20) {
                     const int window = 15;
-                    const int width_thresh = 20;
+                    int width_thresh = (int)barrel_width_max; // Phase 3: scaled
                     std::vector<cv::Point2f> barrel_pts_bw;
                     int h = motion_mask.rows, w = motion_mask.cols;
+                    
+                    // Phase 3 (Change 6): Pre-bucket mask pixels by row for fast width lookup
+                    std::map<int, std::pair<int,int>> row_minmax;
+                    {
+                        std::vector<cv::Point> all_mask_pts;
+                        cv::findNonZero(motion_mask, all_mask_pts);
+                        for (const auto& p : all_mask_pts) {
+                            auto it = row_minmax.find(p.y);
+                            if (it == row_minmax.end()) row_minmax[p.y] = {p.x, p.x};
+                            else { it->second.first = std::min(it->second.first, p.x); it->second.second = std::max(it->second.second, p.x); }
+                        }
+                    }
                     
                     for (int i = 0; i < (int)best_path.size(); ++i) {
                         int x0 = best_path[i].x, y0 = best_path[i].y;
                         
-                        // Local direction from path window
                         int i0 = std::max(0, i - window);
                         int i1 = std::min((int)best_path.size() - 1, i + window);
                         double ldx = best_path[i1].x - best_path[i0].x;
@@ -710,10 +718,8 @@ DetectionResult detect_dart(
                         double ll = std::sqrt(ldx*ldx + ldy*ldy);
                         if (ll < 1) continue;
                         
-                        // Perpendicular direction
                         double px = -ldy / ll, py = ldx / ll;
                         
-                        // Measure width in perpendicular direction
                         int count = 1;
                         for (int sign : {1, -1}) {
                             for (int t = 1; t < 80; ++t) {
@@ -730,21 +736,20 @@ DetectionResult detect_dart(
                         }
                     }
                     
-                    // Fit line through barrel points
                     if ((int)barrel_pts_bw.size() > 15) {
                         cv::Vec4f lp;
                         cv::fitLine(barrel_pts_bw, lp, cv::DIST_HUBER, 0, 0.01, 0.01);
                         double bvx = lp[0], bvy = lp[1], bcx = lp[2], bcy = lp[3];
                         if (bvy < 0) { bvx = -bvx; bvy = -bvy; }
                         
-                        // Accept if angle is reasonable vs ref_angle
+                        // Phase 3 (Change 2): Angle tolerance 75 -> 60 degrees
                         bool accept = true;
                         if (ref_angle) {
                             double la = std::atan2(bvy, bvx);
                             double ad = std::abs(la - *ref_angle);
                             if (ad > CV_PI) ad = 2*CV_PI - ad;
                             ad = std::min(ad, CV_PI - ad);
-                            if (ad > CV_PI * 75.0 / 180.0) accept = false;
+                            if (ad > CV_PI * 60.0 / 180.0) accept = false;
                         }
                         
                         if (accept) {
@@ -769,7 +774,6 @@ DetectionResult detect_dart(
                 cv::HoughLinesP(skel, hough_lines, 1, CV_PI / 180, 12, 15, 8);
                 
                 if (!hough_lines.empty()) {
-                    // Find tip region for proximity scoring
                     std::vector<cv::Point> mask_pts;
                     cv::findNonZero(motion_mask, mask_pts);
                     double tip_center_x = 0, tip_center_y = 0;
@@ -820,7 +824,6 @@ DetectionResult detect_dart(
                     std::sort(scored.begin(), scored.end(),
                         [](const auto& a, const auto& b) { return a.score > b.score; });
                     
-                    // Average top-N Hough lines (up to 3) within 30 deg of best
                     double best_angle2 = scored[0].angle;
                     double avg_vx2 = 0, avg_vy2 = 0, total_w2 = 0;
                     double avg_cx = 0, avg_cy = 0, max_len2 = 0;
@@ -857,7 +860,6 @@ DetectionResult detect_dart(
                     }
                 }
                 
-                // fitLine fallback
                 if (!pca_line && !contours_skel.empty()) {
                     auto& largest = *std::max_element(contours_skel.begin(), contours_skel.end(),
                         [](const auto& a, const auto& b) { return cv::contourArea(a) < cv::contourArea(b); });
@@ -872,7 +874,6 @@ DetectionResult detect_dart(
                     }
                 }
                 
-                // Full PCA fallback
                 if (!pca_line) {
                     std::vector<cv::Point> pts;
                     cv::findNonZero(motion_mask, pts);
@@ -943,12 +944,10 @@ DetectionResult detect_dart(
     if (pca_line) {
         int h = motion_mask.rows, w = motion_mask.cols;
         
-        // Label connected components in pre-chain mask
         cv::Mat walk_mask = (!pre_chain_mask.empty()) ? pre_chain_mask : motion_mask;
         cv::Mat labeled;
         int n_labels = cv::connectedComponents(walk_mask, labeled, 8, CV_32S);
         
-        // Walk direction: toward highest Y (board surface)
         double walk_vx = pca_line->vx, walk_vy = pca_line->vy;
         if (walk_vy < 0) { walk_vx = -walk_vx; walk_vy = -walk_vy; }
         
@@ -968,7 +967,6 @@ DetectionResult detect_dart(
             
             int label = labeled.at<int>(py, px);
             
-            // Search perpendicular corridor if on background
             if (label == 0) {
                 for (int po = 1; po <= PCA_PERP_TOLERANCE; ++po) {
                     for (int sign : {1, -1}) {
@@ -990,28 +988,23 @@ DetectionResult detect_dart(
                 visited_labels.insert(label);
                 last_blob_label = label;
                 
-                // Find blob pixels
                 std::vector<cv::Point> blob_pts;
                 for (int r = 0; r < h; ++r)
                     for (int c = 0; c < w; ++c)
                         if (labeled.at<int>(r, c) == label)
                             blob_pts.push_back(cv::Point(c, r));
                 
-                // Blob centroid
                 double bx = 0, by = 0;
                 for (const auto& p : blob_pts) { bx += p.x; by += p.y; }
                 bx /= blob_pts.size(); by /= blob_pts.size();
                 
-                // Tip candidate = highest Y
                 int max_y_idx = 0;
                 for (size_t i = 1; i < blob_pts.size(); ++i)
                     if (blob_pts[i].y > blob_pts[max_y_idx].y) max_y_idx = (int)i;
                 last_blob_tip = Point2f(blob_pts[max_y_idx].x, blob_pts[max_y_idx].y);
                 
-                // Re-center on centroid
                 current_x = bx; current_y = by;
                 
-                // Skip past blob
                 double max_along = 0;
                 for (const auto& p : blob_pts) {
                     double along = (p.x - current_x) * walk_vx + (p.y - current_y) * walk_vy;
@@ -1020,7 +1013,6 @@ DetectionResult detect_dart(
                 step = (int)max_along + 1;
                 continue;
             } else if (label == 0 && last_blob_label >= 0) {
-                // Gap handling
                 int gap_start = step;
                 bool found = false;
                 while (step < gap_start + PCA_GAP_TOLERANCE) {
@@ -1046,7 +1038,6 @@ DetectionResult detect_dart(
                 dart_length = std::sqrt(dx*dx + dy*dy);
             }
         } else {
-            // Fallback: line walk
             std::optional<Point2f> fwd_last, bwd_last;
             for (int s = 0; s < 500; ++s) {
                 int px = (int)std::round(pca_line->x0 + pca_line->vx * s);
@@ -1089,7 +1080,6 @@ DetectionResult detect_dart(
     if (current_frame.channels() == 3)
         cv::cvtColor(current_frame, gray, cv::COLOR_BGR2GRAY);
     else gray = current_frame;
-    // Pass barrel direction for direction-constrained tip refinement
     if (pca_line) {
         *tip = refine_tip_subpixel(*tip, gray, motion_mask, 10, pca_line->vx, pca_line->vy);
     } else {
@@ -1102,7 +1092,7 @@ DetectionResult detect_dart(
         double dx = tip->x - flight_centroid->x;
         double dy = tip->y - flight_centroid->y;
         dart_length = std::sqrt(dx*dx + dy*dy);
-        view_quality = std::min(1.0, dart_length / 150.0);
+        view_quality = std::min(1.0, dart_length / dart_length_min);
     }
     
     result.tip = tip;
