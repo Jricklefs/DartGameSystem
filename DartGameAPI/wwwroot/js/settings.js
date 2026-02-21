@@ -3380,8 +3380,8 @@ function initReplayTab() {
             sel.innerHTML = '<option value="">All Games</option>';
             (data.games || []).forEach(g => {
                 const opt = document.createElement('option');
-                opt.value = g.gameId;
-                opt.textContent = g.gameId.substring(0, 8) + '... (' + g.dartCount + ' darts)';
+                opt.value = g.game_id;
+                opt.textContent = g.game_id.substring(0, 8) + '... (' + g.total_darts + ' darts)';
                 sel.appendChild(opt);
             });
         })
@@ -3476,7 +3476,7 @@ function renderReplayResults(data) {
         data.games.forEach(g => {
             const gColor = g.accuracyPct >= 90 ? '#27ae60' : g.accuracyPct >= 70 ? '#f39c12' : '#e74c3c';
             html += '<tr style="border-bottom: 1px solid #222;">';
-            html += '<td style="padding: 8px; color: var(--paper); font-family: monospace;">' + g.gameId.substring(0, 8) + '...</td>';
+            html += '<td style="padding: 8px; color: var(--paper); font-family: monospace;">' + g.game_id.substring(0, 8) + '...</td>';
             html += '<td style="text-align: center; padding: 8px; color: var(--paper);">' + g.totalDarts + '</td>';
             html += '<td style="text-align: center; padding: 8px; color: var(--paper);">' + g.correct + '</td>';
             html += '<td style="text-align: center; padding: 8px; color: ' + gColor + '; font-weight: bold;">' + g.accuracyPct + '%</td>';
