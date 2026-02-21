@@ -1841,7 +1841,7 @@ async function showGameDetails(boardId, gameId) {
                 const final = meta.final_result || {};
                 const correction = dart.correction;
                 
-                const detected = final.segment ? `${final.multiplier > 1 ? (final.multiplier === 2 ? 'D' : 'T') : ''}${final.segment}` : '?';
+                const detected = (final.segment != null && final.segment !== undefined) ? (final.segment === 0 ? '0' : `${final.multiplier > 1 ? (final.multiplier === 2 ? 'D' : 'T') : ''}${final.segment}`) : '?';
                 const corrected = correction ? `${correction.corrected.multiplier > 1 ? (correction.corrected.multiplier === 2 ? 'D' : 'T') : ''}${correction.corrected.segment}` : null;
                 
                 const isCorrect = !correction;
