@@ -87,6 +87,7 @@
             color: var(--cream);
             border: 1px solid rgba(255,255,255,0.3) !important;
         }
+            @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="settings-page">
@@ -105,7 +106,8 @@
             <button class="nav-tab-sm" data-tab="logs">📋 LOGS</button>
             <button class="nav-tab-sm" data-tab="accuracy">📊 ACCURACY</button>
             <button class="nav-tab-sm" data-tab="system">🖥️ SYSTEM</button>
-            <button class="nav-tab-sm" data-tab="tuning">🔧 TUNING</button>
+            <button class="nav-tab-sm" data-tab="replay">🔄 REPLAY</button>
+            
         </nav>
     </header>
 
@@ -624,7 +626,33 @@
             </div>
         </section>
 
-        </main>
+        
+        <!-- Replay Tab -->
+        <section id="tab-replay" class="settings-section">
+            <div class="section-header">
+                <h2>Benchmark Replay</h2>
+                <p class="section-desc">Replay saved benchmark darts through the current detection engine</p>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+                <select id="replay-game-select" style="padding: 10px 15px; background: #0a0a0a; border: 1px solid var(--gold-dark); color: var(--paper); border-radius: 4px; min-width: 200px;">
+                    <option value="">All Games</option>
+                </select>
+                <button id="run-replay-btn" class="btn btn-primary" style="padding: 10px 25px;">&#9654; Run Replay</button>
+                <button id="load-last-replay-btn" class="btn btn-secondary" style="padding: 10px 20px;">&#128203; Load Last Results</button>
+                <div id="replay-spinner" style="display: none; color: var(--gold);">
+                    <span class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle;"></span>
+                    Running replay...
+                </div>
+            </div>
+
+            <div id="replay-results-container">
+                <div style="color: var(--paper-muted); padding: 40px; text-align: center;">
+                    No replay results yet. Click "Run Replay" to start.
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script src="/js/settings.js"></script>
     <!-- Delete Confirmation Modal -->

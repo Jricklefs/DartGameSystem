@@ -3365,3 +3365,189 @@ async function deleteRound(boardId, gameId, roundFolder) {
         alert('Error deleting round: ' + e.message);
     }
 }
+
+// ============================================================================
+// Benchmark Replay Tab
+// ============================================================================
+
+function initReplayTab() {
+    // Load game list
+    fetch('/api/benchmark/games')
+        .then(r => r.json())
+        .then(data => {
+            const sel = document.getElementById('replay-game-select');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">All Games</option>';
+            (data.games || []).forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.gameId;
+                opt.textContent = g.gameId.substring(0, 8) + '... (' + g.dartCount + ' darts)';
+                sel.appendChild(opt);
+            });
+        })
+        .catch(() => {});
+
+    document.getElementById('run-replay-btn')?.addEventListener('click', () => {
+        const gameId = document.getElementById('replay-game-select')?.value || '';
+        runReplay(gameId || null);
+    });
+
+    document.getElementById('load-last-replay-btn')?.addEventListener('click', loadLastReplayResults);
+
+    // Auto-load last results
+    loadLastReplayResults();
+}
+
+async function runReplay(gameId) {
+    const spinner = document.getElementById('replay-spinner');
+    const btn = document.getElementById('run-replay-btn');
+    if (spinner) spinner.style.display = 'inline-block';
+    if (btn) btn.disabled = true;
+
+    try {
+        const url = gameId ? '/api/benchmark/replay?gameId=' + encodeURIComponent(gameId) : '/api/benchmark/replay';
+        const resp = await fetch(url, { method: 'POST' });
+        const data = await resp.json();
+        renderReplayResults(data);
+    } catch (err) {
+        document.getElementById('replay-results-container').innerHTML =
+            '<div style="color: #e74c3c; padding: 20px;">Error: ' + err.message + '</div>';
+    } finally {
+        if (spinner) spinner.style.display = 'none';
+        if (btn) btn.disabled = false;
+    }
+}
+
+async function loadLastReplayResults() {
+    try {
+        const resp = await fetch('/api/benchmark/replay/results');
+        const data = await resp.json();
+        if (data.totalDarts !== undefined) {
+            renderReplayResults(data);
+        }
+    } catch (err) { /* ignore */ }
+}
+
+function renderReplayResults(data) {
+    const container = document.getElementById('replay-results-container');
+    if (!container) return;
+
+    if (!data || data.totalDarts === 0) {
+        container.innerHTML = '<div style="color: var(--paper-muted); padding: 40px; text-align: center;">No benchmark data found.</div>';
+        return;
+    }
+
+    const accColor = data.accuracyPct >= 90 ? '#27ae60' : data.accuracyPct >= 70 ? '#f39c12' : '#e74c3c';
+    const elapsed = data.elapsedMs ? ' (' + (data.elapsedMs / 1000).toFixed(1) + 's)' : '';
+
+    // Group errors by category
+    const errorGroups = {};
+    (data.errors || []).forEach(e => {
+        if (!errorGroups[e.category]) errorGroups[e.category] = [];
+        errorGroups[e.category].push(e);
+    });
+
+    const categoryLabels = {
+        miss_false_neg: '❌ False Negative (said miss, was hit)',
+        miss_false_pos: '⚠️ False Positive (said hit, was miss)',
+        ring_error: '🔴 Ring Error (right segment, wrong multiplier)',
+        adjacent_seg: '🟡 Adjacent Segment (off by 1)',
+        far_seg: '🔺 Far Segment (off by 2+)'
+    };
+
+    let html = '';
+
+    // Overall accuracy
+    html += '<div style="background: #1a1a1a; border: 1px solid var(--gold-dark); border-radius: 8px; padding: 20px; margin-bottom: 20px; text-align: center;">';
+    html += '<div style="color: ' + accColor + '; font-size: 3.5rem; font-weight: bold; font-family: Bebas Neue, sans-serif;">' + data.accuracyPct + '%</div>';
+    html += '<div style="color: var(--paper-muted);">' + data.correct + ' / ' + data.totalDarts + ' correct' + elapsed + '</div>';
+    html += '</div>';
+
+    // Per-game table
+    if (data.games && data.games.length > 0) {
+        html += '<h3 style="color: var(--gold); margin: 15px 0 10px;">Per-Game Breakdown</h3>';
+        html += '<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">';
+        html += '<tr style="border-bottom: 1px solid #333;">';
+        html += '<th style="text-align: left; padding: 8px; color: var(--gold);">Game ID</th>';
+        html += '<th style="text-align: center; padding: 8px; color: var(--gold);">Darts</th>';
+        html += '<th style="text-align: center; padding: 8px; color: var(--gold);">Correct</th>';
+        html += '<th style="text-align: center; padding: 8px; color: var(--gold);">Accuracy</th>';
+        html += '</tr>';
+        data.games.forEach(g => {
+            const gColor = g.accuracyPct >= 90 ? '#27ae60' : g.accuracyPct >= 70 ? '#f39c12' : '#e74c3c';
+            html += '<tr style="border-bottom: 1px solid #222;">';
+            html += '<td style="padding: 8px; color: var(--paper); font-family: monospace;">' + g.gameId.substring(0, 8) + '...</td>';
+            html += '<td style="text-align: center; padding: 8px; color: var(--paper);">' + g.totalDarts + '</td>';
+            html += '<td style="text-align: center; padding: 8px; color: var(--paper);">' + g.correct + '</td>';
+            html += '<td style="text-align: center; padding: 8px; color: ' + gColor + '; font-weight: bold;">' + g.accuracyPct + '%</td>';
+            html += '</tr>';
+        });
+        html += '</table>';
+    }
+
+    // Errors grouped by category
+    const cats = Object.keys(errorGroups);
+    if (cats.length > 0) {
+        html += '<h3 style="color: var(--gold); margin: 15px 0 10px;">Errors (' + (data.errors?.length || 0) + ')</h3>';
+        cats.forEach(cat => {
+            const errs = errorGroups[cat];
+            const label = categoryLabels[cat] || cat;
+            const catId = 'err-cat-' + cat;
+            html += '<div style="background: #111; border: 1px solid #333; border-radius: 6px; margin-bottom: 8px;">';
+            html += '<div onclick="document.getElementById(\'' + catId + '\').style.display = document.getElementById(\'' + catId + '\').style.display === \'none\' ? \'block\' : \'none\'" style="padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">';
+            html += '<span style="color: var(--paper);">' + label + '</span>';
+            html += '<span style="color: var(--gold); font-weight: bold;">' + errs.length + '</span>';
+            html += '</div>';
+            html += '<div id="' + catId + '" style="display: none; padding: 0 15px 10px;">';
+            html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">';
+            html += '<tr style="border-bottom: 1px solid #333;">';
+            html += '<th style="text-align: left; padding: 4px; color: var(--gold);">Game</th>';
+            html += '<th style="text-align: left; padding: 4px; color: var(--gold);">Round</th>';
+            html += '<th style="text-align: left; padding: 4px; color: var(--gold);">Dart</th>';
+            html += '<th style="text-align: center; padding: 4px; color: var(--gold);">Expected</th>';
+            html += '<th style="text-align: center; padding: 4px; color: var(--gold);">Detected</th>';
+            html += '</tr>';
+            errs.forEach(e => {
+                const expLabel = formatScore(e.expectedSegment, e.expectedMultiplier);
+                const detLabel = formatScore(e.detectedSegment, e.detectedMultiplier);
+                html += '<tr style="border-bottom: 1px solid #1a1a1a;">';
+                html += '<td style="padding: 4px; color: var(--paper-muted); font-family: monospace;">' + e.gameId.substring(0, 8) + '</td>';
+                html += '<td style="padding: 4px; color: var(--paper-muted);">' + e.round + '</td>';
+                html += '<td style="padding: 4px; color: var(--paper-muted);">' + e.dart + '</td>';
+                html += '<td style="text-align: center; padding: 4px; color: #27ae60;">' + expLabel + '</td>';
+                html += '<td style="text-align: center; padding: 4px; color: #e74c3c;">' + detLabel + '</td>';
+                html += '</tr>';
+            });
+            html += '</table></div></div>';
+        });
+    }
+
+    container.innerHTML = html;
+}
+
+function formatScore(segment, multiplier) {
+    if (segment === 0 && multiplier === 0) return 'MISS';
+    if (segment === 25) return multiplier === 2 ? 'D-BULL' : 'BULL';
+    const prefix = multiplier === 3 ? 'T' : multiplier === 2 ? 'D' : 'S';
+    return prefix + segment;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Hook into tab switching to init replay tab on first visit
+    const tabs = document.querySelectorAll('.nav-tab-sm');
+    let replayInited = false;
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            if (tab.dataset.tab === 'replay' && !replayInited) {
+                replayInited = true;
+                initReplayTab();
+            }
+        });
+    });
+});
+
+
+// ============================================================================
+// Benchmark Replay Tab
+// ============================================================================
+

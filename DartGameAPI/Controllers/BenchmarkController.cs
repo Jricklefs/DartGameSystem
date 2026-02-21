@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using DartGameAPI.Services;
@@ -10,10 +11,14 @@ namespace DartGameAPI.Controllers;
 public class BenchmarkController : ControllerBase
 {
     private readonly BenchmarkSettings _settings;
+    private readonly IDartDetectService _dartDetect;
+    private static ReplayResults? _lastReplayResults;
+    private static readonly object _replayLock = new();
+    private static readonly int[] SegmentOrder = { 20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5 };
     private readonly ILogger<BenchmarkController> _logger;
     private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public BenchmarkController(BenchmarkSettings settings, ILogger<BenchmarkController> logger)
+    public BenchmarkController(BenchmarkSettings settings, ILogger<BenchmarkController> logger, IDartDetectService dartDetect)
     {
         _settings = settings;
         _logger = logger;
@@ -238,4 +243,196 @@ public class BenchmarkController : ControllerBase
 
         return PhysicalFile(filePath, contentType);
     }
+
+    // ===== REPLAY ENDPOINTS =====
+
+    [HttpPost("replay")]
+    public async Task<ActionResult> RunReplay([FromQuery] string? gameId = null)
+    {
+        var basePath = _settings.BasePath;
+        if (!Directory.Exists(basePath))
+            return BadRequest(new { error = "Benchmark path not found", path = basePath });
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var allDartFolders = new List<(string boardId, string gId, string roundFolder, string dartFolder, string fullPath)>();
+
+        foreach (var boardDir in Directory.GetDirectories(basePath))
+        {
+            var boardId = Path.GetFileName(boardDir);
+            foreach (var gameDir in Directory.GetDirectories(boardDir))
+            {
+                var gId = Path.GetFileName(gameDir);
+                if (gameId != null && !string.Equals(gId, gameId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                foreach (var roundDir in Directory.GetDirectories(gameDir))
+                {
+                    foreach (var dartDir in Directory.GetDirectories(roundDir))
+                    {
+                        if (System.IO.File.Exists(Path.Combine(dartDir, "metadata.json")))
+                            allDartFolders.Add((boardId, gId, Path.GetFileName(roundDir), Path.GetFileName(dartDir), dartDir));
+                    }
+                }
+            }
+        }
+
+        if (allDartFolders.Count == 0)
+            return Ok(new ReplayResults());
+
+        _dartDetect.InitBoard("replay_bench");
+
+        var errors = new List<ReplayError>();
+        var gameBreakdowns = new Dictionary<string, GameBreakdown>();
+        int totalCorrect = 0;
+
+        foreach (var (bId, gId, roundFolder, dartFolder, fullPath) in allDartFolders)
+        {
+            try
+            {
+                var metaJson = await System.IO.File.ReadAllTextAsync(Path.Combine(fullPath, "metadata.json"));
+                using var doc = JsonDocument.Parse(metaJson);
+                var meta = doc.RootElement;
+
+                int truthSeg, truthMul;
+                if (meta.TryGetProperty("correction", out var corr) && corr.ValueKind != JsonValueKind.Null)
+                {
+                    var corrected = corr.GetProperty("corrected");
+                    truthSeg = corrected.GetProperty("segment").GetInt32();
+                    truthMul = corrected.GetProperty("multiplier").GetInt32();
+                }
+                else if (meta.TryGetProperty("final_result", out var fr) && fr.ValueKind != JsonValueKind.Null)
+                {
+                    truthSeg = fr.GetProperty("segment").GetInt32();
+                    truthMul = fr.GetProperty("multiplier").GetInt32();
+                }
+                else continue;
+
+                var afterImages = new List<CameraImageDto>();
+                var beforeImages = new List<CameraImageDto>();
+
+                foreach (var file in Directory.GetFiles(fullPath, "*_raw.jpg"))
+                {
+                    var camId = Path.GetFileNameWithoutExtension(file).Replace("_raw", "");
+                    var bytes = await System.IO.File.ReadAllBytesAsync(file);
+                    afterImages.Add(new CameraImageDto { CameraId = camId, Image = Convert.ToBase64String(bytes) });
+                }
+                foreach (var file in Directory.GetFiles(fullPath, "*_previous.jpg"))
+                {
+                    var camId = Path.GetFileNameWithoutExtension(file).Replace("_previous", "");
+                    var bytes = await System.IO.File.ReadAllBytesAsync(file);
+                    beforeImages.Add(new CameraImageDto { CameraId = camId, Image = Convert.ToBase64String(bytes) });
+                }
+
+                if (afterImages.Count == 0) continue;
+
+                _dartDetect.ClearBoard("replay_bench");
+                _dartDetect.InitBoard("replay_bench");
+
+                var result = await _dartDetect.DetectAsync(afterImages, "replay_bench", 1, beforeImages);
+
+                int detSeg = 0, detMul = 0;
+                if (result?.Tips != null && result.Tips.Any())
+                {
+                    var tip = result.Tips.OrderByDescending(t => t.Confidence).First();
+                    detSeg = tip.Segment;
+                    detMul = tip.Multiplier;
+                }
+
+                bool correct = (detSeg == truthSeg && detMul == truthMul);
+                if (correct) totalCorrect++;
+
+                if (!gameBreakdowns.ContainsKey(gId))
+                    gameBreakdowns[gId] = new GameBreakdown { GameId = gId };
+                gameBreakdowns[gId].TotalDarts++;
+                if (correct) gameBreakdowns[gId].Correct++;
+
+                if (!correct)
+                {
+                    errors.Add(new ReplayError
+                    {
+                        GameId = gId, Round = roundFolder, Dart = dartFolder,
+                        ExpectedSegment = truthSeg, ExpectedMultiplier = truthMul,
+                        DetectedSegment = detSeg, DetectedMultiplier = detMul,
+                        Category = ClassifyError(truthSeg, truthMul, detSeg, detMul)
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Replay error for {Path}: {Error}", fullPath, ex.Message);
+            }
+        }
+
+        _dartDetect.ClearBoard("replay_bench");
+
+        var results = new ReplayResults
+        {
+            TotalDarts = allDartFolders.Count,
+            Correct = totalCorrect,
+            AccuracyPct = allDartFolders.Count > 0 ? Math.Round(100.0 * totalCorrect / allDartFolders.Count, 1) : 0,
+            ElapsedMs = sw.ElapsedMilliseconds,
+            Games = gameBreakdowns.Values.Select(g => { g.AccuracyPct = g.TotalDarts > 0 ? Math.Round(100.0 * g.Correct / g.TotalDarts, 1) : 0; return g; }).ToList(),
+            Errors = errors
+        };
+
+        lock (_replayLock) { _lastReplayResults = results; }
+        return Ok(results);
+    }
+
+    [HttpGet("replay/results")]
+    public ActionResult GetLastReplayResults()
+    {
+        lock (_replayLock)
+        {
+            if (_lastReplayResults == null)
+                return Ok(new { message = "No replay results yet" });
+            return Ok(_lastReplayResults);
+        }
+    }
+
+    private static string ClassifyError(int truthSeg, int truthMul, int detSeg, int detMul)
+    {
+        bool truthIsMiss = (truthSeg == 0 && truthMul == 0);
+        bool detIsMiss = (detSeg == 0 && detMul == 0);
+        if (detIsMiss && !truthIsMiss) return "miss_false_neg";
+        if (!detIsMiss && truthIsMiss) return "miss_false_pos";
+        if (detSeg == truthSeg && detMul != truthMul) return "ring_error";
+        int truthIdx = Array.IndexOf(SegmentOrder, truthSeg);
+        int detIdx = Array.IndexOf(SegmentOrder, detSeg);
+        if (truthIdx >= 0 && detIdx >= 0)
+        {
+            int dist = Math.Min(Math.Abs(truthIdx - detIdx), 20 - Math.Abs(truthIdx - detIdx));
+            if (dist == 1) return "adjacent_seg";
+        }
+        return "far_seg";
+    }
+}
+
+public class ReplayResults
+{
+    [JsonPropertyName("totalDarts")] public int TotalDarts { get; set; }
+    [JsonPropertyName("correct")] public int Correct { get; set; }
+    [JsonPropertyName("accuracyPct")] public double AccuracyPct { get; set; }
+    [JsonPropertyName("elapsedMs")] public long ElapsedMs { get; set; }
+    [JsonPropertyName("games")] public List<GameBreakdown> Games { get; set; } = new();
+    [JsonPropertyName("errors")] public List<ReplayError> Errors { get; set; } = new();
+}
+
+public class GameBreakdown
+{
+    [JsonPropertyName("gameId")] public string GameId { get; set; } = "";
+    [JsonPropertyName("totalDarts")] public int TotalDarts { get; set; }
+    [JsonPropertyName("correct")] public int Correct { get; set; }
+    [JsonPropertyName("accuracyPct")] public double AccuracyPct { get; set; }
+}
+
+public class ReplayError
+{
+    [JsonPropertyName("gameId")] public string GameId { get; set; } = "";
+    [JsonPropertyName("round")] public string Round { get; set; } = "";
+    [JsonPropertyName("dart")] public string Dart { get; set; } = "";
+    [JsonPropertyName("expectedSegment")] public int ExpectedSegment { get; set; }
+    [JsonPropertyName("expectedMultiplier")] public int ExpectedMultiplier { get; set; }
+    [JsonPropertyName("detectedSegment")] public int DetectedSegment { get; set; }
+    [JsonPropertyName("detectedMultiplier")] public int DetectedMultiplier { get; set; }
+    [JsonPropertyName("category")] public string Category { get; set; } = "";
 }
