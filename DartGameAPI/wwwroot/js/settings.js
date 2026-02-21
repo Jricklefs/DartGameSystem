@@ -3378,10 +3378,12 @@ function initReplayTab() {
             const sel = document.getElementById('replay-game-select');
             if (!sel) return;
             sel.innerHTML = '<option value="">All Games</option>';
-            (data.games || []).forEach(g => {
+            const games = (data.games || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            games.forEach(g => {
                 const opt = document.createElement('option');
                 opt.value = g.game_id;
-                opt.textContent = g.game_id.substring(0, 8) + '... (' + g.total_darts + ' darts)';
+                const dt = g.timestamp ? new Date(g.timestamp).toLocaleDateString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '';
+                opt.textContent = (dt ? dt + ' - ' : '') + g.game_id.substring(0, 8) + '... (' + g.total_darts + ' darts, ' + g.accuracy + '%)';
                 sel.appendChild(opt);
             });
         })
