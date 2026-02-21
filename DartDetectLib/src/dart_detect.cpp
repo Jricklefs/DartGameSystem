@@ -347,7 +347,7 @@ DD_API const char* dd_detect(
                 }
 
                 DetectionResult det = detect_dart(
-                    current, before, detect_center, prev_masks, 15, res_scale);
+                    current, before, detect_center, prev_masks, 20, res_scale);
 
 #ifdef ENABLE_ROI_CROP
                 // Transform tip back to full-image space

@@ -46,12 +46,19 @@ MotionMaskResult compute_motion_mask(
     
     // Absolute difference
     cv::Mat diff;
-    cv::absdiff(blur_curr, blur_prev, diff);
+    // Phase 5: Brightness normalization - cancel global exposure drift
+    double mean_curr = cv::mean(blur_curr)[0];
+    double mean_prev = cv::mean(blur_prev)[0];
+    double brightness_shift = mean_curr - mean_prev;
+    cv::Mat normalized_curr;
+    blur_curr.convertTo(normalized_curr, CV_8U, 1.0, -brightness_shift);
+    
+    cv::absdiff(normalized_curr, blur_prev, diff);
     
     // Multi-threshold hysteresis
     cv::Mat mask_high, mask_low;
     cv::threshold(diff, mask_high, threshold, 255, cv::THRESH_BINARY);
-    cv::threshold(diff, mask_low, std::max(5, threshold / 3), 255, cv::THRESH_BINARY);
+    cv::threshold(diff, mask_low, std::max(7, threshold / 3), 255, cv::THRESH_BINARY);
     
     // Aggressive close on low mask to bridge flight-shaft gaps
     cv::Mat close_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
@@ -131,9 +138,16 @@ PixelSegmentation compute_pixel_segmentation(
     cv::GaussianBlur(gray_curr, blur_curr, cv::Size(blur_size, blur_size), 0);
     cv::GaussianBlur(gray_prev, blur_prev, cv::Size(blur_size, blur_size), 0);
     
+    // Phase 5: Brightness normalization for pixel segmentation
+    double seg_mean_curr = cv::mean(blur_curr)[0];
+    double seg_mean_prev = cv::mean(blur_prev)[0];
+    double seg_shift = seg_mean_curr - seg_mean_prev;
+    cv::Mat seg_norm_curr;
+    blur_curr.convertTo(seg_norm_curr, CV_8U, 1.0, -seg_shift);
+    
     // Signed difference (needed for appeared/disappeared classification)
     cv::Mat signed_diff;
-    blur_curr.convertTo(signed_diff, CV_16S);
+    seg_norm_curr.convertTo(signed_diff, CV_16S);
     cv::Mat prev16;
     blur_prev.convertTo(prev16, CV_16S);
     signed_diff -= prev16;
@@ -144,10 +158,10 @@ PixelSegmentation compute_pixel_segmentation(
     } else {
         // Compute full motion mask with hysteresis (same as compute_motion_mask)
         cv::Mat diff;
-        cv::absdiff(blur_curr, blur_prev, diff);
+        cv::absdiff(seg_norm_curr, blur_prev, diff);
         cv::Mat mask_high, mask_low;
         cv::threshold(diff, mask_high, threshold, 255, cv::THRESH_BINARY);
-        cv::threshold(diff, mask_low, std::max(5, threshold / 3), 255, cv::THRESH_BINARY);
+        cv::threshold(diff, mask_low, std::max(7, threshold / 3), 255, cv::THRESH_BINARY);
         
         cv::Mat close_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
         cv::morphologyEx(mask_low, mask_low, cv::MORPH_CLOSE, close_kern);

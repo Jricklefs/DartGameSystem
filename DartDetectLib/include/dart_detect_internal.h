@@ -227,7 +227,7 @@ MotionMaskResult compute_motion_mask(
     const cv::Mat& current,
     const cv::Mat& previous,
     int blur_size = 5,
-    int threshold = 16
+    int threshold = 20
 );
 
 struct PixelSegmentation {
@@ -247,7 +247,7 @@ PixelSegmentation compute_pixel_segmentation(
     const cv::Mat& current,
     const cv::Mat& previous,
     const std::vector<cv::Mat>& prev_dart_masks,
-    int threshold = 16,
+    int threshold = 20,
     int blur_size = 5,
     const MotionMaskResult* precomputed_mmr = nullptr
 );
@@ -263,7 +263,7 @@ DetectionResult detect_dart(
     const cv::Mat& previous_frame,
     Point2f board_center,
     const std::vector<cv::Mat>& prev_dart_masks,
-    int diff_threshold = 15,
+    int diff_threshold = 20,
     double resolution_scale = 1.0
 );
 
