@@ -58,7 +58,7 @@ MotionMaskResult compute_motion_mask(
     // Multi-threshold hysteresis
     cv::Mat mask_high, mask_low;
     cv::threshold(diff, mask_high, threshold, 255, cv::THRESH_BINARY);
-    cv::threshold(diff, mask_low, std::max(7, threshold / 3), 255, cv::THRESH_BINARY);
+    cv::threshold(diff, mask_low, std::max(10, threshold / 2), 255, cv::THRESH_BINARY);
     
     // Aggressive close on low mask to bridge flight-shaft gaps
     cv::Mat close_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
@@ -83,6 +83,19 @@ MotionMaskResult compute_motion_mask(
     // Morphological opening to trim noise
     cv::Mat open_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
     cv::morphologyEx(seed, seed, cv::MORPH_OPEN, open_kernel);
+    
+    // Phase 6: Remove small noise blobs (< 30 pixels)
+    {
+        cv::Mat lbl6, st6, ct6;
+        int n6 = cv::connectedComponentsWithStats(seed, lbl6, st6, ct6);
+        cv::Mat cleaned6 = cv::Mat::zeros(seed.size(), CV_8U);
+        for (int i = 1; i < n6; ++i) {
+            if (st6.at<int>(i, cv::CC_STAT_AREA) >= 30) {
+                cleaned6.setTo(255, lbl6 == i);
+            }
+        }
+        seed = cleaned6;
+    }
     
     result.mask = seed;
     result.high_mask = mask_high;
@@ -161,7 +174,7 @@ PixelSegmentation compute_pixel_segmentation(
         cv::absdiff(seg_norm_curr, blur_prev, diff);
         cv::Mat mask_high, mask_low;
         cv::threshold(diff, mask_high, threshold, 255, cv::THRESH_BINARY);
-        cv::threshold(diff, mask_low, std::max(7, threshold / 3), 255, cv::THRESH_BINARY);
+        cv::threshold(diff, mask_low, std::max(10, threshold / 2), 255, cv::THRESH_BINARY);
         
         cv::Mat close_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
         cv::morphologyEx(mask_low, mask_low, cv::MORPH_CLOSE, close_kern);
