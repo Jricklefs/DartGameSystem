@@ -496,13 +496,17 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     }
     
     // Miss detection: board-edge override
+    // Only override to miss if ALL cameras see tip clearly off-board (>1.05)
+    // Previous threshold (>1.0 for 1 cam + >0.95 for 2) killed valid doubles
+    // since doubles legitimately sit at normalized distance 0.953-1.000
     if (best->score.multiplier == 2) {
-        int edge_count = 0, off_board_count = 0;
+        int off_board_count = 0;
+        int total_cams = 0;
         for (const auto& [_, data] : cam_lines) {
-            if (data.tip_dist > 0.95) ++edge_count;
-            if (data.tip_dist > 1.0) ++off_board_count;
+            ++total_cams;
+            if (data.tip_dist > 1.05) ++off_board_count;
         }
-        if (off_board_count >= 1 && edge_count >= 2) {
+        if (off_board_count == total_cams && total_cams >= 2) {
             // Override to miss
             IntersectionResult result;
             result.segment = 0; result.multiplier = 1; result.score = 0;
