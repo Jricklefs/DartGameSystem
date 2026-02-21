@@ -423,6 +423,24 @@ DD_API const char* dd_detect(
                 first = false;
             }
             json << "}";
+            
+            // Camera detection details (barrel method, tip method, quality)
+            json << ",\"camera_details\":{";
+            bool first_det = true;
+            for (const auto& [cam_id, det] : camera_results) {
+                if (!first_det) json << ",";
+                std::string bm = "none";
+                if (det.pca_line) bm = det.pca_line->method;
+                json << "\"" << cam_id << "\":{"
+                     << json_string("tip_method", det.method) << ","
+                     << json_string("barrel_method", bm) << ","
+                     << json_double("mask_quality", det.mask_quality) << ","
+                     << json_double("ransac_inlier_ratio", det.ransac_inlier_ratio) << ","
+                     << json_double("barrel_aspect", det.barrel_aspect_ratio)
+                     << "}";
+                first_det = false;
+            }
+            json << "}";
         } else {
             goto single_camera;
         }

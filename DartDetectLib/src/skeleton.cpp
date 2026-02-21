@@ -556,7 +556,7 @@ DetectionResult detect_dart(
                         else       right_pts.push_back(cv::Point2f((float)p.x, (float)p.y));
                     }
 
-                    if ((int)left_pts.size() >= 10 && (int)right_pts.size() >= 10) {
+                    if ((int)left_pts.size() >= 6 && (int)right_pts.size() >= 6) {
                         cv::Vec4f ll, rl;
                         cv::fitLine(left_pts, ll, cv::DIST_HUBER, 0, 0.01, 0.01);
                         cv::fitLine(right_pts, rl, cv::DIST_HUBER, 0, 0.01, 0.01);
