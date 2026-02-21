@@ -511,8 +511,97 @@ DetectionResult detect_dart(
             if (cv::countNonZero(barrel_mask_eroded) < 20) barrel_mask_eroded = barrel_mask;
         }
 
-        // === Barrel RANSAC line fitting ===
+        // === Phase 4C: Edge-pair barrel detection (try FIRST before RANSAC) ===
         if (!barrel_mask.empty() && barrel_info) {
+            cv::Mat gray_curr_ep, gray_prev_ep, gray_diff_ep;
+            if (current_frame.channels() == 3)
+                cv::cvtColor(current_frame, gray_curr_ep, cv::COLOR_BGR2GRAY);
+            else gray_curr_ep = current_frame;
+            if (previous_frame.channels() == 3)
+                cv::cvtColor(previous_frame, gray_prev_ep, cv::COLOR_BGR2GRAY);
+            else gray_prev_ep = previous_frame;
+            cv::absdiff(gray_curr_ep, gray_prev_ep, gray_diff_ep);
+
+            cv::Mat ep_edges;
+            cv::Canny(gray_diff_ep, ep_edges, 30, 90);
+            cv::Mat barrel_edges;
+            cv::bitwise_and(ep_edges, barrel_mask, barrel_edges);
+
+            std::vector<cv::Point> ep_pts;
+            cv::findNonZero(barrel_edges, ep_pts);
+
+            if ((int)ep_pts.size() >= 20) {
+                // Rough barrel direction from centroid->pivot
+                double ep_rvx = barrel_info->pivot.x - barrel_info->centroid.x;
+                double ep_rvy = barrel_info->pivot.y - barrel_info->centroid.y;
+                double ep_rlen = std::sqrt(ep_rvx*ep_rvx + ep_rvy*ep_rvy);
+                if (ep_rlen < 5.0) {
+                    std::vector<cv::Point> bp; cv::findNonZero(barrel_mask, bp);
+                    if ((int)bp.size() > 10) {
+                        std::vector<cv::Point2f> bpf(bp.begin(), bp.end());
+                        cv::Vec4f lp; cv::fitLine(bpf, lp, cv::DIST_HUBER, 0, 0.01, 0.01);
+                        ep_rvx = lp[0]; ep_rvy = lp[1]; ep_rlen = 1.0;
+                    }
+                }
+                if (ep_rlen >= 1.0) {
+                    if (ep_rlen != 1.0) { ep_rvx /= ep_rlen; ep_rvy /= ep_rlen; }
+                    if (ep_rvy < 0) { ep_rvx = -ep_rvx; ep_rvy = -ep_rvy; }
+                    double ep_pvx = -ep_rvy, ep_pvy = ep_rvx;
+                    double ep_cx = barrel_info->centroid.x, ep_cy = barrel_info->centroid.y;
+
+                    std::vector<cv::Point2f> left_pts, right_pts;
+                    for (const auto& p : ep_pts) {
+                        double d = (p.x - ep_cx) * ep_pvx + (p.y - ep_cy) * ep_pvy;
+                        if (d < 0) left_pts.push_back(cv::Point2f((float)p.x, (float)p.y));
+                        else       right_pts.push_back(cv::Point2f((float)p.x, (float)p.y));
+                    }
+
+                    if ((int)left_pts.size() >= 10 && (int)right_pts.size() >= 10) {
+                        cv::Vec4f ll, rl;
+                        cv::fitLine(left_pts, ll, cv::DIST_HUBER, 0, 0.01, 0.01);
+                        cv::fitLine(right_pts, rl, cv::DIST_HUBER, 0, 0.01, 0.01);
+                        double lvx=ll[0],lvy=ll[1], rvx=rl[0],rvy=rl[1];
+                        if (lvx*ep_rvx+lvy*ep_rvy < 0) { lvx=-lvx; lvy=-lvy; }
+                        if (rvx*ep_rvx+rvy*ep_rvy < 0) { rvx=-rvx; rvy=-rvy; }
+
+                        double dot = lvx*rvx + lvy*rvy;
+                        double ang_between = std::acos(std::min(1.0, std::abs(dot))) * 180.0 / CV_PI;
+
+                        if (ang_between <= 15.0) {
+                            double avx=(lvx+rvx)/2, avy=(lvy+rvy)/2;
+                            double alen=std::sqrt(avx*avx+avy*avy);
+                            if (alen>0) { avx/=alen; avy/=alen; }
+                            double apvx=-avy, apvy=avx;
+                            double edge_dist = std::abs((rl[2]-ll[2])*apvx + (rl[3]-ll[3])*apvy);
+
+                            if (edge_dist >= 3.0*rs && edge_dist <= 25.0*rs) {
+                                double fcx=(ll[2]+rl[2])/2, fcy=(ll[3]+rl[3])/2;
+                                double fvx=avx, fvy=avy;
+                                if (fvy<0) { fvx=-fvx; fvy=-fvy; }
+
+                                bool accept=true;
+                                if (ref_angle) {
+                                    double la=std::atan2(fvy,fvx);
+                                    double ad=std::abs(la - *ref_angle);
+                                    if (ad>CV_PI) ad=2*CV_PI-ad;
+                                    ad=std::min(ad, CV_PI-ad);
+                                    if (ad > CV_PI*60.0/180.0) accept=false;
+                                }
+                                if (accept) {
+                                    pca_line = PcaLine{fvx, fvy, fcx, fcy,
+                                        (double)(left_pts.size()+right_pts.size()), "edge_pair"};
+                                    result.ransac_inlier_ratio = 1.0;
+                                    result.barrel_pixel_count = (int)ep_pts.size();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // === Barrel RANSAC line fitting ===
+        if (!barrel_mask.empty() && barrel_info && !pca_line) {
             std::vector<cv::Point> barrel_pts;
             cv::findNonZero(barrel_mask_eroded, barrel_pts);
 
