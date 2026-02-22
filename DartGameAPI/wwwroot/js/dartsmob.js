@@ -817,42 +817,36 @@ async function checkLegWonReady() {
 }
 
 function showWinnerModal(winner) {
-    // Create modal if it doesn't exist
-    let modal = document.getElementById('winner-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'winner-modal';
-        modal.className = 'modal hidden';
-        modal.innerHTML = `
-            <div class="modal-content winner-content">
-                <h2 class="winner-title">?? WINNER! ??</h2>
-                <div class="winner-name"></div>
-                <div class="winner-buttons">
-                    <button class="btn btn-primary" id="winner-play-again">?? Play Again</button>
-                    <button class="btn btn-secondary" id="winner-quit">?? Quit</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        
-        document.getElementById('winner-play-again').addEventListener('click', () => {
-            modal.classList.add('hidden');
-            // Restart with same players
-            location.reload();  // Simple reload for now
+    const winnerName = winner.name || winner || 'Winner';
+    console.log('showWinnerModal:', winnerName);
+    
+    // Update the built-in gameover screen
+    const nameEl = document.getElementById('winner-name');
+    if (nameEl) nameEl.textContent = winnerName;
+    
+    const statsEl = document.getElementById('winner-stats');
+    if (statsEl) {
+        const player = currentGame?.players?.find(p => {
+            const pName = p.name || p.Name;
+            return pName === winnerName;
         });
-        
-        document.getElementById('winner-quit').addEventListener('click', () => {
-            modal.classList.add('hidden');
-            showScreen('setup-screen');
-        });
+        if (player) {
+            statsEl.textContent = (player.dartsThrown || player.DartsThrown || '?') + ' darts';
+        }
     }
     
-    modal.querySelector('.winner-name').textContent = winner.name || winner;
-    modal.classList.remove('hidden');
+    // Wire up Play Again button
+    const playAgainBtn = document.getElementById('new-game-btn');
+    if (playAgainBtn) {
+        playAgainBtn.onclick = () => location.reload();
+    }
+    
+    // Show the gameover screen
+    showScreen('gameover-screen');
     
     // Announce winner
     if (audioSettings.mode === 'tts') {
-        dartAudio.speak(`${winner.name || winner} wins!`);
+        dartAudio.speak(winnerName + ' wins!');
     }
 }
 
