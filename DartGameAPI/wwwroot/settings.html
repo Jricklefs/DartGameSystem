@@ -89,6 +89,29 @@
         }
             @keyframes spin { to { transform: rotate(360deg); } }
     </style>
+
+    <style>
+        .cam-settings-btn {
+            padding: 8px 18px; background: #1a1a1a; border: 1px solid var(--gold-dark);
+            color: var(--paper-muted); border-radius: 4px; cursor: pointer; font-size: 13px;
+            transition: all 0.2s;
+        }
+        .cam-settings-btn.active, .cam-settings-btn:hover {
+            background: var(--gold-dark); color: var(--paper); border-color: var(--gold);
+        }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333; transition: 0.3s; border-radius: 26px;
+        }
+        .toggle-slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background-color: white; transition: 0.3s; border-radius: 50%;
+        }
+        .toggle-switch input:checked + .toggle-slider { background-color: var(--gold-dark); }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
+    </style>
 </head>
 <body class="settings-page">
     <div id="background-layer" class="background-layer"></div>
@@ -107,6 +130,7 @@
             <button class="nav-tab-sm" data-tab="accuracy">📊 ACCURACY</button>
             <button class="nav-tab-sm" data-tab="system">🖥️ SYSTEM</button>
             <button class="nav-tab-sm" data-tab="replay">🔄 REPLAY</button>
+            <button class="nav-tab-sm" data-tab="camera">📷 CAMERA</button>
             
         </nav>
     </header>
@@ -652,6 +676,92 @@
                 </div>
             </div>
         </section>
+
+        <!-- Camera Settings Tab -->
+        <section id="tab-camera" class="settings-section">
+            <div class="section-header">
+                <h2>Camera Settings</h2>
+                <p class="section-desc">Adjust exposure, gain, and white balance for each camera</p>
+            </div>
+
+            <!-- Camera selector -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+                <button class="cam-settings-btn active" data-cam="0" onclick="selectSettingsCam(0)">CAM 0</button>
+                <button class="cam-settings-btn" data-cam="1" onclick="selectSettingsCam(1)">CAM 1</button>
+                <button class="cam-settings-btn" data-cam="2" onclick="selectSettingsCam(2)">CAM 2</button>
+                <button class="cam-settings-btn" data-cam="all" onclick="selectSettingsCam('all')">ALL</button>
+                <span id="cam-settings-status" style="color: var(--paper-muted); margin-left: 15px;"></span>
+            </div>
+
+            <!-- Live preview -->
+            <div style="margin-bottom: 20px; position: relative;">
+                <img id="cam-preview-img" style="width: 100%; max-width: 640px; border-radius: 8px; border: 1px solid var(--gold-dark); background: #111;" alt="Camera Preview">
+                <div id="cam-preview-info" style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 12px; border-radius: 4px; font-size: 12px; color: var(--paper-muted);">
+                    Brightness: <span id="cam-brightness">--</span> | StdDev: <span id="cam-stddev">--</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div style="display: grid; gap: 20px; max-width: 640px;">
+                <!-- Exposure -->
+                <div class="slider-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="color: var(--paper); font-weight: bold;">Exposure</label>
+                        <span id="exposure-val" style="color: var(--gold); font-family: monospace;">Auto</span>
+                    </div>
+                    <input type="range" id="exposure-slider" min="-13" max="-1" value="-7" step="1"
+                        style="width: 100%; accent-color: var(--gold);" oninput="updateExposureLabel(this.value)" onchange="applyCameraSetting()">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--paper-muted);">
+                        <span>-13 (Dark/Sharp)</span><span>-1 (Bright/Soft)</span>
+                    </div>
+                </div>
+
+                <!-- Gain -->
+                <div class="slider-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="color: var(--paper); font-weight: bold;">Gain</label>
+                        <span id="gain-val" style="color: var(--gold); font-family: monospace;">0</span>
+                    </div>
+                    <input type="range" id="gain-slider" min="0" max="255" value="0" step="1"
+                        style="width: 100%; accent-color: var(--gold);" oninput="updateGainLabel(this.value)" onchange="applyCameraSetting()">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--paper-muted);">
+                        <span>0 (Min noise)</span><span>255 (Max boost)</span>
+                    </div>
+                </div>
+
+                <!-- Auto Exposure toggle -->
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <label style="color: var(--paper); font-weight: bold;">Auto Exposure</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="auto-exposure-toggle" checked onchange="applyCameraSetting()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Auto White Balance toggle -->
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <label style="color: var(--paper); font-weight: bold;">Auto White Balance</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="auto-wb-toggle" checked onchange="applyCameraSetting()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Action buttons -->
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                    <button class="btn btn-primary" onclick="autoTuneCameras()" id="auto-tune-btn">&#9881; Auto-Tune</button>
+                    <button class="btn btn-secondary" onclick="refreshCameraSettings()">&#x21bb; Refresh</button>
+                    <button class="btn btn-secondary" onclick="resetCameraDefaults()">Reset Defaults</button>
+                </div>
+
+                <!-- Auto-tune results -->
+                <div id="auto-tune-results" style="display: none; background: #111; border: 1px solid var(--gold-dark); border-radius: 8px; padding: 15px; margin-top: 10px;">
+                    <h3 style="color: var(--gold); margin: 0 0 10px 0; font-size: 14px;">Auto-Tune Results</h3>
+                    <div id="auto-tune-content"></div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <script src="/js/settings.js"></script>
