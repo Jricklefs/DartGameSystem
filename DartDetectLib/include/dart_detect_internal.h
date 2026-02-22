@@ -60,7 +60,7 @@ static const int MOVED_PIXEL_DISTANCE = 15;
 static const double MASK_QUALITY_THRESHOLD_BASE = 12000.0;
 static const double BARREL_WIDTH_MAX_BASE = 20.0;
 static const double DART_LENGTH_MIN_BASE = 150.0;
-static const double RANSAC_THRESHOLD_BASE = 4.0;
+static const double RANSAC_THRESHOLD_BASE = 3.5;
 static const double RANSAC_MIN_PAIR_DIST_BASE = 20.0;
 
 // Legacy aliases for backward compat (used where scale not yet applied)
