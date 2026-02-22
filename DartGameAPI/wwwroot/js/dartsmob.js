@@ -835,10 +835,48 @@ function showWinnerModal(winner) {
         }
     }
     
-    // Wire up Play Again button
+    // Wire up Play Again button - restart with same settings
     const playAgainBtn = document.getElementById('new-game-btn');
     if (playAgainBtn) {
-        playAgainBtn.onclick = () => location.reload();
+        playAgainBtn.onclick = async () => {
+            try {
+                // Re-create game with same settings
+                const response = await fetch('/api/games', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        boardId,
+                        mode: currentGame?.mode ?? 'X01',
+                        playerNames: currentGame?.players?.map(p => p.name || p.Name) || ['Player 1'],
+                        bestOf: selectedBestOf || 1,
+                        requireDoubleOut: currentGame?.rules?.requireDoubleOut ?? currentGame?.requireDoubleOut ?? false,
+                        startingScore: currentGame?.rules?.startingScore ?? currentGame?.matchConfig?.startingScore ?? 501,
+                        doubleIn: currentGame?.rules?.doubleIn ?? currentGame?.matchConfig?.doubleIn ?? false,
+                        masterOut: currentGame?.rules?.masterOut ?? currentGame?.matchConfig?.masterOut ?? false,
+                        rules: currentGame?.rules || {}
+                    })
+                });
+                
+                if (response.ok) {
+                    currentGame = await response.json();
+                    showScreen('game-screen');
+                    updateScoreboard();
+                    updateCurrentTurn();
+                } else {
+                    console.error('Failed to restart game');
+                    location.reload();
+                }
+            } catch (err) {
+                console.error('Error restarting game:', err);
+                location.reload();
+            }
+        };
+    }
+    
+    // Wire up Quit button - back to setup
+    const quitBtn = document.getElementById('quit-game-btn');
+    if (quitBtn) {
+        quitBtn.onclick = () => showScreen('setup-screen');
     }
     
     // Show the gameover screen
