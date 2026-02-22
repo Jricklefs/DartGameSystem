@@ -323,6 +323,27 @@ DD_API const char* dd_detect(
                     cv::addWeighted(current_raw, 1.0 + 0.7, blur_c, -0.7, 0, current);
                     cv::addWeighted(before_raw, 1.0 + 0.7, blur_b, -0.7, 0, before);
                 }
+                // Gamma 0.6 correction
+                {
+                    cv::Mat lut(1, 256, CV_8U);
+                    for (int i = 0; i < 256; i++)
+                        lut.at<uchar>(0, i) = cv::saturate_cast<uchar>(255.0 * std::pow(i / 255.0, 0.6));
+                    cv::LUT(current, lut, current);
+                    cv::LUT(before, lut, before);
+                }
+                // Desaturate to 0.5
+                {
+                    cv::Mat hsv_c, hsv_b;
+                    cv::cvtColor(current, hsv_c, cv::COLOR_BGR2HSV);
+                    cv::cvtColor(before, hsv_b, cv::COLOR_BGR2HSV);
+                    std::vector<cv::Mat> ch_c, ch_b;
+                    cv::split(hsv_c, ch_c); cv::split(hsv_b, ch_b);
+                    ch_c[1] = ch_c[1] * 0.5;
+                    ch_b[1] = ch_b[1] * 0.5;
+                    cv::merge(ch_c, hsv_c); cv::merge(ch_b, hsv_b);
+                    cv::cvtColor(hsv_c, current, cv::COLOR_HSV2BGR);
+                    cv::cvtColor(hsv_b, before, cv::COLOR_HSV2BGR);
+                }
 
                 // Phase 3 (Change 4): Compute resolution scale from image height
                 double res_scale = compute_resolution_scale(current.rows);
