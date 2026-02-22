@@ -871,7 +871,7 @@ DetectionResult detect_dart(
                 zhangSuenThinning(motion_mask, skel);
                 
                 std::vector<cv::Vec4i> hough_lines;
-                cv::HoughLinesP(skel, hough_lines, 1, CV_PI / 180, 12, 15, 8);
+                cv::HoughLinesP(skel, hough_lines, 1, CV_PI / 1800, 12, 15, 8);
                 
                 if (!hough_lines.empty()) {
                     std::vector<cv::Point> mask_pts;
