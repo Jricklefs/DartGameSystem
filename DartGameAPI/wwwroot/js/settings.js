@@ -3595,8 +3595,8 @@ function updateGainLabel(val) {
 }
 
 async function applyCameraSetting() {
-    const autoExp = document.getElementById('auto-exposure-toggle').checked;
-    const autoWb = document.getElementById('auto-wb-toggle').checked;
+    const autoExp = !document.getElementById('manual-exposure-toggle').checked;
+    const autoWb = !document.getElementById('manual-wb-toggle').checked;
     const exposure = parseInt(document.getElementById('exposure-slider').value);
     const gain = parseInt(document.getElementById('gain-slider').value);
     
@@ -3654,8 +3654,8 @@ async function refreshCameraSettings() {
                 document.getElementById('exposure-val').textContent = cam.auto_exposure == 3 ? 'Auto' : exp;
                 document.getElementById('gain-slider').value = cam.gain || 0;
                 document.getElementById('gain-val').textContent = cam.gain || 0;
-                document.getElementById('auto-exposure-toggle').checked = (cam.auto_exposure == 3);
-                document.getElementById('auto-wb-toggle').checked = (cam.auto_wb == 1);
+                document.getElementById('manual-exposure-toggle').checked = (cam.auto_exposure != 3);
+                document.getElementById('manual-wb-toggle').checked = (cam.auto_wb != 1);
                 status.textContent = 'Settings loaded';
                 status.style.color = '#4caf50';
                 setTimeout(() => { status.textContent = ''; }, 2000);
@@ -3701,7 +3701,7 @@ async function autoTuneCameras() {
                     if (selectedSettingsCam === 'all' || selectedSettingsCam === r.camera) {
                         document.getElementById('exposure-slider').value = r.optimal.exposure;
                         document.getElementById('exposure-val').textContent = r.optimal.exposure;
-                        document.getElementById('auto-exposure-toggle').checked = false;
+                        document.getElementById('manual-exposure-toggle').checked = true;
                         document.getElementById('gain-slider').value = 0;
                         document.getElementById('gain-val').textContent = '0';
                     }
