@@ -8,7 +8,9 @@
 // ==========================================================================
 
 const DETECT_API = 'http://192.168.0.158:8000';
-const boardId = 'default';
+let boardId = 'default';
+// Fetch actual board ID from API
+fetch('/api/boards/current').then(r => r.json()).then(b => { boardId = b.id; console.log('Board:', b.name, b.id); }).catch(() => {});
 
 // ==========================================================================
 // Centralized Logging
@@ -51,7 +53,14 @@ let currentGame = null;
 let selectedMode = 'Practice';
 let selectedBestOf = 5;
 let lookingForMatch = false;  // Looking for match toggle state
-let bustAcknowledged = false; // True when user clicked Continue on bust, waiting for board clear
+
+// Bust flow state machine
+let bustState = { active: false, confirmed: false, boardCleared: false };
+
+// Leg-won flow: both conditions must be met before starting next leg
+let legWonBoardCleared = false;
+let legWonContinueClicked = false;
+let isLegWonState = false;
 
 // ==========================================================================
 // Initialization
@@ -90,7 +99,7 @@ function initTheme() {
     // Apply tagline
     const taglineEl = document.getElementById('app-tagline');
     if (taglineEl && theme.tagline) {
-        taglineEl.textContent = `— ${theme.tagline} —`;
+        taglineEl.textContent = `� ${theme.tagline} �`;
     }
     
     // Apply background
@@ -103,14 +112,16 @@ function initTheme() {
     ];
     
     if (backgrounds.length > 0) {
-        setBackground(backgrounds[0]);
+        // Shuffle backgrounds randomly
+        const shuffled = [...backgrounds].sort(() => Math.random() - 0.5);
+        setBackground(shuffled[0]);
         
         // Start slideshow if enabled
-        if (theme.slideshow !== false && backgrounds.length > 1) {
+        if (theme.slideshow !== false && shuffled.length > 1) {
             let idx = 0;
             setInterval(() => {
-                idx = (idx + 1) % backgrounds.length;
-                setBackground(backgrounds[idx]);
+                idx = (idx + 1) % shuffled.length;
+                setBackground(shuffled[idx]);
             }, theme.slideshowSpeed || 30000);
         }
     }
@@ -155,6 +166,13 @@ async function initConnection() {
     connection.on('GameStarted', handleGameStarted);
     connection.on('GameEnded', handleGameEnded);
     connection.on('TurnEnded', handleTurnEnded);
+    connection.on('DartNotFound', handleDartNotFound);
+    connection.on('LegWon', handleLegWon);
+    connection.on('BustDetected', handleBustDetected);
+    connection.on('BustConfirmedWaitingForClear', handleBustConfirmedWaitingForClear);
+    connection.on('BustBoardCleared', handleBustBoardCleared);
+    connection.on('BustCancelled', handleBustCancelled);
+    connection.on('BustStillActive', handleBustStillActive);
 
     try {
         await connection.start();
@@ -169,7 +187,7 @@ async function initConnection() {
 function updateConnectionStatus(text, className) {
     const el = document.getElementById('connection-status');
     if (el) {
-        el.textContent = `🔌 ${text}`;
+        el.textContent = `?? ${text}`;
         el.className = `connection ${className}`;
     }
 }
@@ -254,18 +272,22 @@ function speakDartScore(dart) {
     
     const zone = dart.zone?.toLowerCase() || '';
     const segment = dart.segment || 0;
+    const multiplier = dart.multiplier || 0;
     let audioFile = '';
     let ttsText = '';
     
-    if (zone === 'miss' || segment === 0) {
-        audioFile = 'miss';
-        ttsText = 'Miss';
-    } else if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull') {
+    // Check for bull first (segment 0 or 25 with multiplier > 0)
+    if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull' || 
+        (segment === 0 && multiplier === 2) || (segment === 25 && multiplier === 2)) {
         audioFile = 'double-bullseye';
         ttsText = 'Double Bullseye';
-    } else if (zone === 'outer_bull' || zone === 'bull') {
+    } else if (zone === 'outer_bull' || zone === 'bull' || 
+               (segment === 0 && multiplier === 1) || (segment === 25 && multiplier === 1)) {
         audioFile = 'bullseye';
         ttsText = 'Bullseye';
+    } else if (zone === 'miss' || (segment === 0 && multiplier === 0)) {
+        audioFile = 'miss';
+        ttsText = 'Miss';
     } else if (zone === 'double' || zone === 'double_ring') {
         audioFile = `double-${segment}`;
         ttsText = `Double ${segment}`;
@@ -313,7 +335,7 @@ function handleDartThrown(data) {
     updateCurrentTurn();
     
     // Check for bust - show bust popup instead of normal dart popup
-    if (data.game?.currentTurn?.isBusted) {
+    if (data.game?.currentTurn?.busted) {
         showBustPopup(data.dart);
         setTimeout(() => speakBust(), 300);
     } else {
@@ -321,23 +343,28 @@ function handleDartThrown(data) {
         speakDartScore(data.dart);
     }
     
-    // Check for winner
-    if (data.game?.isComplete && data.game?.winner) {
-        setTimeout(() => showWinnerModal(data.game.winner), 1000);
+    // Check for winner - game state Finished = 2
+    if (data.game?.state === 2 || data.game?.state === 'Finished') {
+        const winnerName = data.game.winnerName || 
+                          data.game.players?.find(p => p.id === data.game.winnerId)?.name ||
+                          'Winner';
+        console.log('?? Game finished via dart! Winner:', winnerName);
+        setTimeout(() => showWinnerModal(winnerName), 1000);
     }
 }
 
 function handleBoardCleared(data) {
-    console.log('Board cleared - PPD stays visible until Next Player');
+    console.log('Board cleared');
     
-    // If bust was acknowledged, finalize the bust now that darts are pulled
-    if (bustAcknowledged) {
-        finalizeBust();
+    // If we're in leg-won state, mark board as cleared and check if we can proceed
+    if (isLegWonState) {
+        console.log('Board cleared during leg-won state');
+        legWonBoardCleared = true;
+        checkLegWonReady();
         return;
     }
     
-    // Do NOT clear PPD boxes here - player just removed darts
-    // PPD and turn total stay visible until Next Player is pressed
+    // Normal flow: PPD stays visible until Next Player
 }
 
 function handleDartRemoved(data) {
@@ -352,21 +379,35 @@ function handleDartRemoved(data) {
 function handleGameStarted(data) {
     console.log('Game started:', data);
     currentGame = data;
-    bustAcknowledged = false;  // Reset bust state
     showScreen('game-screen');
     updateScoreboard();
     updateCurrentTurn();
 }
 
 function handleGameEnded(data) {
-    console.log('Game ended:', data);
-    // Show winner modal instead of separate screen
-    showWinnerModal(data.winnerName || data.winner || 'Winner');
+    console.log('?? Game ended! Full data:', JSON.stringify(data));
+    
+    // Update game state
+    if (data.game) {
+        currentGame = data.game;
+        updateScoreboard();
+    }
+    
+    // Find winner name from various possible properties
+    const winnerName = data.winnerName || data.WinnerName || data.winner || 
+                       (data.players?.find(p => p.id === data.winnerId)?.name) ||
+                       'Winner';
+    
+    console.log('?? Showing winner modal for:', winnerName);
+    
+    // Small delay to let any dart animations finish
+    setTimeout(() => {
+        showWinnerModal(winnerName);
+    }, 500);
 }
 
 function handleTurnEnded(data) {
     console.log('Turn ended:', data);
-    bustAcknowledged = false;  // Reset bust state for new turn
     // Update game state with new turn info (round may have increased)
     if (data.game) {
         currentGame = data.game;
@@ -444,7 +485,7 @@ function updateCurrentTurn() {
             console.log(`[updateCurrentTurn] slot ${i} = ${darts[i].score}`);
         } else {
             slot.classList.remove('hit');
-            slot.textContent = '—';
+            slot.textContent = '�';
         }
     });
     
@@ -456,7 +497,7 @@ function updateCurrentTurn() {
 function clearCurrentTurn() {
     document.querySelectorAll('.dart-slot').forEach(slot => {
         slot.classList.remove('hit');
-        slot.textContent = '—';
+        slot.textContent = '�';
     });
     document.getElementById('turn-score').textContent = '0';
 }
@@ -503,120 +544,275 @@ function showThrowPopup(dart) {
 }
 
 function showBustPopup(dart) {
-    const popup = document.getElementById('throw-popup');
-    if (!popup) return;
+    // Show the bust modal instead of just a popup
+    showBustModal();
+}
+
+function showBustModal() {
+    document.getElementById('bust-modal')?.remove();
     
-    // Build the dart score text for top line
-    let prefix = '';
+    const turn = currentGame?.currentTurn;
+    const darts = turn?.darts || [];
+    const player = currentGame?.players?.[currentGame.currentPlayerIndex];
+    
+    let dartsHtml = '';
+    darts.forEach((d, i) => {
+        const dartText = formatDartShort(d);
+        dartsHtml += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #222; border-radius: 8px; margin-bottom: 8px;">
+                <span style="font-size: 1.3rem; color: var(--paper);">Dart ${i + 1}: <strong>${dartText}</strong> (${d.score})</span>
+                <button onclick="openCorrectionForDart(${i})" style="background: #d4af37; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">Correct</button>
+            </div>
+        `;
+    });
+    
+    const modal = document.createElement('div');
+    modal.id = 'bust-modal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.95); z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+    `;
+    modal.innerHTML = `
+        <div style="background: linear-gradient(180deg, #2a1a1a 0%, #1a0a0a 100%); border: 3px solid #ff4444; border-radius: 16px; padding: 30px; max-width: 500px; width: 100%; text-align: center;">
+            <h1 style="color: #ff4444; font-size: 3rem; margin: 0 0 10px 0; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em; text-shadow: 0 0 20px rgba(255,68,68,0.5);">BUSTED!</h1>
+            <p style="color: var(--paper-muted); margin: 0 0 20px 0;">${player?.name || 'Player'} - Score reverted to ${turn?.scoreBeforeBust || player?.score}</p>
+            
+            <div style="margin-bottom: 20px; text-align: left;">
+                ${dartsHtml || '<p style="color: var(--paper-muted);">No darts recorded</p>'}
+            </div>
+            
+            <p id="bust-status-text" style="color: #ffaa00; margin-bottom: 20px; font-size: 0.95rem;">
+                Pull darts and confirm bust to continue
+            </p>
+            
+            <button id="confirm-bust-btn" onclick="confirmBust()" style="background: linear-gradient(180deg, #ff5555 0%, #cc3333 100%); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-size: 1.3rem; font-weight: bold; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em;">
+                CONFIRM BUST
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    updateBustStatusText();
+}
+
+function updateBustStatusText() {
+    const el = document.getElementById('bust-status-text');
+    if (!el) return;
+    
+    if (bustState.confirmed && bustState.boardCleared) {
+        el.textContent = 'Advancing to next player...';
+        el.style.color = '#44ff44';
+    } else if (bustState.confirmed && !bustState.boardCleared) {
+        el.textContent = 'Bust confirmed \u2713 \u2014 pull darts to continue';
+        el.style.color = '#ffaa00';
+    } else if (!bustState.confirmed && bustState.boardCleared) {
+        el.textContent = 'Darts cleared \u2713 \u2014 confirm bust to continue';
+        el.style.color = '#ffaa00';
+    } else {
+        el.textContent = 'Pull darts and confirm bust to continue';
+        el.style.color = '#ffaa00';
+    }
+}
+
+function handleBustDetected(data) {
+    console.log('Bust detected:', data);
+    bustState = { active: true, confirmed: false, boardCleared: false };
+    if (currentGame) {
+        // Update local game state
+        if (data.game) Object.assign(currentGame, data.game);
+        updateScoreboard();
+        updateCurrentTurn();
+    }
+    showBustModal();
+    setTimeout(() => speakBust(), 300);
+}
+
+function handleBustConfirmedWaitingForClear(data) {
+    console.log('Bust confirmed, waiting for clear:', data);
+    bustState.confirmed = true;
+    updateBustStatusText();
+}
+
+function handleBustBoardCleared(data) {
+    console.log('Board cleared during bust:', data);
+    bustState.boardCleared = true;
+    updateBustStatusText();
+}
+
+function handleBustCancelled(data) {
+    console.log('Bust cancelled (correction cleared bust):', data);
+    bustState = { active: false, confirmed: false, boardCleared: false };
+    document.getElementById('bust-modal')?.remove();
+    if (currentGame) {
+        updateScoreboard();
+        updateCurrentTurn();
+    }
+}
+
+function handleBustStillActive(data) {
+    console.log('Bust still active after correction:', data);
+    // Re-show bust modal with updated darts
+    showBustModal();
+}
+
+function formatDartShort(dart) {
     const zone = dart?.zone?.toLowerCase() || '';
     const segment = dart?.segment || 0;
     
-    if (zone === 'double' || zone === 'double_ring') {
-        prefix = 'D';
-    } else if (zone === 'triple' || zone === 'triple_ring') {
-        prefix = 'T';
-    } else if (zone === 'inner_bull' || zone === 'bullseye') {
-        prefix = 'BULL';
-    } else if (zone === 'outer_bull') {
-        prefix = 'BULL';
-    } else if (zone === 'miss' || segment === 0) {
-        prefix = 'MISS';
-    } else {
-        prefix = 'S';
-    }
-    
-    const topText = (prefix === 'BULL' || prefix === 'MISS') ? prefix : `${prefix}${segment}`;
-    
-    // Top line: Score, Bottom line: BUST with buttons
-    popup.querySelector('.throw-zone').textContent = topText;
-    popup.querySelector('.throw-value').textContent = 'BUST';
-    popup.querySelector('.throw-value').style.color = '#ff4444';
-    
-    // Add bust action buttons if not already present
-    let bustActions = popup.querySelector('.bust-actions');
-    if (!bustActions) {
-        bustActions = document.createElement('div');
-        bustActions.className = 'bust-actions';
-        bustActions.innerHTML = `
-            <button class="bust-btn bust-correct" onclick="showBustCorrectionPopup()">Correct Score</button>
-            <button class="bust-btn bust-confirm" onclick="confirmBust()">Continue</button>
-        `;
-        popup.appendChild(bustActions);
-    }
-    bustActions.classList.remove('hidden');
-    
-    popup.classList.remove('hidden', 'show');
-    void popup.offsetWidth;
-    popup.classList.add('show');
-    
-    // Don't auto-dismiss bust popup - wait for user action
+    if (zone === 'inner_bull' || zone === 'bullseye' || zone === 'double_bull') return 'BULL';
+    if (zone === 'outer_bull') return 'S-BULL';
+    if (zone === 'miss' || segment === 0) return 'MISS';
+    if (zone === 'double' || zone === 'double_ring') return `D${segment}`;
+    if (zone === 'triple' || zone === 'triple_ring') return `T${segment}`;
+    return `S${segment}`;
 }
 
 async function confirmBust() {
-    const popup = document.getElementById('throw-popup');
-    if (popup) {
-        const bustActions = popup.querySelector('.bust-actions');
-        if (bustActions) bustActions.classList.add('hidden');
-        
-        // Show "Pull your darts" message instead of hiding
-        popup.querySelector('.throw-zone').textContent = 'BUSTED';
-        popup.querySelector('.throw-value').textContent = 'Pull your darts';
-        popup.querySelector('.throw-value').style.color = '#ffaa00';
-        popup.querySelector('.throw-value').style.fontSize = '1.2rem';
+    const btn = document.getElementById('confirm-bust-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '? Confirming...';
     }
-    
-    // Set flag - actual turn end happens when board is cleared
-    bustAcknowledged = true;
-    console.log('Bust acknowledged - waiting for board clear');
-}
-
-async function finalizeBust() {
-    // Called when board is cleared after bust was acknowledged
-    if (!currentGame?.id) return;
     
     try {
-        const response = await fetch(`${GAME_API_URL}/games/${currentGame.id}/confirm-bust`, {
-            method: 'POST'
+        // Call API to confirm the bust and end turn
+        const resp = await fetch(`/api/games/${currentGame.id}/confirm-bust`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
         });
-        if (response.ok) {
-            const data = await response.json();
-            currentGame = data.game;
+        
+        if (resp.ok) {
+            const data = await resp.json();
+            currentGame = data.game || data;
             updateScoreboard();
             updateCurrentTurn();
-            console.log('Bust finalized, turn ended');
         }
-    } catch (error) {
-        console.error('Error confirming bust:', error);
+    } catch (err) {
+        console.error('Error confirming bust:', err);
     }
     
-    // Hide the popup now
-    const popup = document.getElementById('throw-popup');
-    if (popup) {
-        popup.classList.add('hidden');
-        popup.classList.remove('show');
-        popup.querySelector('.throw-value').style.color = '';
-        popup.querySelector('.throw-value').style.fontSize = '';
-    }
-    
-    bustAcknowledged = false;
+    // Close modal
+    document.getElementById('bust-modal')?.remove();
 }
 
-function showBustCorrectionPopup() {
-    // Reset bust acknowledgment since they're correcting
-    bustAcknowledged = false;
+function openCorrectionForDart(dartIndex) {
+    // Close bust modal temporarily
+    document.getElementById('bust-modal')?.remove();
     
-    // Hide the bust popup first
-    const popup = document.getElementById('throw-popup');
-    if (popup) {
-        popup.classList.add('hidden');
-        popup.classList.remove('show');
+    // Open the correction modal for this dart
+    correctionDartIndex = dartIndex;
+    correctionSegment = 20;
+    correctionMultiplier = 1;
+    
+    const correctionModal = document.getElementById('correction-modal');
+    if (correctionModal) {
+        correctionModal.classList.remove('hidden');
+        updateCorrectionPreview();
+    }
+}
+
+function handleLegWon(data) {
+    console.log('?? Leg won!', data);
+    
+    // Update player leg counts in local state
+    if (currentGame && data.game?.Players) {
+        data.game.Players.forEach(p => {
+            const local = currentGame.players?.find(lp => lp.id === p.Id);
+            if (local) local.legsWon = p.LegsWon;
+        });
     }
     
-    // Show the correction popup for the last dart
-    const turn = currentGame?.currentTurn;
-    if (turn?.darts?.length > 0) {
-        const lastDartIndex = turn.darts.length - 1;
-        showCorrectionPopup(lastDartIndex);
+    showLegWonModal(data.winnerName, data.legsWon, data.legsToWin, data.game?.Players || []);
+}
+
+function showLegWonModal(winnerName, legsWon, legsToWin, players) {
+    // Enter leg-won state - reset flags
+    isLegWonState = true;
+    legWonBoardCleared = false;
+    legWonContinueClicked = false;
+    
+    let modal = document.getElementById('leg-won-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'leg-won-modal';
+        modal.className = 'modal hidden';
+        modal.innerHTML = `
+            <div class="modal-content winner-content">
+                <h2 class="winner-title">🎯 LEG WON! 🎯</h2>
+                <div class="winner-name"></div>
+                <div class="leg-standings"></div>
+                <p id="leg-won-status" style="margin-top: 10px; color: #aaa; font-size: 0.9rem;">Remove darts and click Continue</p>
+                <button class="btn btn-primary" id="leg-won-ok" style="margin-top: 20px;">Continue</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        document.getElementById('leg-won-ok').addEventListener('click', () => {
+            console.log('Continue clicked during leg-won state');
+            legWonContinueClicked = true;
+            
+            // Update status text
+            const statusEl = document.getElementById('leg-won-status');
+            if (statusEl && !legWonBoardCleared) {
+                statusEl.textContent = 'Waiting for darts to be removed...';
+            }
+            
+            checkLegWonReady();
+        });
+    }
+    
+    modal.querySelector('.winner-name').textContent = winnerName;
+    
+    // Build standings
+    const standings = players.map(p => 
+        `${p.Name}: ${p.LegsWon} / ${legsToWin}`
+    ).join('  •  ');
+    modal.querySelector('.leg-standings').textContent = standings;
+    
+    // Reset status text
+    const statusEl = document.getElementById('leg-won-status');
+    if (statusEl) statusEl.textContent = 'Remove darts and click Continue';
+    
+    modal.classList.remove('hidden');
+    
+    if (audioSettings.mode === 'tts') {
+        dartAudio.speak(`${winnerName} wins the leg! ${legsWon} of ${legsToWin}.`);
+    }
+}
+
+async function checkLegWonReady() {
+    if (!legWonBoardCleared || !legWonContinueClicked) {
+        console.log('Leg-won not ready:', { boardCleared: legWonBoardCleared, continueClicked: legWonContinueClicked });
+        return;
+    }
+    
+    console.log('Both conditions met - starting next leg');
+    
+    // Hide the modal
+    const modal = document.getElementById('leg-won-modal');
+    if (modal) modal.classList.add('hidden');
+    
+    // Reset flags
+    isLegWonState = false;
+    legWonBoardCleared = false;
+    legWonContinueClicked = false;
+    
+    // Call server to start next leg
+    try {
+        const resp = await fetch('/api/games/' + currentGame.id + '/next-leg', { method: 'POST' });
+        if (resp.ok) {
+            const data = await resp.json();
+            currentGame = data.game;
+            updateScoreboard();
+            clearCurrentTurn();
+            console.log('Next leg started successfully');
+        } else {
+            console.error('Failed to start next leg:', resp.status);
+        }
+    } catch (e) {
+        console.error('Error starting next leg:', e);
     }
 }
 
@@ -626,33 +822,33 @@ function showWinnerModal(winner) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'winner-modal';
-        modal.className = 'modal';
+        modal.className = 'modal hidden';
         modal.innerHTML = `
             <div class="modal-content winner-content">
-                <h2 class="winner-title">🏆 WINNER! 🏆</h2>
+                <h2 class="winner-title">?? WINNER! ??</h2>
                 <div class="winner-name"></div>
                 <div class="winner-buttons">
-                    <button class="btn btn-primary" id="winner-play-again">🎯 Play Again</button>
-                    <button class="btn btn-secondary" id="winner-quit">🚪 Quit</button>
+                    <button class="btn btn-primary" id="winner-play-again">?? Play Again</button>
+                    <button class="btn btn-secondary" id="winner-quit">?? Quit</button>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
         
         document.getElementById('winner-play-again').addEventListener('click', () => {
-            modal.classList.remove('show');
+            modal.classList.add('hidden');
             // Restart with same players
             location.reload();  // Simple reload for now
         });
         
         document.getElementById('winner-quit').addEventListener('click', () => {
-            modal.classList.remove('show');
+            modal.classList.add('hidden');
             showScreen('setup-screen');
         });
     }
     
     modal.querySelector('.winner-name').textContent = winner.name || winner;
-    modal.classList.add('show');
+    modal.classList.remove('hidden');
     
     // Announce winner
     if (audioSettings.mode === 'tts') {
@@ -682,7 +878,7 @@ async function startGame() {
     const startBtn = document.getElementById('start-game-btn');
     if (startBtn) {
         startBtn.disabled = true;
-        startBtn.textContent = '⏳ Starting...';
+        startBtn.textContent = '? Starting...';
     }
     
     try {
@@ -694,6 +890,10 @@ async function startGame() {
                 mode: gameMode,
                 playerNames: players,
                 bestOf: selectedBestOf,
+                requireDoubleOut: rules['double-out'] ?? false,
+                startingScore: getSelectedStartingScore(),
+                doubleIn: rules['double-in'] ?? false,
+                masterOut: rules['master-out'] ?? false,
                 rules: rules
             })
         });
@@ -723,10 +923,10 @@ async function startGame() {
 function showStartGameError(error) {
     // Map error codes to user-friendly messages
     const messages = {
-        'NO_CAMERAS': '📷 No cameras registered. Go to Settings to set up cameras.',
-        'NOT_CALIBRATED': '🎯 Cameras not calibrated. Go to Settings → Calibration.',
-        'SENSOR_DISCONNECTED': '📡 DartSensor not connected. Please start the sensor.',
-        'BOARD_NOT_FOUND': '🎯 Board not found. Check your settings.'
+        'NO_CAMERAS': '?? No cameras registered. Go to Settings to set up cameras.',
+        'NOT_CALIBRATED': '?? Cameras not calibrated. Go to Settings ? Calibration.',
+        'SENSOR_DISCONNECTED': '?? DartSensor not connected. Please start the sensor.',
+        'BOARD_NOT_FOUND': '?? Board not found. Check your settings.'
     };
     
     const friendlyMessage = messages[error.code] || error.message || error.error || 'Failed to start game';
@@ -737,10 +937,11 @@ function showStartGameError(error) {
         // Create modal if it doesn't exist
         modal = document.createElement('div');
         modal.id = 'start-error-modal';
-        modal.className = 'modal-overlay';
+        modal.className = 'modal hidden';
         modal.innerHTML = `
-            <div class="modal art-deco-card" style="max-width: 400px; text-align: center;">
-                <h2 style="color: var(--gold); margin-bottom: 1rem;">⚠️ Cannot Start Game</h2>
+            <div class="modal-backdrop" onclick="document.getElementById('start-error-modal').classList.add('hidden')"></div>
+            <div class="modal-content art-deco-card" style="max-width: 400px; text-align: center;">
+                <h2 style="color: var(--gold); margin-bottom: 1rem;">?? Cannot Start Game</h2>
                 <p id="start-error-message" style="margin-bottom: 1.5rem; color: #ccc;"></p>
                 <button class="btn-gold" onclick="document.getElementById('start-error-modal').classList.add('hidden')">OK</button>
             </div>
@@ -806,22 +1007,26 @@ function updateRoundDisplay() {
 // Game definitions with category-specific options
 const gameConfig = {
     x01: {
-        label: '🔢 X01',
+        label: '?? X01',
         variants: [
-            { value: '20', label: '🐛 Debug 20' },
+            { value: '20', label: '?? Debug 20' },
             { value: '301', label: '301' },
             { value: '501', label: '501' },
+            { value: '401', label: '401' },
+            { value: '601', label: '601' },
             { value: '701', label: '701' },
+            { value: '801', label: '801' },
+            { value: '901', label: '901' },
             { value: '1001', label: '1001' }
         ],
         defaultVariant: '501',
         rules: [
             { id: 'double-in', label: 'Double In', default: false },
-            { id: 'double-out', label: 'Double Out', default: true }
+            { id: 'double-out', label: 'Double Out', default: false }
         ]
     },
     cricket: {
-        label: '🦗 Cricket',
+        label: '?? Cricket',
         variants: [
             { value: 'CricketStandard', label: 'Standard' },
             { value: 'CricketCutThroat', label: 'Cut-Throat' },
@@ -831,7 +1036,7 @@ const gameConfig = {
         rules: []
     },
     around: {
-        label: '🔄 Around the World',
+        label: '?? Around the World',
         variants: [
             { value: 'AroundTheClock', label: 'Around the Clock' },
             { value: 'Shanghai', label: 'Shanghai' }
@@ -842,7 +1047,7 @@ const gameConfig = {
         ]
     },
     killer: {
-        label: '💀 Killer',
+        label: '?? Killer',
         variants: [
             { value: 'Killer', label: 'Killer' },
             { value: 'BlindKiller', label: 'Blind Killer' }
@@ -853,7 +1058,7 @@ const gameConfig = {
         ]
     },
     practice: {
-        label: '🎯 Practice',
+        label: '?? Practice',
         variants: [
             { value: 'FreePlay', label: 'Free Play (Count Up)' },
             { value: 'DoublesTraining', label: 'Doubles Training' },
@@ -982,16 +1187,21 @@ function getSelectedGameMode() {
     const category = document.getElementById('game-category')?.value || 'x01';
     const variant = document.getElementById('game-variant')?.value;
     const config = gameConfig[category];
-    
-    // Use variant if selected, otherwise default
     const gameVariant = variant || config?.defaultVariant || '501';
-    
     if (category === 'x01') {
         if (gameVariant === '20') return 'Debug20';
-        return `Game${gameVariant}`;
+        return 'X01';
     } else {
         return gameVariant;
     }
+}
+
+function getSelectedStartingScore() {
+    const category = document.getElementById('game-category')?.value || 'x01';
+    if (category !== 'x01') return 0;
+    const variant = document.getElementById('game-variant')?.value || '501';
+    if (variant === '20') return 20;
+    return parseInt(variant) || 501;
 }
 
 function getSelectedRules() {
@@ -1064,8 +1274,8 @@ function formatMode(mode) {
     }
     
     // Handle Debug mode
-    if (mode === 'Debug20') return '🐛 Debug 20';
-    
+    if (mode === 'Debug20') return '?? Debug 20';
+
     // Handle X01 games
     const x01Match = mode.match(/^Game(\d+)$/);
     if (x01Match) return x01Match[1];
@@ -1086,6 +1296,32 @@ function formatMode(mode) {
 }
 
 // ==========================================================================
+
+// Remove a false dart (e.g. phantom detection during clearing)
+async function removeDart(dartIndex) {
+    if (!currentGame?.id) return;
+    
+    if (!confirm(`Remove dart ${dartIndex + 1}? (Use for false detections)`)) return;
+    
+    try {
+        const resp = await fetch(`/api/games/${currentGame.id}/remove-dart`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dartIndex: dartIndex })
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            console.error('Failed to remove dart:', err);
+            return;
+        }
+        const result = await resp.json();
+        console.log('Dart removed:', result);
+        // UI updates via SignalR DartRemoved event
+    } catch (e) {
+        console.error('Error removing dart:', e);
+    }
+}
+
 // Dart Correction
 // ==========================================================================
 
@@ -1145,6 +1381,9 @@ function initDartCorrection() {
     // Cancel button
     document.getElementById('correction-cancel')?.addEventListener('click', closeCorrectionModal);
     
+    // Bounce Out button - mark dart as excluded from benchmark (bounced out, can't correct)
+    document.getElementById('correction-bounceout')?.addEventListener('click', markBounceOut);
+    
     // False button - remove this dart entirely (phantom detection)
     document.getElementById('correction-false')?.addEventListener('click', removeFalseDart);
     
@@ -1198,7 +1437,7 @@ function getSegmentAndScore() {
     
     const segment = parseInt(correctionInput, 10);
     if (isNaN(segment) || segment < 1 || segment > 20) {
-        return { segment: 0, score: 0, display: '—' };
+        return { segment: 0, score: 0, display: '�' };
     }
     
     const score = segment * correctionMultiplier;
@@ -1213,7 +1452,7 @@ function updateCorrectionDisplay() {
     const { display, score } = getSegmentAndScore();
     
     if (correctionInput === '' && correctionMultiplier === 1) {
-        displayEl.textContent = '—';
+        displayEl.textContent = '�';
     } else {
         // Show S12, D20, T19, BULL, D-BULL, MISS
         displayEl.textContent = display;
@@ -1231,7 +1470,7 @@ function openCorrectionModal(dartIndex) {
     document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
     
     document.getElementById('correction-dart-num').textContent = dartIndex + 1;
-    document.getElementById('correction-input-display').textContent = '—';
+    document.getElementById('correction-input-display').textContent = '�';
     
     document.getElementById('dart-correction-modal')?.classList.remove('hidden');
 }
@@ -1242,6 +1481,53 @@ function closeCorrectionModal() {
 }
 
 async function submitCorrection() {
+    // Handle "Not Detected" mode - submit as manual throw instead of correction
+    if (window._notDetectedMode) {
+        window._notDetectedMode = false;
+        
+        // Reset modal title
+        const modalTitle = document.querySelector('#dart-correction-modal .modal-title');
+        if (modalTitle) modalTitle.textContent = 'Correct Dart';
+        
+        let segment, multiplier;
+        if (correctionInput === 'miss') {
+            segment = 0;
+            multiplier = 0;
+        } else if (correctionInput === 'bull') {
+            segment = 25;
+            multiplier = correctionMultiplier;  // 1=outer bull (25), 2=inner bull (50)
+        } else {
+            segment = parseInt(correctionInput);
+            multiplier = correctionMultiplier || 1;
+        }
+        
+        if (isNaN(segment) && correctionInput !== 'miss') {
+            console.log('[NOT-DETECTED] Invalid input:', correctionInput);
+            return;
+        }
+        
+        console.log('[NOT-DETECTED] Submitting manual dart: S' + segment + 'x' + multiplier);
+        
+        // Submit as manual throw
+        fetch('/api/games/' + currentGame.id + '/manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ segment: segment, multiplier: multiplier })
+        })
+        .then(r => r.json())
+        .then(data => {
+            console.log('[NOT-DETECTED] Manual dart submitted:', data);
+            closeCorrectionModal();
+        })
+        .catch(err => {
+            console.error('[NOT-DETECTED] Failed:', err);
+            closeCorrectionModal();
+        });
+        
+        return;  // Don't fall through to normal correction logic
+    }
+    
+    // Original correction logic follows...
     const { segment, score, display } = getSegmentAndScore();
     
     if (correctionDartIndex === null || !currentGame) {
@@ -1256,6 +1542,27 @@ async function submitCorrection() {
     
     // Get the original dart for logging
     const originalDart = currentGame.currentTurn?.darts?.[correctionDartIndex];
+
+        // If no dart at this index, use manual entry instead of correct
+        if (!originalDart) {
+            const { segment, score, display } = getSegmentAndScore();
+            if (segment === 0 && correctionInput === '') return;
+            try {
+                const resp = await fetch(`/api/games/${currentGame.id}/manual`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ segment: segment, multiplier: correctionMultiplier })
+                });
+                if (resp.ok) {
+                    const result = await resp.json();
+                    currentGame = result.game;
+                    updateScoreboard();
+                    updateCurrentTurn();
+                }
+            } catch (e) { console.error('Manual dart failed:', e); }
+            closeCorrectionModal();
+            return;
+        }
     const originalSegment = originalDart?.segment || 0;
     const originalMultiplier = originalDart?.multiplier || 1;
     const originalScore = originalDart?.score || 0;
@@ -1301,26 +1608,7 @@ async function submitCorrection() {
         };
         
         // Log to centralized system
-        log.info('Correction', `Corrected dart ${correctionDartIndex}: ${correctionLog.original.zone} ${correctionLog.original.segment} → ${correctionLog.corrected.display}`, correctionLog);
-        
-        // Send correction to DartDetect benchmark system
-        try {
-            await fetch(`${DETECT_API}/v1/benchmark/correction`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    game_id: currentGame.id,
-                    dart_number: correctionDartIndex + 1,  // 1-indexed for API
-                    original_segment: originalSegment,
-                    original_multiplier: originalMultiplier,
-                    corrected_segment: segment,
-                    corrected_multiplier: correctionMultiplier
-                })
-            });
-            console.log(`[BENCHMARK] Correction sent to DartDetect`);
-        } catch (e) {
-            console.warn('[BENCHMARK] Failed to send correction to DartDetect:', e);
-        }
+        log.info('Correction', `Corrected dart ${correctionDartIndex}: ${correctionLog.original.zone} ${correctionLog.original.segment} ? ${correctionLog.corrected.display}`, correctionLog);
         
         // Store corrections in localStorage for later export
         try {
@@ -1412,6 +1700,58 @@ async function removeFalseDart() {
     }
 }
 
+async function markBounceOut() {
+    // Mark this dart as "bounce out" - excluded from benchmark training data
+    // The dart still happened (scores as 0/miss) but shouldn't be used for detection training
+    if (correctionDartIndex === null || !currentGame) {
+        return;
+    }
+    
+    const dart = currentGame.currentTurn?.darts?.[correctionDartIndex];
+    
+    try {
+        // Call benchmark API to mark as excluded
+        await fetch(`${DETECT_API}/v1/benchmark/exclude-dart`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                game_id: currentGame.id,
+                dart_index: correctionDartIndex,
+                reason: 'bounce_out'
+            })
+        }).catch(() => {}); // Don't fail if DartDetect is down
+        
+        // Also correct the dart to MISS (score 0) since it bounced out
+        const response = await fetch(`/api/games/${currentGame.id}/correct`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                dartIndex: correctionDartIndex,
+                segment: 0,
+                multiplier: 1
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            currentGame = result.game;
+        }
+        
+        log.info('BounceOut', `Marked dart ${correctionDartIndex} as bounce out - excluded from benchmark`, { 
+            dart, gameId: currentGame.id 
+        });
+        
+        updateScoreboard();
+        updateCurrentTurn();
+        closeCorrectionModal();
+        
+    } catch (e) {
+        console.error('Bounce out error:', e);
+        log.error('BounceOut', 'Failed to mark bounce out', { error: e.message });
+        alert('Failed to mark dart as bounce out');
+    }
+}
+
 // ==========================================================================
 // Player Management
 // ==========================================================================
@@ -1478,7 +1818,7 @@ function addPlayerRow() {
     row.className = 'player-row';
     row.innerHTML = `
         <input type="text" class="player-input" placeholder="Player ${count}">
-        <button class="btn-remove-player" title="Remove">✕</button>
+        <button class="btn-remove-player" title="Remove">?</button>
     `;
     list.appendChild(row);
 }
@@ -1494,7 +1834,7 @@ function addBotPlayer() {
     row.className = 'player-row';
     row.innerHTML = `
         <input type="text" class="player-input" value="${botName}" data-is-bot="true">
-        <button class="btn-remove-player" title="Remove">✕</button>
+        <button class="btn-remove-player" title="Remove">?</button>
     `;
     list.appendChild(row);
 }
@@ -1574,7 +1914,7 @@ async function loadRegisteredPlayers() {
                     <div class="nickname">${escapeHtml(p.nickname)}</div>
                     <div class="stats">${p.gamesPlayed || 0} games played</div>
                 </div>
-                <span class="check">✓</span>
+                <span class="check">?</span>
             </div>
         `).join('');
         
@@ -1613,7 +1953,7 @@ function applySelectedPlayers() {
         row.className = 'player-row';
         row.innerHTML = `
             <input type="text" class="player-input" value="${escapeHtml(player.nickname)}" data-player-id="${player.id}">
-            ${i > 0 ? '<button class="btn-remove-player" title="Remove">✕</button>' : ''}
+            ${i > 0 ? '<button class="btn-remove-player" title="Remove">?</button>' : ''}
         `;
         list.appendChild(row);
     });
@@ -1722,7 +2062,7 @@ async function toggleLookingForMatch(e) {
             await connectOnlineHub();
             await onlineConnection.invoke('JoinMatchmakingQueue', 'Game501', 'anyone', null, null);
             if (statusEl) {
-                statusEl.textContent = '🔍 Searching for opponent...';
+                statusEl.textContent = '?? Searching for opponent...';
                 statusEl.classList.add('active');
             }
         } catch (err) {
@@ -1794,7 +2134,7 @@ async function connectOnlineHub() {
     });
 
     onlineConnection.on('LegWon', (data) => {
-        addChatMessage('System', `🎯 ${data.winnerName} won the leg!`);
+        addChatMessage('System', `?? ${data.winnerName} won the leg!`);
     });
 
     onlineConnection.on('MatchWon', (data) => {
@@ -1913,7 +2253,7 @@ function displayOpenMatches(matches) {
         <div class="open-match" onclick="joinOnlineMatch('${m.matchCode}')">
             <div class="match-info">
                 <span class="match-host">${escapeHtml(m.hostName)}'s Game</span>
-                <span class="match-mode">${formatMode(m.gameMode)} • Best of ${m.bestOf}</span>
+                <span class="match-mode">${formatMode(m.gameMode)} � Best of ${m.bestOf}</span>
             </div>
             <button class="btn-join">Join</button>
         </div>
@@ -2074,3 +2414,105 @@ function getCorrections() {
 window.exportCorrections = exportCorrections;
 window.clearCorrections = clearCorrections;
 window.getCorrections = getCorrections;
+
+
+
+// ==========================================================================
+// Dart Not Detected
+// ==========================================================================
+// When a dart is thrown but the cameras don't detect it, this button
+// opens the correction modal so the player can manually enter the score.
+// The dart is submitted as a manual throw to keep dart count in sync.
+// This preserves benchmark data integrity - we know a dart was missed.
+
+function dartNotDetected() {
+    if (!currentGame || currentGame.state !== 1) {
+        console.log('[NOT-DETECTED] No active game');
+        return;
+    }
+    
+    const dartsThrown = currentGame.currentTurn?.darts?.length || 0;
+    if (dartsThrown >= 3) {
+        console.log('[NOT-DETECTED] Already 3 darts this turn');
+        return;
+    }
+    
+    console.log('[NOT-DETECTED] Opening correction modal for undetected dart ' + (dartsThrown + 1));
+    
+    // Set up correction state for next dart index
+    correctionDartIndex = dartsThrown;  // 0, 1, or 2
+    correctionInput = '';
+    correctionMultiplier = 1;
+    
+    // Flag this as a "not detected" manual entry (not a correction of existing dart)
+    window._notDetectedMode = true;
+    
+    // Update modal title to indicate this is a manual entry
+    const modalTitle = document.querySelector('#dart-correction-modal .modal-title');
+    if (modalTitle) {
+        modalTitle.textContent = '?? Dart Not Detected - Enter Score';
+    }
+    
+    // Open the correction modal
+    const modal = document.getElementById('dart-correction-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        updateCorrectionDisplay();
+    }
+}
+
+// Override submitCorrection to handle not-detected mode
+const _originalSubmitCorrection = typeof submitCorrection === 'function' ? submitCorrection : null;
+
+// ===== Dart Not Found Toast =====
+// Shows a toast notification when DartSensor detects motion but DartDetect
+// can't find a dart. Prompts the user to use the manual entry button.
+function handleDartNotFound(data) {
+    console.log('Motion detected but no dart found');
+    showToast('Dart not scored \u2014 use \ud83d\udeab to enter manually', 'warning');
+}
+
+// ===== Toast Notification Helper =====
+// Creates a temporary floating notification that auto-dismisses after 3 seconds.
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        border-radius: 8px;
+        color: white;
+        font-weight: bold;
+        z-index: 10000;
+        animation: fadeInOut 3s ease-in-out;
+        background: ${type === 'warning' ? '#e67e22' : '#3498db'};
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+
+// Toggle camera image viewer in correction modal
+function toggleCorrectionCamView() {
+    const viewer = document.getElementById('correction-cam-viewer');
+    if (!viewer) return;
+    
+    if (viewer.style.display === 'none') {
+        viewer.style.display = 'block';
+        // Load live snapshots from each camera
+        const SENSOR_URL = 'http://192.168.0.158:8001';
+        for (let i = 0; i < 3; i++) {
+            const img = document.getElementById('correction-cam' + i);
+            if (img) {
+                img.src = SENSOR_URL + '/v1/camera/preview?camera=' + i + '&t=' + Date.now();
+            }
+        }
+    } else {
+        viewer.style.display = 'none';
+    }
+}

@@ -2495,3 +2495,24 @@ function showToast(message, type = 'info') {
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
+
+
+// Toggle camera image viewer in correction modal
+function toggleCorrectionCamView() {
+    const viewer = document.getElementById('correction-cam-viewer');
+    if (!viewer) return;
+    
+    if (viewer.style.display === 'none') {
+        viewer.style.display = 'block';
+        // Load live snapshots from each camera
+        const SENSOR_URL = 'http://192.168.0.158:8001';
+        for (let i = 0; i < 3; i++) {
+            const img = document.getElementById('correction-cam' + i);
+            if (img) {
+                img.src = SENSOR_URL + '/v1/camera/preview?camera=' + i + '&t=' + Date.now();
+            }
+        }
+    } else {
+        viewer.style.display = 'none';
+    }
+}

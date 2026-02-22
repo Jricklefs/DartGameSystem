@@ -456,10 +456,29 @@
             
             <!-- Action buttons -->
             <div class="correction-actions">
+                <button id="correction-show-cams" class="btn btn-secondary" onclick="toggleCorrectionCamView()" title="View what cameras saw">📷 View</button>
                 <button id="correction-bounceout" class="btn btn-danger" title="Dart bounced out - exclude from benchmark">🚫 Bounce</button>
-                <button id="correction-false" class="btn btn-danger">False</button>
+                <button id="correction-false" class="btn btn-danger">👻 Phantom</button>
                 <button id="correction-clear" class="btn btn-warning">Clear</button>
                 <button id="correction-cancel" class="btn btn-secondary">Cancel</button>
+            </div>
+            <!-- Camera image viewer for phantom/error analysis -->
+            <div id="correction-cam-viewer" style="display: none; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
+                <div style="display: flex; gap: 5px; flex-wrap: wrap; justify-content: center;">
+                    <div style="flex: 1; min-width: 200px; text-align: center;">
+                        <div style="color: #d4af37; font-size: 11px; margin-bottom: 4px;">CAM 0</div>
+                        <img id="correction-cam0" style="width: 100%; border-radius: 4px; border: 1px solid #333;" alt="">
+                    </div>
+                    <div style="flex: 1; min-width: 200px; text-align: center;">
+                        <div style="color: #d4af37; font-size: 11px; margin-bottom: 4px;">CAM 1</div>
+                        <img id="correction-cam1" style="width: 100%; border-radius: 4px; border: 1px solid #333;" alt="">
+                    </div>
+                    <div style="flex: 1; min-width: 200px; text-align: center;">
+                        <div style="color: #d4af37; font-size: 11px; margin-bottom: 4px;">CAM 2</div>
+                        <img id="correction-cam2" style="width: 100%; border-radius: 4px; border: 1px solid #333;" alt="">
+                    </div>
+                </div>
+            </div
                 <button id="correction-confirm" class="btn btn-primary">Enter</button>
             </div>
         </div>
