@@ -3755,3 +3755,29 @@ origNavTabs.forEach(tab => {
         }
     });
 });
+
+
+async function saveCameraSettings() {
+    const btn = document.getElementById('save-cam-btn');
+    const status = document.getElementById('cam-settings-status');
+    btn.disabled = true;
+    status.textContent = 'Saving...';
+    status.style.color = 'var(--gold)';
+    
+    try {
+        const resp = await fetch(DART_SENSOR_URL + '/v1/camera/save', { method: 'POST' });
+        const data = await resp.json();
+        if (data.status === 'saved') {
+            status.textContent = 'Settings saved! Will persist across restarts.';
+            status.style.color = '#4caf50';
+        } else {
+            status.textContent = 'Save failed: ' + (data.error || 'unknown');
+            status.style.color = '#f44336';
+        }
+    } catch (e) {
+        status.textContent = 'Save failed: DartSensor not reachable';
+        status.style.color = '#f44336';
+    }
+    btn.disabled = false;
+    setTimeout(() => { status.textContent = ''; }, 3000);
+}
