@@ -9,6 +9,7 @@
 #include <map>
 #include <cmath>
 #include <set>
+#include <opencv2/calib3d.hpp>
 
 // ============================================================================
 // TPS (Thin-Plate Spline) Transform
@@ -314,30 +315,44 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         double vx = det.pca_line->vx, vy = det.pca_line->vy;
         double x0 = det.pca_line->x0, y0 = det.pca_line->y0;
         
-        // Multi-point TPS line sampling: warp ~21 points along barrel,
-        // then fitLine in normalized space for accurate warped direction.
-        int img_w = 0, img_h = 0;
-        for (int si = 0; si < tps.src_points.rows; ++si) {
-            img_w = std::max(img_w, (int)(tps.src_points.at<double>(si, 0) * 1.2));
-            img_h = std::max(img_h, (int)(tps.src_points.at<double>(si, 1) * 1.2));
+        // === EXPERIMENT: Homography warp instead of TPS multi-point ===
+        cv::Mat H_mat;
+        {
+            std::vector<cv::Point2f> sv, dv;
+            for (int hi = 0; hi < tps.src_points.rows; ++hi) {
+                sv.push_back(cv::Point2f((float)tps.src_points.at<double>(hi, 0),
+                                          (float)tps.src_points.at<double>(hi, 1)));
+                dv.push_back(cv::Point2f((float)tps.dst_points.at<double>(hi, 0),
+                                          (float)tps.dst_points.at<double>(hi, 1)));
+            }
+            H_mat = cv::findHomography(sv, dv, cv::RANSAC, 5.0);
         }
-        if (img_w < 100) img_w = 1920;
-        if (img_h < 100) img_h = 1080;
-        
+
         double extent = 200.0;
         std::vector<cv::Point2f> warped_sample_pts;
         const int N_SAMPLES = 21;
-        for (int t = 0; t < N_SAMPLES; ++t) {
-            double frac = (double)t / (N_SAMPLES - 1);
-            double dist_back = extent * (1.0 - frac);
-            double px = det.tip->x - vx * dist_back;
-            double py = det.tip->y - vy * dist_back;
-            px = std::max(0.0, std::min(px, (double)(img_w - 1)));
-            py = std::max(0.0, std::min(py, (double)(img_h - 1)));
-            Point2f wp = warp_point(tps, px, py);
-            warped_sample_pts.push_back(cv::Point2f(wp.x, wp.y));
-        }
         
+        if (!H_mat.empty()) {
+            std::vector<cv::Point2f> src_pts_h;
+            for (int t = 0; t < N_SAMPLES; ++t) {
+                double frac = (double)t / (N_SAMPLES - 1);
+                double dist_back = extent * (1.0 - frac);
+                src_pts_h.push_back(cv::Point2f(
+                    (float)(det.tip->x - vx * dist_back),
+                    (float)(det.tip->y - vy * dist_back)));
+            }
+            cv::perspectiveTransform(src_pts_h, warped_sample_pts, H_mat);
+        } else {
+            for (int t = 0; t < N_SAMPLES; ++t) {
+                double frac = (double)t / (N_SAMPLES - 1);
+                double dist_back = extent * (1.0 - frac);
+                double px = det.tip->x - vx * dist_back;
+                double py = det.tip->y - vy * dist_back;
+                Point2f wp = warp_point(tps, px, py);
+                warped_sample_pts.push_back(cv::Point2f(wp.x, wp.y));
+            }
+        }
+
         Point2f tip_n = warp_point(tps, det.tip->x, det.tip->y);
         cv::Vec4f warped_line_fit;
         cv::fitLine(warped_sample_pts, warped_line_fit, cv::DIST_HUBER, 0, 0.01, 0.01);
