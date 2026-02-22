@@ -310,9 +310,19 @@ DD_API const char* dd_detect(
     for (const auto& task : tasks) {
         futures.push_back(std::async(std::launch::async,
             [&, task]() -> std::optional<CameraResult> {
-                cv::Mat current = decode_image(current_images[task.index], current_sizes[task.index]);
-                cv::Mat before = decode_image(before_images[task.index], before_sizes[task.index]);
-                if (current.empty() || before.empty()) return std::nullopt;
+                cv::Mat current_raw = decode_image(current_images[task.index], current_sizes[task.index]);
+                cv::Mat before_raw = decode_image(before_images[task.index], before_sizes[task.index]);
+                if (current_raw.empty() || before_raw.empty()) return std::nullopt;
+                
+                // Unsharp mask sharpening for better edge detection
+                cv::Mat current, before;
+                {
+                    cv::Mat blur_c, blur_b;
+                    cv::GaussianBlur(current_raw, blur_c, cv::Size(0, 0), 3.0);
+                    cv::GaussianBlur(before_raw, blur_b, cv::Size(0, 0), 3.0);
+                    cv::addWeighted(current_raw, 1.0 + 0.7, blur_c, -0.7, 0, current);
+                    cv::addWeighted(before_raw, 1.0 + 0.7, blur_b, -0.7, 0, before);
+                }
 
                 // Phase 3 (Change 4): Compute resolution scale from image height
                 double res_scale = compute_resolution_scale(current.rows);
