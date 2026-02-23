@@ -29,7 +29,7 @@
 
 #include "dart_detect_internal.h"
 // Zhang-Suen thinning (replaces cv::ximgproc::thinning to avoid contrib dependency)
-// Phase 3: Optimized ΓÇö compute bounding rect of non-zero pixels, iterate only within it,
+// Phase 3: Optimized — compute bounding rect of non-zero pixels, iterate only within it,
 // use ptr<uchar> row access instead of .at<uchar>(row, col) for inner loop.
 namespace {
 void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
@@ -368,100 +368,10 @@ DetectionResult detect_dart(
     }
     
     if (mask_pixels > 50) {
-        // === Eccentricity-based blob filtering (pre-step) ===
+        // === Width-profile barrel splitting ===
         cv::Mat barrel_mask;
-        bool eccentricity_filtered = false;
         
-        {
-            std::vector<std::vector<cv::Point>> ecc_contours;
-            cv::findContours(motion_mask.clone(), ecc_contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-            
-            if ((int)ecc_contours.size() >= 2) {
-                // Compute eccentricity for each blob
-                struct BlobInfo {
-                    int idx;
-                    double eccentricity;
-                    double area;
-                    cv::Point2f centroid;
-                    std::vector<cv::Point> contour;
-                };
-                std::vector<BlobInfo> elongated_blobs;
-                
-                for (int ci = 0; ci < (int)ecc_contours.size(); ++ci) {
-                    double area = cv::contourArea(ecc_contours[ci]);
-                    if (area < 30) continue;  // skip tiny noise
-                    
-                    double ecc = 1.0;
-                    if ((int)ecc_contours[ci].size() >= 5) {
-                        cv::RotatedRect rr = cv::minAreaRect(ecc_contours[ci]);
-                        double major = std::max(rr.size.width, rr.size.height);
-                        double minor = std::min(rr.size.width, rr.size.height);
-                        if (minor > 0) ecc = major / minor;
-                    }
-                    
-                    cv::Moments m = cv::moments(ecc_contours[ci]);
-                    cv::Point2f cent(0, 0);
-                    if (m.m00 > 0) cent = cv::Point2f((float)(m.m10 / m.m00), (float)(m.m01 / m.m00));
-                    
-                    if (ecc > 2.0) {
-                        elongated_blobs.push_back({ci, ecc, area, cent, ecc_contours[ci]});
-                    }
-                }
-                
-                if (!elongated_blobs.empty()) {
-                    // Pick the elongated blob closest to board center
-                    int best_idx = 0;
-                    double best_dist = 1e18;
-                    for (int i = 0; i < (int)elongated_blobs.size(); ++i) {
-                        double dx = elongated_blobs[i].centroid.x - board_center.x;
-                        double dy = elongated_blobs[i].centroid.y - board_center.y;
-                        double d = dx*dx + dy*dy;
-                        if (d < best_dist) { best_dist = d; best_idx = i; }
-                    }
-                    
-                    // Create barrel-only mask from the selected blob
-                    cv::Mat ecc_barrel_mask = cv::Mat::zeros(motion_mask.size(), CV_8U);
-                    cv::drawContours(ecc_barrel_mask, std::vector<std::vector<cv::Point>>{elongated_blobs[best_idx].contour}, 0, cv::Scalar(255), -1);
-                    
-                    int ecc_pixels = cv::countNonZero(ecc_barrel_mask);
-                    if (ecc_pixels > 50) {
-                        barrel_mask = ecc_barrel_mask;
-                        
-                        // Compute barrel_info from the filtered blob
-                        std::vector<cv::Point> bp;
-                        cv::findNonZero(barrel_mask, bp);
-                        double bxs = 0, bys = 0;
-                        for (auto& p : bp) { bxs += p.x; bys += p.y; }
-                        double bcx = bxs / bp.size(), bcy = bys / bp.size();
-                        
-                        // Pivot = point farthest from board center along barrel
-                        double pvx = bcx, pvy = bcy;
-                        double max_board_dist = 0;
-                        for (auto& p : bp) {
-                            double dx = p.x - board_center.x;
-                            double dy = p.y - board_center.y;
-                            double d = dx*dx + dy*dy;
-                            if (d > max_board_dist) { max_board_dist = d; pvx = p.x; pvy = p.y; }
-                        }
-                        
-                        barrel_info = BarrelInfo{Point2f(bcx, bcy), Point2f(pvx, pvy), ecc_pixels};
-                        
-                        // Compute aspect ratio
-                        if ((int)bp.size() >= 5) {
-                            cv::RotatedRect rr = cv::minAreaRect(bp);
-                            double ls = std::max(rr.size.width, rr.size.height);
-                            double ss = std::min(rr.size.width, rr.size.height) + 1.0;
-                            result.barrel_aspect_ratio = ls / ss;
-                        }
-                        
-                        eccentricity_filtered = true;
-                    }
-                }
-            }
-        }
-        
-        // === Width-profile barrel splitting (only if eccentricity filter didn't produce a barrel mask) ===
-        if (!eccentricity_filtered && flight) {
+        if (flight) {
             std::vector<cv::Point> dart_pts;
             cv::findNonZero(motion_mask, dart_pts);
             
@@ -951,11 +861,6 @@ DetectionResult detect_dart(
             }
         }
         
-        // Tag eccentricity-filtered results
-        if (eccentricity_filtered && pca_line) {
-            pca_line->method = "eccentricity_" + pca_line->method;
-        }
-        
         // === Fallback: Full mask skeleton + Hough ===
         if (!pca_line) {
             std::vector<std::vector<cv::Point>> contours_skel;
@@ -1300,3 +1205,4 @@ DetectionResult detect_dart(
     
     return result;
 }
+
