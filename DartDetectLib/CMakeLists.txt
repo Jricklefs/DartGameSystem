@@ -12,6 +12,7 @@ find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs)
 add_library(DartDetectLib SHARED
     src/dart_detect.cpp
     src/skeleton.cpp
+    src/pca_detection.cpp
     src/scoring.cpp
     src/triangulation.cpp
     src/mask.cpp

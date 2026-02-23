@@ -474,6 +474,93 @@ DD_API const char* dd_detect(
                 first_det = false;
             }
             json << "}";
+            
+            // === PCA DUAL PIPELINE ===
+            // Run PCA barrel detection on same enhanced images
+            {
+                std::map<std::string, std::optional<PcaLine>> pca_lines;
+                for (const auto& [cam_id, det] : camera_results) {
+                    // Re-detect with PCA on the already-enhanced images
+                    // We need the enhanced current/before - reconstruct from detection
+                    // Actually, run PCA detection using same frames
+                    auto cal_it = active_cals.find(cam_id);
+                    if (cal_it == active_cals.end()) continue;
+                    
+                    // Find the camera index to get images
+                    int cam_idx = -1;
+                    for (const auto& t : tasks) {
+                        if (t.cam_id == cam_id) { cam_idx = t.index; break; }
+                    }
+                    if (cam_idx < 0) continue;
+                    
+                    // Decode and enhance images (same pipeline as main detection)
+                    cv::Mat cur_raw = decode_image(current_images[cam_idx], current_sizes[cam_idx]);
+                    cv::Mat bef_raw = decode_image(before_images[cam_idx], before_sizes[cam_idx]);
+                    if (cur_raw.empty() || bef_raw.empty()) continue;
+                    
+                    cv::Mat cur_enh, bef_enh;
+                    {
+                        cv::Mat bc, bb;
+                        cv::GaussianBlur(cur_raw, bc, cv::Size(0,0), 3.0);
+                        cv::GaussianBlur(bef_raw, bb, cv::Size(0,0), 3.0);
+                        cv::addWeighted(cur_raw, 1.7, bc, -0.7, 0, cur_enh);
+                        cv::addWeighted(bef_raw, 1.7, bb, -0.7, 0, bef_enh);
+                    }
+                    {
+                        cv::Mat lut(1, 256, CV_8U);
+                        for (int i = 0; i < 256; i++)
+                            lut.at<uchar>(0, i) = cv::saturate_cast<uchar>(255.0 * std::pow(i / 255.0, 0.6));
+                        cv::LUT(cur_enh, lut, cur_enh);
+                        cv::LUT(bef_enh, lut, bef_enh);
+                    }
+                    {
+                        cv::Mat hc, hb;
+                        cv::cvtColor(cur_enh, hc, cv::COLOR_BGR2HSV);
+                        cv::cvtColor(bef_enh, hb, cv::COLOR_BGR2HSV);
+                        std::vector<cv::Mat> cc, cb;
+                        cv::split(hc, cc); cv::split(hb, cb);
+                        cc[1] = cc[1] * 0.5; cb[1] = cb[1] * 0.5;
+                        cv::merge(cc, hc); cv::merge(cb, hb);
+                        cv::cvtColor(hc, cur_enh, cv::COLOR_HSV2BGR);
+                        cv::cvtColor(hb, bef_enh, cv::COLOR_HSV2BGR);
+                    }
+                    
+                    pca_lines[cam_id] = detect_barrel_pca(cur_enh, bef_enh);
+                }
+                
+                auto pca_tri = triangulate_pca(pca_lines, active_cals);
+                
+                json << ","pca_result":{";
+                if (pca_tri) {
+                    json << json_int("segment", pca_tri->segment) << ","
+                         << json_int("multiplier", pca_tri->multiplier) << ","
+                         << json_int("score", pca_tri->score) << ","
+                         << json_string("method", pca_tri->method) << ","
+                         << json_double("confidence", pca_tri->confidence);
+                    
+                    // Per-camera PCA elongation
+                    json << ","cameras":{";
+                    bool pf = true;
+                    for (const auto& [cid, pl] : pca_lines) {
+                        if (!pf) json << ",";
+                        if (pl) {
+                            json << """ << cid << "":{" 
+                                 << json_double("elongation", pl->elongation) << ","
+                                 << json_string("method", pl->method)
+                                 << "}";
+                        } else {
+                            json << """ << cid << "":{"elongation":0}";
+                        }
+                        pf = false;
+                    }
+                    json << "}";
+                } else {
+                    json << json_string("method", "no_pca") << ","
+                         << json_int("segment", 0) << ","
+                         << json_int("multiplier", 0);
+                }
+                json << "}";
+            }
         } else {
             goto single_camera;
         }

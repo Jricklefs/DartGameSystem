@@ -309,4 +309,23 @@ bool parse_calibrations(const std::string& json,
 // Decode image bytes (JPEG/PNG) into cv::Mat
 cv::Mat decode_image(const unsigned char* data, int size);
 
+
+// ============================================================================
+// Module: pca_detection.h - PCA barrel line detection (dual pipeline)
+// ============================================================================
+
+std::optional<PcaLine> detect_barrel_pca(
+    const cv::Mat& current,
+    const cv::Mat& previous,
+    double otsu_fraction = 0.26,
+    int morph_kernel_size = 5,
+    double min_elongation = 2.0,
+    int min_contour_area = 50
+);
+
+std::optional<IntersectionResult> triangulate_pca(
+    const std::map<std::string, std::optional<PcaLine>>& pca_lines,
+    const std::map<std::string, CameraCalibration>& calibrations
+);
+
 #endif /* DART_DETECT_INTERNAL_H */
