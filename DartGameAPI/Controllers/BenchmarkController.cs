@@ -22,6 +22,7 @@ public class BenchmarkController : ControllerBase
     {
         _settings = settings;
         _logger = logger;
+        _dartDetect = dartDetect;
     }
 
     /// <summary>

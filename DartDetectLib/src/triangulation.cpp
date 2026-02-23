@@ -510,10 +510,21 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         confidence = 0.5;
     }
     
-    // Miss detection: board-edge override
-    // Only override to miss if ALL cameras see tip clearly off-board (>1.05)
-    // Previous threshold (>1.0 for 1 cam + >0.95 for 2) killed valid doubles
-    // since doubles legitimately sit at normalized distance 0.953-1.000
+    // Miss detection: two independent checks
+    // Check 1: If selected intersection is far off-board (>1.3 norm dist), force miss
+    if (best->ix_dist > 1.3) {
+        IntersectionResult result;
+        result.segment = 0; result.multiplier = 0; result.score = 0;
+        result.method = "MissOverride_IxDist";
+        result.confidence = 0.7;
+        result.coords = best->coords;
+        result.total_error = best->total_error;
+        for (const auto& [cam_id, data] : cam_lines)
+            result.per_camera[cam_id] = data.vote;
+        return result;
+    }
+    // Check 2: For doubles, if ALL cameras see tip off-board, force miss
+    // (doubles at board edge are most prone to surround dart false positives)
     if (best->score.multiplier == 2) {
         int off_board_count = 0;
         int total_cams = 0;
@@ -522,10 +533,9 @@ const TpsTransform& tps = cal_it->second.tps_cache;
             if (data.tip_dist > 1.05) ++off_board_count;
         }
         if (off_board_count == total_cams && total_cams >= 2) {
-            // Override to miss
             IntersectionResult result;
-            result.segment = 0; result.multiplier = 1; result.score = 0;
-            result.method = "MissOverride";
+            result.segment = 0; result.multiplier = 0; result.score = 0;
+            result.method = "MissOverride_AllCams";
             result.confidence = 0.7;
             result.coords = best->coords;
             result.total_error = best->total_error;
