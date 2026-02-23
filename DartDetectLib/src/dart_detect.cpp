@@ -530,7 +530,7 @@ DD_API const char* dd_detect(
                 
                 auto pca_tri = triangulate_pca(pca_lines, active_cals);
                 
-                json << ","pca_result":{";
+                json << ",\"pca_result\":{";
                 if (pca_tri) {
                     json << json_int("segment", pca_tri->segment) << ","
                          << json_int("multiplier", pca_tri->multiplier) << ","
@@ -539,17 +539,17 @@ DD_API const char* dd_detect(
                          << json_double("confidence", pca_tri->confidence);
                     
                     // Per-camera PCA elongation
-                    json << ","cameras":{";
+                    json << ",\"cameras\":{";
                     bool pf = true;
                     for (const auto& [cid, pl] : pca_lines) {
                         if (!pf) json << ",";
                         if (pl) {
-                            json << """ << cid << "":{" 
+                            json << "\"" << cid << "\":{" 
                                  << json_double("elongation", pl->elongation) << ","
                                  << json_string("method", pl->method)
                                  << "}";
                         } else {
-                            json << """ << cid << "":{"elongation":0}";
+                            json << "\"" << cid << "\":{\"elongation\":0}";
                         }
                         pf = false;
                     }
