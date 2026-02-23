@@ -21,6 +21,7 @@ public class GamesController : ControllerBase
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly BenchmarkService _benchmark;
     private readonly X01GameEngine _x01Engine;
+    private readonly CricketGameEngine _cricketEngine;
 
     public GamesController(
         GameService gameService, 
@@ -30,7 +31,8 @@ public class GamesController : ControllerBase
         ILogger<GamesController> logger,
         IHttpClientFactory httpClientFactory,
         BenchmarkService benchmark,
-        X01GameEngine x01Engine)
+        X01GameEngine x01Engine,
+        CricketGameEngine cricketEngine)
     {
         _gameService = gameService;
         _dartDetect = dartDetect;
@@ -40,6 +42,7 @@ public class GamesController : ControllerBase
         _httpClientFactory = httpClientFactory;
         _benchmark = benchmark;
         _x01Engine = x01Engine;
+        _cricketEngine = cricketEngine;
     }
 
     // ===== HUB ENDPOINT - Receives images from DartSensor =====
@@ -137,6 +140,8 @@ public class GamesController : ControllerBase
 
             if (game.IsX01Engine)
                 _x01Engine.ProcessDart(game, missDart);
+            else if (game.IsCricketEngine)
+                _cricketEngine.ProcessDart(game, missDart);
             else
                 _gameService.ApplyManualDart(game, missDart);
             
@@ -529,8 +534,13 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
             _dartDetect.InitBoard(boardId);
 
             Game game;
+            // Cricket games
+            if (request.Mode == GameMode.Cricket || request.Mode == GameMode.CricketCutthroat)
+            {
+                game = _gameService.CreateGame(boardId, request.Mode, request.PlayerNames, request.BestOf);
+            }
             // Use full MatchConfig when X01-specific options are provided
-            if (request.StartingScore > 0 || request.DoubleIn || request.MasterOut || request.SetsEnabled ||
+            else if (request.StartingScore > 0 || request.DoubleIn || request.MasterOut || request.SetsEnabled ||
                 request.Mode == GameMode.X01)
             {
                 var config = new MatchConfig

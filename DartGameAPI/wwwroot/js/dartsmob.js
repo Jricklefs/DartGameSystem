@@ -433,18 +433,24 @@ function updateScoreboard() {
     const scoreboard = document.getElementById('scoreboard');
     if (!scoreboard) return;
     
-    scoreboard.innerHTML = currentGame.players.map((player, idx) => `
-        <div class="player-card ${idx === currentGame.currentPlayerIndex ? 'active' : ''}">
-            <div class="player-info">
-                <span class="player-name">${escapeHtml(player.name)}</span>
-                <div class="player-stats">
-                    <span>${player.dartsThrown} darts</span>
-                    ${currentGame.legsToWin > 1 ? `<span class="legs">Legs: ${player.legsWon}</span>` : ''}
+    // Cricket-specific scoreboard
+    const mode = currentGame.mode;
+    if (mode === 'Cricket' || mode === 'CricketCutthroat' || mode === 4 || mode === 5) {
+        renderCricketScoreboard(scoreboard);
+    } else {
+        scoreboard.innerHTML = currentGame.players.map((player, idx) => `
+            <div class="player-card ${idx === currentGame.currentPlayerIndex ? 'active' : ''}">
+                <div class="player-info">
+                    <span class="player-name">${escapeHtml(player.name)}</span>
+                    <div class="player-stats">
+                        <span>${player.dartsThrown} darts</span>
+                        ${currentGame.legsToWin > 1 ? `<span class="legs">Legs: ${player.legsWon}</span>` : ''}
+                    </div>
                 </div>
+                <span class="player-score">${player.score}</span>
             </div>
-            <span class="player-score">${player.score}</span>
-        </div>
-    `).join('');
+        `).join('');
+    }
     
     // Update header
     document.getElementById('game-mode-display').textContent = formatMode(currentGame.mode);
@@ -1060,11 +1066,11 @@ const gameConfig = {
     cricket: {
         label: '?? Cricket',
         variants: [
-            { value: 'CricketStandard', label: 'Standard' },
-            { value: 'CricketCutThroat', label: 'Cut-Throat' },
+            { value: 'Cricket', label: 'Standard' },
+            { value: 'CricketCutthroat', label: 'Cut-Throat' },
             { value: 'CricketNoPoints', label: 'No Points (Close Only)' }
         ],
-        defaultVariant: 'CricketStandard',
+        defaultVariant: 'Cricket',
         rules: []
     },
     around: {
@@ -1318,8 +1324,8 @@ function formatMode(mode) {
         case 'CountUp':
         case 'HighScore':
             return 'PRACTICE';
-        case 'CricketStandard': return 'CRICKET';
-        case 'CricketCutThroat': return 'CUT-THROAT';
+        case 'Cricket': return 'CRICKET';
+        case 'CricketCutthroat': return 'CUT-THROAT';
         case 'AroundTheClock': return 'AROUND';
         case 'Shanghai': return 'SHANGHAI';
         case 'Killer': return 'KILLER';
@@ -2547,4 +2553,81 @@ function toggleCorrectionCamView() {
     } else {
         viewer.style.display = 'none';
     }
+}
+
+// ==========================================================================
+// Cricket Scoreboard
+// ==========================================================================
+
+const CRICKET_NUMBERS = [20, 19, 18, 17, 16, 15, 25];
+const CRICKET_LABELS = ['20', '19', '18', '17', '16', '15', 'BULL'];
+
+function getCricketMarkSymbol(count) {
+    if (count <= 0) return '';
+    if (count === 1) return '/';
+    if (count === 2) return 'X';
+    return '⊗'; // closed (3+)
+}
+
+function getCricketMarkClass(count) {
+    if (count <= 0) return 'mark-0';
+    if (count === 1) return 'mark-1';
+    if (count === 2) return 'mark-2';
+    return 'mark-3';
+}
+
+function renderCricketScoreboard(scoreboard) {
+    if (!currentGame || !currentGame.cricketState) {
+        scoreboard.innerHTML = '<p style="color:#aaa;text-align:center;">Waiting for cricket state...</p>';
+        return;
+    }
+
+    const players = currentGame.players || [];
+    const marks = currentGame.cricketState.marks || {};
+    const isCutthroat = currentGame.cricketState.isCutthroat;
+
+    // Build cricket table
+    let html = '<div class="cricket-board">';
+    
+    // Header row with numbers
+    html += '<div class="cricket-header">';
+    html += '<div class="cricket-cell cricket-player-header">PLAYER</div>';
+    CRICKET_LABELS.forEach(label => {
+        html += `<div class="cricket-cell cricket-number-header">${label}</div>`;
+    });
+    html += '<div class="cricket-cell cricket-score-header">PTS</div>';
+    html += '</div>';
+
+    // Player rows
+    players.forEach((player, idx) => {
+        const isActive = idx === currentGame.currentPlayerIndex;
+        const playerMarks = marks[player.id] || {};
+        
+        html += `<div class="cricket-row ${isActive ? 'cricket-active' : ''}">`;
+        html += `<div class="cricket-cell cricket-player-name">
+            <span class="cricket-name">${escapeHtml(player.name)}</span>
+            ${currentGame.legsToWin > 1 ? `<span class="cricket-legs">${player.legsWon}L</span>` : ''}
+        </div>`;
+        
+        CRICKET_NUMBERS.forEach(num => {
+            const count = playerMarks[num] || 0;
+            const symbol = getCricketMarkSymbol(count);
+            const markClass = getCricketMarkClass(count);
+            // Check if number is dead (all players closed it)
+            const isDead = players.every(p => (marks[p.id] || {})[num] >= 3);
+            
+            html += `<div class="cricket-cell cricket-mark ${markClass} ${isDead ? 'cricket-dead' : ''}">${symbol}</div>`;
+        });
+        
+        html += `<div class="cricket-cell cricket-score">${player.score}</div>`;
+        html += '</div>';
+    });
+
+    html += '</div>';
+    
+    // Subtitle showing mode
+    const modeLabel = isCutthroat ? 'CUT-THROAT' : 'STANDARD';
+    html += `<div class="cricket-mode-label">${modeLabel} CRICKET</div>`;
+
+    scoreboard.innerHTML = html;
 }

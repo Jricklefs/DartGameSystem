@@ -72,6 +72,7 @@ builder.Services.AddSingleton<BenchmarkService>();
 builder.Services.AddSingleton<GameEventDispatcher>();
 builder.Services.AddSingleton<IDartSensorController, SignalRSensorController>();
 builder.Services.AddSingleton<X01GameEngine>();
+builder.Services.AddSingleton<CricketGameEngine>();
 
 // Game service (singleton - holds all state)
 builder.Services.AddSingleton<GameService>();

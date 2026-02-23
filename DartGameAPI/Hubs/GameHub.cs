@@ -218,7 +218,8 @@ public static class GameHubExtensions
                         d.Zone,
                         d.Score
                     }).ToList()
-                }
+                },
+                game.CricketState
             }
         });
     }
@@ -299,7 +300,8 @@ public static class GameHubExtensions
             game.BoardId,
             game.Mode,
             game.State,
-            Players = game.Players.Select(p => new { p.Id, p.Name, p.Score })
+            Players = game.Players.Select(p => new { p.Id, p.Name, p.Score }),
+            game.CricketState
         });
         
         // Tell sensor to start detecting
@@ -378,7 +380,8 @@ public static class GameHubExtensions
                         d.Zone,
                         d.Score
                     }).ToList()
-                }
+                },
+                game.CricketState
             }
         });
         

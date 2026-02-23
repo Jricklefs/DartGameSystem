@@ -11,13 +11,15 @@ public class GameService
     private readonly Dictionary<string, Game> _games = new();
     private readonly ILogger<GameService> _logger;
     private readonly X01GameEngine _x01Engine;
+    private readonly CricketGameEngine _cricketEngine;
 
     private const double POSITION_TOLERANCE_MM = 20.0;
 
-    public GameService(ILogger<GameService> logger, X01GameEngine x01Engine)
+    public GameService(ILogger<GameService> logger, X01GameEngine x01Engine, CricketGameEngine cricketEngine)
     {
         _logger = logger;
         _x01Engine = x01Engine;
+        _cricketEngine = cricketEngine;
     }
 
     #region Boards
@@ -59,9 +61,19 @@ public class GameService
             game.Mode = mode;
             _x01Engine.StartLeg(game);
         }
+        else if (mode == GameMode.Cricket || mode == GameMode.CricketCutthroat)
+        {
+            var cricketGame = _cricketEngine.StartMatch(mode, playerNames, boardId, bestOf);
+            _games[cricketGame.Id] = cricketGame;
+            var cBoard = GetBoard(boardId);
+            if (cBoard != null) cBoard.CurrentGameId = cricketGame.Id;
+            _cricketEngine.StartLeg(cricketGame);
+            _logger.LogInformation("Created Cricket game {GameId} on board {BoardId}", cricketGame.Id, boardId);
+            return cricketGame;
+        }
         else
         {
-            // Practice / Cricket — original logic
+            // Practice — original logic
             int legsToWin = (bestOf / 2) + 1;
             var rules = GameRules.FromMode(mode, requireDoubleOut);
 
@@ -215,7 +227,22 @@ public class GameService
         if (game == null || game.State != GameState.InProgress) return;
         game.KnownDarts.Clear();
 
-        if (game.IsX01Engine)
+        if (game.IsCricketEngine)
+        {
+            var cPlayer = game.CurrentPlayer;
+            if (cPlayer != null && game.CurrentTurn != null && game.CurrentTurn.IsTurnActive)
+            {
+                game.CurrentTurn.IsTurnActive = false;
+                cPlayer.Turns.Add(game.CurrentTurn);
+            }
+            var cPrevIndex = game.CurrentPlayerIndex;
+            game.CurrentPlayerIndex = (game.CurrentPlayerIndex + 1) % game.Players.Count;
+            if (game.CurrentPlayerIndex == 0 && (game.Players.Count == 1 || cPrevIndex != 0))
+                game.CurrentRound++;
+            if (game.CurrentPlayer != null)
+                _cricketEngine.StartTurn(game, game.CurrentPlayer.Id);
+        }
+        else if (game.IsX01Engine)
         {
             // For X01 engine games, the engine manages turn state internally via ProcessDart.
             // NextTurn is called externally (board clear / next button) so we just
@@ -287,6 +314,12 @@ public class GameService
             return;
         }
 
+        if (game.IsCricketEngine)
+        {
+            _cricketEngine.StartNextLeg(game);
+            return;
+        }
+
         // Legacy leg start
         game.CurrentLeg++;
         foreach (var player in game.Players)
@@ -325,6 +358,14 @@ public class GameService
     {
         game.LegWinnerId = null;
 
+        if (game.IsCricketEngine)
+        {
+            var result = _cricketEngine.ProcessDart(game, dart);
+            _logger.LogInformation("Dart applied via Cricket engine: {Zone} = {Score} pts, result={Type}",
+                dart.Zone, dart.Score, result.Type);
+            return result;
+        }
+
         if (game.IsX01Engine)
         {
             var result = _x01Engine.ProcessDart(game, dart);
@@ -348,6 +389,12 @@ public class GameService
 
         var player = game.CurrentPlayer;
         if (player == null) return;
+
+        if (game.IsCricketEngine)
+        {
+            _cricketEngine.CorrectDart(game, player.Id, dartIndex, newDart);
+            return;
+        }
 
         if (game.IsX01Engine)
         {

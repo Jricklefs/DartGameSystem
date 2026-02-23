@@ -2958,3 +2958,177 @@ html, body {
     85% { opacity: 1; transform: translateX(-50%) translateY(0); }
     100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
 }
+
+/* ==========================================================================
+   Cricket Scoreboard
+   ========================================================================== */
+
+.cricket-board {
+    width: 100%;
+    border: 2px solid var(--gold, #d4af37);
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.7);
+    font-family: 'Bebas Neue', sans-serif;
+}
+
+.cricket-header {
+    display: flex;
+    background: linear-gradient(180deg, rgba(212, 175, 55, 0.3) 0%, rgba(212, 175, 55, 0.1) 100%);
+    border-bottom: 2px solid var(--gold, #d4af37);
+}
+
+.cricket-cell {
+    flex: 1;
+    text-align: center;
+    padding: 10px 4px;
+    min-width: 0;
+}
+
+.cricket-player-header,
+.cricket-player-name {
+    flex: 2;
+    text-align: left;
+    padding-left: 12px;
+}
+
+.cricket-score-header,
+.cricket-score {
+    flex: 1.2;
+}
+
+.cricket-number-header {
+    color: var(--gold, #d4af37);
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+}
+
+.cricket-score-header {
+    color: var(--gold, #d4af37);
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+}
+
+.cricket-player-header {
+    color: var(--gold, #d4af37);
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+}
+
+.cricket-row {
+    display: flex;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    transition: background 0.3s;
+}
+
+.cricket-row:last-child {
+    border-bottom: none;
+}
+
+.cricket-row.cricket-active {
+    background: rgba(212, 175, 55, 0.12);
+    box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.08);
+}
+
+.cricket-player-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cricket-name {
+    color: var(--cream, #f5f0e8);
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cricket-active .cricket-name {
+    color: var(--gold, #d4af37);
+}
+
+.cricket-legs {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.cricket-mark {
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.cricket-mark.mark-0 {
+    color: rgba(255, 255, 255, 0.15);
+}
+
+.cricket-mark.mark-1 {
+    color: #e0c060;
+}
+
+.cricket-mark.mark-2 {
+    color: #d4af37;
+    font-weight: bold;
+}
+
+.cricket-mark.mark-3 {
+    color: #2ecc71;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(46, 204, 113, 0.4);
+}
+
+.cricket-mark.cricket-dead {
+    opacity: 0.3;
+}
+
+.cricket-score {
+    font-size: 1.6rem;
+    color: var(--cream, #f5f0e8);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cricket-active .cricket-score {
+    color: var(--gold, #d4af37);
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.cricket-mode-label {
+    text-align: center;
+    color: rgba(212, 175, 55, 0.5);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    padding: 8px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    .cricket-cell {
+        padding: 8px 2px;
+    }
+    .cricket-number-header {
+        font-size: 0.9rem;
+    }
+    .cricket-mark {
+        font-size: 1.2rem;
+    }
+    .cricket-score {
+        font-size: 1.3rem;
+    }
+    .cricket-name {
+        font-size: 0.9rem;
+    }
+    .cricket-player-name {
+        padding-left: 8px;
+    }
+}

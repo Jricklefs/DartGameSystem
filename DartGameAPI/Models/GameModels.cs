@@ -95,7 +95,8 @@ public enum GameMode
     Game501,    // Start at 501, get to exactly 0 with double out
     Game301,    // Start at 301
     Debug20,    // Start at 20, for fast testing
-    Cricket,    // Hit 15-20 and bulls
+    Cricket,           // Standard Cricket
+    CricketCutthroat,  // Cutthroat Cricket (points go to opponents)
     X01         // Configurable X01 (301-1001) with DI/DO/MO
 }
 
@@ -162,6 +163,12 @@ public class Game
     /// <summary>Pending bust confirmations</summary>
     public List<PendingBust> PendingBusts { get; set; } = new();
     
+    /// <summary>Cricket-specific state (marks per player per number)</summary>
+    public CricketState? CricketState { get; set; }
+
+    /// <summary>Whether this game uses the Cricket engine</summary>
+    public bool IsCricketEngine => Mode == GameMode.Cricket || Mode == GameMode.CricketCutthroat;
+
     // Known dart positions on board (to detect new vs existing)
     public List<KnownDart> KnownDarts { get; set; } = new();
     
@@ -183,4 +190,16 @@ public class KnownDart
     public double YMm { get; set; }
     public int Score { get; set; }
     public DateTime DetectedAt { get; set; }
+}
+
+/// <summary>
+/// Cricket game state: tracks marks per player per number
+/// </summary>
+public class CricketState
+{
+    /// <summary>Marks per player: playerId -> (number -> markCount). Max 3 marks to close.</summary>
+    public Dictionary<string, Dictionary<int, int>> Marks { get; set; } = new();
+    
+    /// <summary>Whether this is cutthroat mode</summary>
+    public bool IsCutthroat { get; set; } = false;
 }
