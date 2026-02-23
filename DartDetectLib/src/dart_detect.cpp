@@ -327,7 +327,7 @@ DD_API const char* dd_detect(
                 {
                     cv::Mat lut(1, 256, CV_8U);
                     for (int i = 0; i < 256; i++)
-                        lut.at<uchar>(0, i) = cv::saturate_cast<uchar>(255.0 * std::pow(i / 255.0, 0.6));
+                        lut.at<uchar>(0, i) = cv::saturate_cast<uchar>(255.0 * std::pow(i / 255.0, 0.5));
                     cv::LUT(current, lut, current);
                     cv::LUT(before, lut, before);
                 }
