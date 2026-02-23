@@ -537,7 +537,8 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
             // Cricket games
             if (request.Mode == GameMode.Cricket || request.Mode == GameMode.CricketCutthroat)
             {
-                game = _gameService.CreateGame(boardId, request.Mode, request.PlayerNames, request.BestOf);
+                game = _cricketEngine.StartMatch(request.Mode, request.PlayerNames, boardId, request.BestOf);
+                _gameService.RegisterGame(game, boardId);
             }
             // Use full MatchConfig when X01-specific options are provided
             else if (request.StartingScore > 0 || request.DoubleIn || request.MasterOut || request.SetsEnabled ||

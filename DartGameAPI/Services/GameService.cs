@@ -134,6 +134,16 @@ public class GameService
 
     public Game? GetGame(string id) => _games.GetValueOrDefault(id);
 
+    /// <summary>
+    /// Register an externally-created game (e.g., from CricketGameEngine)
+    /// </summary>
+    public void RegisterGame(Game game, string boardId)
+    {
+        _games[game.Id] = game;
+        if (_boards.TryGetValue(boardId, out var board))
+            board.CurrentGameId = game.Id;
+    }
+
     public Game? GetGameForBoard(string boardId)
     {
         var board = GetBoard(boardId);
