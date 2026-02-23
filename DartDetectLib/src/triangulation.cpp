@@ -325,6 +325,7 @@ const TpsTransform& tps = cal_it->second.tps_cache;
                 dv.push_back(cv::Point2f((float)tps.dst_points.at<double>(hi, 0),
                                           (float)tps.dst_points.at<double>(hi, 1)));
             }
+            cv::setRNGSeed(42);
             H_mat = cv::findHomography(sv, dv, cv::RANSAC, 5.0);
         }
 
