@@ -467,7 +467,9 @@ DD_API const char* dd_detect(
                      << json_string("barrel_method", bm) << ","
                      << json_double("mask_quality", det.mask_quality) << ","
                      << json_double("ransac_inlier_ratio", det.ransac_inlier_ratio) << ","
-                     << json_double("barrel_aspect", det.barrel_aspect_ratio)
+                     << json_double("barrel_aspect", det.barrel_aspect_ratio) << ","
+                     << json_double("tip_x", det.tip ? det.tip->x : -1) << ","
+                     << json_double("tip_y", det.tip ? det.tip->y : -1)
                      << "}";
                 first_det = false;
             }

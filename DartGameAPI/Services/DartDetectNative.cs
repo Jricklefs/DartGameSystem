@@ -162,6 +162,27 @@ public class DetectionResult
     public double CoordsY { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("debug_lines")]
     public Dictionary<string, CamDebugInfo>? DebugLines { get; set; }
+    
+    [System.Text.Json.Serialization.JsonPropertyName("camera_details")]
+    public Dictionary<string, CameraDetail>? CameraDetails { get; set; }
+}
+
+public class CameraDetail
+{
+    [System.Text.Json.Serialization.JsonPropertyName("tip_method")]
+    public string TipMethod { get; set; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("barrel_method")]
+    public string BarrelMethod { get; set; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("mask_quality")]
+    public double MaskQuality { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("ransac_inlier_ratio")]
+    public double RansacInlierRatio { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("barrel_aspect")]
+    public double BarrelAspect { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("tip_x")]
+    public double TipX { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("tip_y")]
+    public double TipY { get; set; }
 }
 
 public class CamDebugInfo

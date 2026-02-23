@@ -379,6 +379,36 @@ public class BenchmarkController : ControllerBase
         return Ok(results);
     }
 
+    /// <summary>
+    /// One-shot detect for debugging - no game needed
+    /// </summary>
+    [HttpPost("detect")]
+    public ActionResult DebugDetect([FromBody] DebugDetectRequest request)
+    {
+        // Call native DLL directly to get raw result with camera_details
+        var cameraIds = new List<string>();
+        var currentBytes = new List<byte[]>();
+        var beforeBytes = new List<byte[]>();
+        
+        foreach (var img in request.Images)
+        {
+            cameraIds.Add(img.CameraId);
+            currentBytes.Add(Convert.FromBase64String(img.Image));
+        }
+        foreach (var img in request.BeforeImages)
+        {
+            beforeBytes.Add(Convert.FromBase64String(img.Image));
+        }
+        
+        DartGameAPI.Services.DartDetectNative.ClearBoard("debug_bench");
+        DartGameAPI.Services.DartDetectNative.InitBoard("debug_bench");
+        var result = DartGameAPI.Services.DartDetectNative.Detect(1, "debug_bench", cameraIds, currentBytes.ToArray(), beforeBytes.ToArray());
+        DartGameAPI.Services.DartDetectNative.ClearBoard("debug_bench");
+        
+        if (result == null) return Ok(new { error = "no result" });
+        return Ok(result);
+    }
+
     [HttpGet("replay/results")]
     public ActionResult GetLastReplayResults()
     {
@@ -436,4 +466,16 @@ public class ReplayError
     [JsonPropertyName("detectedSegment")] public int DetectedSegment { get; set; }
     [JsonPropertyName("detectedMultiplier")] public int DetectedMultiplier { get; set; }
     [JsonPropertyName("category")] public string Category { get; set; } = "";
+}
+
+public class DebugDetectRequest
+{
+    public List<DebugImagePayload> Images { get; set; } = new();
+    public List<DebugImagePayload> BeforeImages { get; set; } = new();
+}
+
+public class DebugImagePayload
+{
+    public string CameraId { get; set; } = string.Empty;
+    public string Image { get; set; } = string.Empty;
 }
