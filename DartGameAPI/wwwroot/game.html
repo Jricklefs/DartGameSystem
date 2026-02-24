@@ -376,10 +376,16 @@
             </div>
         </header>
 
-        <!-- Scoreboard - Takes most of the space -->
-        <section id="scoreboard" class="scoreboard">
-            <!-- Player cards inserted dynamically -->
-        </section>
+        <!-- Scoreboard + Heatmap layout -->
+        <div id="game-layout" style="display:flex;gap:12px;flex:1;min-height:0;overflow:hidden;">
+            <section id="scoreboard" class="scoreboard" style="flex:1;min-width:0;">
+                <!-- Player cards inserted dynamically -->
+            </section>
+            <div id="heatmap-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;">
+                <button id="heatmap-toggle" onclick="DartHeatmap.toggle()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:var(--gold,#d4a84b);border-radius:4px;padding:4px 12px;cursor:pointer;font-size:12px;margin-bottom:6px;font-family:inherit;letter-spacing:1px;">MAP</button>
+                <canvas id="heatmap-canvas" width="300" height="300"></canvas>
+            </div>
+        </div>
 
         <!-- Current Turn - Compact bottom bar -->
         <section class="turn-bar">

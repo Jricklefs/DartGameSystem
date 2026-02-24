@@ -2532,45 +2532,20 @@ const DartHeatmap = {
     ctx: null,
     dots: [],
     visible: true,
-    size: 200,
+    size: 300,
     
     init() {
-        if (this.canvas) return; // already initialized
-        const container = document.createElement('div');
-        container.id = 'heatmap-container';
-        container.style.cssText = 'text-align:center;margin:10px auto;position:relative;';
-        
-        const toggle = document.createElement('button');
-        toggle.id = 'heatmap-toggle';
-        toggle.textContent = 'Map';
-        toggle.title = 'Toggle dart map';
-        toggle.style.cssText = 'background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:14px;margin-bottom:4px;';
-        toggle.onclick = () => this.toggle();
-        container.appendChild(toggle);
-        
-        const canvas = document.createElement('canvas');
-        canvas.id = 'heatmap-canvas';
-        canvas.width = this.size;
-        canvas.height = this.size;
-        canvas.style.cssText = 'display:block;margin:0 auto;';
-        container.appendChild(canvas);
-        
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
-        
-        // Insert after scoreboard
-        const scoreboard = document.getElementById('scoreboard');
-        if (scoreboard && scoreboard.parentNode) {
-            scoreboard.parentNode.insertBefore(container, scoreboard.nextSibling);
-        }
-        
+        if (this.ctx) return;
+        this.canvas = document.getElementById('heatmap-canvas');
+        if (!this.canvas) return;
+        this.size = this.canvas.width;
+        this.ctx = this.canvas.getContext('2d');
         this.draw();
     },
     
     toggle() {
         this.visible = !this.visible;
-        const c = document.getElementById('heatmap-container');
-        if (c) {
+        if (this.canvas) {
             this.canvas.style.display = this.visible ? 'block' : 'none';
         }
     },
