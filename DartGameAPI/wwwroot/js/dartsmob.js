@@ -2532,14 +2532,30 @@ const DartHeatmap = {
     ctx: null,
     dots: [],
     visible: true,
-    size: 300,
+    size: 500,
     
     init() {
         if (this.ctx) return;
         this.canvas = document.getElementById('heatmap-canvas');
         if (!this.canvas) return;
-        this.size = this.canvas.width;
         this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.draw();
+    },
+    
+    resize() {
+        if (!this.canvas) return;
+        // Fill available height minus header/footer
+        const container = this.canvas.parentElement;
+        const vh = window.innerHeight;
+        const mapSize = Math.min(vh - 140, window.innerWidth * 0.45);
+        const s = Math.max(300, Math.floor(mapSize));
+        this.size = s;
+        this.canvas.width = s;
+        this.canvas.height = s;
+        this.canvas.style.width = s + 'px';
+        this.canvas.style.height = s + 'px';
         this.draw();
     },
     

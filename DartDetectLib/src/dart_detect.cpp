@@ -440,7 +440,9 @@ DD_API const char* dd_detect(
                  << json_int("score", tri->score) << ","
                  << json_string("method", tri->method) << ","
                  << json_double("confidence", tri->confidence) << ","
-                 << json_double("total_error", tri->total_error);
+                 << json_double("total_error", tri->total_error)
+                 << ",\"coords_x\":" << tri->coords.x
+                 << ",\"coords_y\":" << tri->coords.y;
             
             json << ",\"per_camera\":{";
             bool first = true;
