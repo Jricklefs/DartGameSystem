@@ -24,6 +24,7 @@
 // ============================================================================
 
 static std::map<std::string, CameraCalibration> g_calibrations;
+static bool g_pca_enabled = false;
 static std::map<std::string, BoardCache> g_board_caches;
 static std::mutex g_mutex;
 static bool g_initialized = false;
@@ -476,7 +477,8 @@ DD_API const char* dd_detect(
             json << "}";
 
             // === PCA DUAL PIPELINE ===
-            // Run PCA-based barrel detection alongside main Hough/RANSAC
+            // Run PCA-based barrel detection (only when enabled)
+            if (g_pca_enabled) { // PCA toggle gate
             // Uses: 26% Otsu threshold -> PCA on largest contour -> TPS warp -> intersect
             try {
                 std::map<std::string, std::optional<PcaLine>> pca_lines;
@@ -557,6 +559,7 @@ DD_API const char* dd_detect(
                 json << ",\"pca_result\":{\"method\":\"error\",\"segment\":0,\"multiplier\":0}";
             } catch (...) {
                 json << ",\"pca_result\":{\"method\":\"crash\",\"segment\":0,\"multiplier\":0}";
+            } // end PCA toggle gate
             }
         } else {
             goto single_camera;

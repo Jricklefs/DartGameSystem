@@ -13,14 +13,17 @@ public class NativeDartDetectService : IDartDetectService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<NativeDartDetectService> _logger;
+    private readonly IConfiguration _configuration;
     private bool _initialized;
 
     public NativeDartDetectService(
         IServiceProvider serviceProvider,
-        ILogger<NativeDartDetectService> logger)
+        ILogger<NativeDartDetectService> logger,
+        IConfiguration configuration)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _configuration = configuration;
 
         var version = DartDetectNative.GetVersion();
         _logger.LogInformation("DartDetectLib native loaded: {Version}", version);
@@ -225,13 +228,37 @@ public class NativeDartDetectService : IDartDetectService
                 return Task.FromResult<DetectResponse?>(null);
             }
 
+            // Check detection mode: "pca" uses PCA pipeline, "hough" (default) uses main pipeline
+            var detectionMode = _configuration.GetValue<string>("DetectionMode") ?? "hough";
+            _logger.LogInformation("[DEBUG] DetectionMode={Mode}, PcaResult={HasPca}, PcaMethod={Method}, PcaSeg={Seg}",
+                detectionMode, 
+                result.PcaResult != null, 
+                result.PcaResult?.Method ?? "null",
+                result.PcaResult?.Segment ?? -1);
+            int finalSegment = result.Segment;
+            int finalMultiplier = result.Multiplier;
+            int finalScore = result.Score;
+            string finalMethod = result.Method ?? "";
+            double finalConfidence = result.Confidence;
+            
+            if (detectionMode == "pca" && result.PcaResult != null && result.PcaResult.Method != "no_pca" && result.PcaResult.Method != "error" && result.PcaResult.Method != "crash")
+            {
+                finalSegment = result.PcaResult.Segment;
+                finalMultiplier = result.PcaResult.Multiplier;
+                finalScore = result.PcaResult.Score;
+                finalMethod = result.PcaResult.Method;
+                finalConfidence = result.PcaResult.Confidence;
+                _logger.LogInformation("[NATIVE] Using PCA result: S{Seg}x{Mult}={Score} (main was S{MainSeg}x{MainMult}={MainScore})",
+                    finalSegment, finalMultiplier, finalScore, result.Segment, result.Multiplier, result.Score);
+            }
+
             var tip = new DetectedTip
             {
-                Segment = result.Segment,
-                Multiplier = result.Multiplier,
-                Score = result.Score,
-                Zone = FormatZone(result.Segment, result.Multiplier),
-                Confidence = result.Confidence,
+                Segment = finalSegment,
+                Multiplier = finalMultiplier,
+                Score = finalScore,
+                Zone = FormatZone(finalSegment, finalMultiplier),
+                Confidence = finalConfidence,
                 XMm = 0,
                 YMm = 0,
                 CamerasSeen = result.PerCamera?.Keys.ToList() ?? new List<string>()
@@ -241,7 +268,7 @@ public class NativeDartDetectService : IDartDetectService
             {
                 RequestId = Guid.NewGuid().ToString()[..8],
                 ProcessingMs = (int)totalMs,
-                Tips = result.Segment > 0 || result.Score > 0
+                Tips = finalSegment > 0 || finalScore > 0
                     ? new List<DetectedTip> { tip }
                     : new List<DetectedTip>(),
                 CameraResults = result.PerCamera?.Select(kv => new CameraDetectionResult
@@ -251,8 +278,8 @@ public class NativeDartDetectService : IDartDetectService
                 }).ToList() ?? new List<CameraDetectionResult>()
             };
 
-            _logger.LogInformation("[NATIVE] Detected: {Zone} S{Seg}x{Mult}={Score} ({Method}, {Confidence:F2})",
-                tip.Zone, result.Segment, result.Multiplier, result.Score, result.Method, result.Confidence);
+            _logger.LogInformation("[NATIVE] Detected: {Zone} S{Seg}x{Mult}={Score} ({Method}, {Confidence:F2}) [mode={Mode}]",
+                tip.Zone, finalSegment, finalMultiplier, finalScore, finalMethod, finalConfidence, detectionMode);
 
             return Task.FromResult<DetectResponse?>(response);
         }

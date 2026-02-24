@@ -34,6 +34,9 @@ public static class DartDetectNative
     private static extern void dd_clear_board([MarshalAs(UnmanagedType.LPUTF8Str)] string boardId);
 
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void dd_set_pca_enabled(int enabled);
+
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
     private static extern void dd_free_string(IntPtr str);
 
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
@@ -132,6 +135,11 @@ public static class DartDetectNative
     }
 
     /// <summary>
+    /// Enable or disable PCA dual pipeline.
+    /// </summary>
+    public static void SetPcaEnabled(bool enabled) => dd_set_pca_enabled(enabled ? 1 : 0);
+
+    /// <summary>
     /// Initialize board cache for a new game.
     /// </summary>
     public static void InitBoard(string boardId) => dd_init_board(boardId);
@@ -162,6 +170,9 @@ public class DetectionResult
     public double CoordsY { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("debug_lines")]
     public Dictionary<string, CamDebugInfo>? DebugLines { get; set; }
+    
+    [System.Text.Json.Serialization.JsonPropertyName("pca_result")]
+    public PcaResult? PcaResult { get; set; }
     
     [System.Text.Json.Serialization.JsonPropertyName("camera_details")]
     public Dictionary<string, CameraDetail>? CameraDetails { get; set; }
@@ -199,6 +210,19 @@ public class CamDebugInfo
     public double TipNx { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("tip_ny")]
     public double TipNy { get; set; }
+}
+
+
+/// <summary>
+/// PCA dual pipeline result.
+/// </summary>
+public class PcaResult
+{
+    public int Segment { get; set; }
+    public int Multiplier { get; set; }
+    public int Score { get; set; }
+    public string Method { get; set; } = "";
+    public double Confidence { get; set; }
 }
 
 /// <summary>
