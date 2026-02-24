@@ -259,8 +259,8 @@ public class NativeDartDetectService : IDartDetectService
                 Score = finalScore,
                 Zone = FormatZone(finalSegment, finalMultiplier),
                 Confidence = finalConfidence,
-                XMm = 0,
-                YMm = 0,
+                XMm = result.CoordsX,
+                YMm = result.CoordsY,
                 CamerasSeen = result.PerCamera?.Keys.ToList() ?? new List<string>()
             };
 

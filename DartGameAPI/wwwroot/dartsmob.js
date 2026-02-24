@@ -163,7 +163,7 @@ async function initConnection() {
     connection.on('DartThrown', handleDartThrown);
     connection.on('DartRemoved', handleDartRemoved);
     connection.on('BoardCleared', handleBoardCleared);
-    connection.on('GameStarted', handleGameStarted);
+    connection.on('GameStarted', (data) => { handleGameStarted(data); _initHeatmapIfNeeded(); });
     connection.on('GameEnded', handleGameEnded);
     connection.on('TurnEnded', handleTurnEnded);
     connection.on('DartNotFound', handleDartNotFound);
@@ -319,6 +319,11 @@ function speakBust() {
 
 function handleDartThrown(data) {
     const receiveTime = Date.now();
+
+    // Add dot to heatmap
+    if (data.dart && typeof DartHeatmap !== 'undefined') {
+        DartHeatmap.addDot(data.dart.xMm || 0, data.dart.yMm || 0, data.dart.segment, data.dart.multiplier, data.game?.currentPlayerIndex || 0);
+    }
     
     // Log to centralized logging
     const dart = data.dart;
@@ -376,6 +381,7 @@ function handleDartRemoved(data) {
     }
 }
 
+function _initHeatmapIfNeeded() { if (typeof DartHeatmap !== "undefined") { DartHeatmap.init(); DartHeatmap.clear(); } }
 function handleGameStarted(data) {
     console.log('Game started:', data);
     currentGame = data;
@@ -2516,3 +2522,123 @@ function toggleCorrectionCamView() {
         viewer.style.display = 'none';
     }
 }
+
+
+// ============================================================================
+// DART HEATMAP - Mini dartboard showing dart landing positions
+// ============================================================================
+const DartHeatmap = {
+    canvas: null,
+    ctx: null,
+    dots: [],
+    visible: true,
+    size: 200,
+    
+    init() {
+        if (this.canvas) return; // already initialized
+        const container = document.createElement('div');
+        container.id = 'heatmap-container';
+        container.style.cssText = 'text-align:center;margin:10px auto;position:relative;';
+        
+        const toggle = document.createElement('button');
+        toggle.id = 'heatmap-toggle';
+        toggle.textContent = 'Map';
+        toggle.title = 'Toggle dart map';
+        toggle.style.cssText = 'background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:14px;margin-bottom:4px;';
+        toggle.onclick = () => this.toggle();
+        container.appendChild(toggle);
+        
+        const canvas = document.createElement('canvas');
+        canvas.id = 'heatmap-canvas';
+        canvas.width = this.size;
+        canvas.height = this.size;
+        canvas.style.cssText = 'display:block;margin:0 auto;';
+        container.appendChild(canvas);
+        
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        
+        // Insert after scoreboard
+        const scoreboard = document.getElementById('scoreboard');
+        if (scoreboard && scoreboard.parentNode) {
+            scoreboard.parentNode.insertBefore(container, scoreboard.nextSibling);
+        }
+        
+        this.draw();
+    },
+    
+    toggle() {
+        this.visible = !this.visible;
+        const c = document.getElementById('heatmap-container');
+        if (c) {
+            this.canvas.style.display = this.visible ? 'block' : 'none';
+        }
+    },
+    
+    addDot(x, y, segment, multiplier, playerIndex) {
+        if (x === 0 && y === 0) return; // no coordinates available
+        this.dots.push({ x, y, segment, multiplier, playerIndex: playerIndex || 0 });
+        this.draw();
+    },
+    
+    clear() {
+        this.dots = [];
+        this.draw();
+    },
+    
+    draw() {
+        if (!this.ctx) return;
+        const ctx = this.ctx;
+        const s = this.size;
+        const cx = s / 2;
+        const cy = s / 2;
+        const r = s / 2 - 10;
+        
+        ctx.clearRect(0, 0, s, s);
+        
+        // Dark background circle
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Board rings
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 0.5;
+        const rings = [1.0, 0.953, 0.629, 0.588, 0.094, 0.037];
+        for (const nr of rings) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, nr * r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        // Segment divider lines
+        for (let i = 0; i < 20; i++) {
+            const angle = (i * 18 - 9) * Math.PI / 180;
+            const wx = cx + Math.sin(angle) * r;
+            const wy = cy - Math.cos(angle) * r;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(wx, wy);
+            ctx.stroke();
+        }
+        
+        // Dart dots
+        const playerColors = ['#00ff88', '#ff4444', '#4488ff', '#ffaa00'];
+        for (const dot of this.dots) {
+            const px = cx + dot.x * r;
+            const py = cy - dot.y * r;
+            
+            ctx.fillStyle = playerColors[dot.playerIndex % playerColors.length];
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath();
+            ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+    }
+};
