@@ -436,6 +436,44 @@ public class BenchmarkController : ControllerBase
         }
         return "far_seg";
     }
+
+    [HttpGet("phantoms")]
+    public ActionResult GetPhantomDarts()
+    {
+        var bmBase = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "DartDetector", "benchmark");
+        
+        var phantoms = new List<object>();
+        if (!Directory.Exists(bmBase)) return Ok(phantoms);
+        
+        foreach (var boardDir in Directory.GetDirectories(bmBase))
+        {
+            foreach (var gameDir in Directory.GetDirectories(boardDir))
+            {
+                foreach (var roundDir in Directory.GetDirectories(gameDir))
+                {
+                    foreach (var dartDir in Directory.GetDirectories(roundDir, "*_phantom"))
+                    {
+                        var images = Directory.GetFiles(dartDir, "*.jpg")
+                            .Select(f => Path.GetFileName(f)).ToList();
+                        phantoms.Add(new
+                        {
+                            gameId = Path.GetFileName(gameDir),
+                            round = Path.GetFileName(roundDir),
+                            dart = Path.GetFileName(dartDir),
+                            path = dartDir,
+                            images = images,
+                            timestamp = Directory.GetCreationTime(dartDir)
+                        });
+                    }
+                }
+            }
+        }
+        
+        return Ok(phantoms.OrderByDescending(p => ((dynamic)p).timestamp));
+    }
+
 }
 
 public class ReplayResults

@@ -947,6 +947,38 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
         if (removedDart == null)
             return BadRequest(new { error = "Failed to remove dart" });
 
+        // Tag phantom dart in benchmark data
+        try
+        {
+            var bmBase = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "DartDetector", "benchmark");
+            // Find the game folder
+            foreach (var boardDir in Directory.GetDirectories(bmBase))
+            {
+                var gameDir = Path.Combine(boardDir, id);
+                if (!Directory.Exists(gameDir)) continue;
+                
+                // Find dart folders matching this dart index in current round
+                var player = game.CurrentPlayer?.Name ?? "player";
+                var roundDir = $"round_{game.CurrentRound}_{player}";
+                var dartDir = Path.Combine(gameDir, roundDir, $"dart_{request.DartIndex + 1}");
+                if (Directory.Exists(dartDir))
+                {
+                    var phantomDir = dartDir + "_phantom";
+                    if (!Directory.Exists(phantomDir))
+                    {
+                        Directory.Move(dartDir, phantomDir);
+                        _logger.LogInformation("[PHANTOM] Tagged {Dir} as phantom", phantomDir);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to tag phantom dart");
+        }
+
         try
         {
             using var httpClient = new HttpClient();
