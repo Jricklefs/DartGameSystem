@@ -67,6 +67,14 @@ public class GameRules
                 RequireDoubleOut = false,
                 DisplayName = "Debug 20"
             },
+            GameMode.CricketCutthroat => new GameRules
+            {
+                DartsPerTurn = 3,
+                StartingScore = 0,
+                Direction = ScoringDirection.CountUp,
+                ActiveSegments = new List<int> { 15, 16, 17, 18, 19, 20, 25 },
+                DisplayName = "Cut-Throat Cricket"
+            },
             GameMode.Cricket => new GameRules
             {
                 DartsPerTurn = 3,
