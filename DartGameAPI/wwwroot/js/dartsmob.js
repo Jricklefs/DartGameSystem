@@ -163,7 +163,7 @@ async function initConnection() {
     connection.on('DartThrown', handleDartThrown);
     connection.on('DartRemoved', handleDartRemoved);
     connection.on('BoardCleared', handleBoardCleared);
-    connection.on('GameStarted', handleGameStarted);
+    connection.on('GameStarted', (data) => { handleGameStarted(data); _initHeatmapIfNeeded(); });
     connection.on('GameEnded', handleGameEnded);
     connection.on('TurnEnded', handleTurnEnded);
     connection.on('DartNotFound', handleDartNotFound);
@@ -319,6 +319,11 @@ function speakBust() {
 
 function handleDartThrown(data) {
     const receiveTime = Date.now();
+
+    // Add dot to heatmap
+    if (data.dart && typeof DartHeatmap !== 'undefined') {
+        DartHeatmap.addDot(data.dart.xMm || 0, data.dart.yMm || 0, data.dart.segment, data.dart.multiplier, data.game?.currentPlayerIndex || 0);
+    }
     
     // Log to centralized logging
     const dart = data.dart;
@@ -376,6 +381,7 @@ function handleDartRemoved(data) {
     }
 }
 
+function _initHeatmapIfNeeded() { if (typeof DartHeatmap !== "undefined") { DartHeatmap.init(); DartHeatmap.clear(); } }
 function handleGameStarted(data) {
     console.log('Game started:', data);
     currentGame = data;
@@ -433,24 +439,18 @@ function updateScoreboard() {
     const scoreboard = document.getElementById('scoreboard');
     if (!scoreboard) return;
     
-    // Cricket-specific scoreboard
-    const mode = currentGame.mode;
-    if (mode === 'Cricket' || mode === 'CricketCutthroat' || mode === 4 || mode === 5) {
-        renderCricketScoreboard(scoreboard);
-    } else {
-        scoreboard.innerHTML = currentGame.players.map((player, idx) => `
-            <div class="player-card ${idx === currentGame.currentPlayerIndex ? 'active' : ''}">
-                <div class="player-info">
-                    <span class="player-name">${escapeHtml(player.name)}</span>
-                    <div class="player-stats">
-                        <span>${player.dartsThrown} darts</span>
-                        ${currentGame.legsToWin > 1 ? `<span class="legs">Legs: ${player.legsWon}</span>` : ''}
-                    </div>
+    scoreboard.innerHTML = currentGame.players.map((player, idx) => `
+        <div class="player-card ${idx === currentGame.currentPlayerIndex ? 'active' : ''}">
+            <div class="player-info">
+                <span class="player-name">${escapeHtml(player.name)}</span>
+                <div class="player-stats">
+                    <span>${player.dartsThrown} darts</span>
+                    ${currentGame.legsToWin > 1 ? `<span class="legs">Legs: ${player.legsWon}</span>` : ''}
                 </div>
-                <span class="player-score">${player.score}</span>
             </div>
-        `).join('');
-    }
+            <span class="player-score">${player.score}</span>
+        </div>
+    `).join('');
     
     // Update header
     document.getElementById('game-mode-display').textContent = formatMode(currentGame.mode);
@@ -823,74 +823,42 @@ async function checkLegWonReady() {
 }
 
 function showWinnerModal(winner) {
-    const winnerName = winner.name || winner || 'Winner';
-    console.log('showWinnerModal:', winnerName);
-    
-    // Update the built-in gameover screen
-    const nameEl = document.getElementById('winner-name');
-    if (nameEl) nameEl.textContent = winnerName;
-    
-    const statsEl = document.getElementById('winner-stats');
-    if (statsEl) {
-        const player = currentGame?.players?.find(p => {
-            const pName = p.name || p.Name;
-            return pName === winnerName;
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('winner-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'winner-modal';
+        modal.className = 'modal hidden';
+        modal.innerHTML = `
+            <div class="modal-content winner-content">
+                <h2 class="winner-title">?? WINNER! ??</h2>
+                <div class="winner-name"></div>
+                <div class="winner-buttons">
+                    <button class="btn btn-primary" id="winner-play-again">?? Play Again</button>
+                    <button class="btn btn-secondary" id="winner-quit">?? Quit</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        document.getElementById('winner-play-again').addEventListener('click', () => {
+            modal.classList.add('hidden');
+            // Restart with same players
+            location.reload();  // Simple reload for now
         });
-        if (player) {
-            statsEl.textContent = (player.dartsThrown || player.DartsThrown || '?') + ' darts';
-        }
+        
+        document.getElementById('winner-quit').addEventListener('click', () => {
+            modal.classList.add('hidden');
+            showScreen('setup-screen');
+        });
     }
     
-    // Wire up Play Again button - restart with same settings
-    const playAgainBtn = document.getElementById('new-game-btn');
-    if (playAgainBtn) {
-        playAgainBtn.onclick = async () => {
-            try {
-                // Re-create game with same settings
-                const response = await fetch('/api/games', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        boardId,
-                        mode: currentGame?.mode ?? 'X01',
-                        playerNames: currentGame?.players?.map(p => p.name || p.Name) || ['Player 1'],
-                        bestOf: selectedBestOf || 1,
-                        requireDoubleOut: currentGame?.rules?.requireDoubleOut ?? currentGame?.requireDoubleOut ?? false,
-                        startingScore: currentGame?.rules?.startingScore ?? currentGame?.matchConfig?.startingScore ?? 501,
-                        doubleIn: currentGame?.rules?.doubleIn ?? currentGame?.matchConfig?.doubleIn ?? false,
-                        masterOut: currentGame?.rules?.masterOut ?? currentGame?.matchConfig?.masterOut ?? false,
-                        rules: currentGame?.rules || {}
-                    })
-                });
-                
-                if (response.ok) {
-                    currentGame = await response.json();
-                    showScreen('game-screen');
-                    updateScoreboard();
-                    updateCurrentTurn();
-                } else {
-                    console.error('Failed to restart game');
-                    location.reload();
-                }
-            } catch (err) {
-                console.error('Error restarting game:', err);
-                location.reload();
-            }
-        };
-    }
-    
-    // Wire up Quit button - back to setup
-    const quitBtn = document.getElementById('quit-game-btn');
-    if (quitBtn) {
-        quitBtn.onclick = () => showScreen('setup-screen');
-    }
-    
-    // Show the gameover screen
-    showScreen('gameover-screen');
+    modal.querySelector('.winner-name').textContent = winner.name || winner;
+    modal.classList.remove('hidden');
     
     // Announce winner
     if (audioSettings.mode === 'tts') {
-        dartAudio.speak(winnerName + ' wins!');
+        dartAudio.speak(`${winner.name || winner} wins!`);
     }
 }
 
@@ -1066,11 +1034,11 @@ const gameConfig = {
     cricket: {
         label: '?? Cricket',
         variants: [
-            { value: 'Cricket', label: 'Standard' },
-            { value: 'CricketCutthroat', label: 'Cut-Throat' },
+            { value: 'CricketStandard', label: 'Standard' },
+            { value: 'CricketCutThroat', label: 'Cut-Throat' },
             { value: 'CricketNoPoints', label: 'No Points (Close Only)' }
         ],
-        defaultVariant: 'Cricket',
+        defaultVariant: 'CricketStandard',
         rules: []
     },
     around: {
@@ -1324,8 +1292,8 @@ function formatMode(mode) {
         case 'CountUp':
         case 'HighScore':
             return 'PRACTICE';
-        case 'Cricket': return 'CRICKET';
-        case 'CricketCutthroat': return 'CUT-THROAT';
+        case 'CricketStandard': return 'CRICKET';
+        case 'CricketCutThroat': return 'CUT-THROAT';
         case 'AroundTheClock': return 'AROUND';
         case 'Shanghai': return 'SHANGHAI';
         case 'Killer': return 'KILLER';
@@ -2555,79 +2523,113 @@ function toggleCorrectionCamView() {
     }
 }
 
-// ==========================================================================
-// Cricket Scoreboard
-// ==========================================================================
 
-const CRICKET_NUMBERS = [20, 19, 18, 17, 16, 15, 25];
-const CRICKET_LABELS = ['20', '19', '18', '17', '16', '15', 'BULL'];
-
-function getCricketMarkSymbol(count) {
-    if (count <= 0) return '';
-    if (count === 1) return '/';
-    if (count === 2) return 'X';
-    return '⊗'; // closed (3+)
-}
-
-function getCricketMarkClass(count) {
-    if (count <= 0) return 'mark-0';
-    if (count === 1) return 'mark-1';
-    if (count === 2) return 'mark-2';
-    return 'mark-3';
-}
-
-function renderCricketScoreboard(scoreboard) {
-    if (!currentGame || !currentGame.cricketState) {
-        scoreboard.innerHTML = '<p style="color:#aaa;text-align:center;">Waiting for cricket state...</p>';
-        return;
-    }
-
-    const players = currentGame.players || [];
-    const marks = currentGame.cricketState.marks || {};
-    const isCutthroat = currentGame.cricketState.isCutthroat;
-
-    // Build cricket table
-    let html = '<div class="cricket-board">';
+// ============================================================================
+// DART HEATMAP - Mini dartboard showing dart landing positions
+// ============================================================================
+const DartHeatmap = {
+    canvas: null,
+    ctx: null,
+    dots: [],
+    visible: true,
+    size: 500,
     
-    // Header row with numbers
-    html += '<div class="cricket-header">';
-    html += '<div class="cricket-cell cricket-player-header">PLAYER</div>';
-    CRICKET_LABELS.forEach(label => {
-        html += `<div class="cricket-cell cricket-number-header">${label}</div>`;
-    });
-    html += '<div class="cricket-cell cricket-score-header">PTS</div>';
-    html += '</div>';
-
-    // Player rows
-    players.forEach((player, idx) => {
-        const isActive = idx === currentGame.currentPlayerIndex;
-        const playerMarks = marks[player.id] || {};
+    init() {
+        if (this.ctx) return;
+        this.canvas = document.getElementById('heatmap-canvas');
+        if (!this.canvas) return;
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.draw();
+    },
+    
+    resize() {
+        if (!this.canvas) return;
+        // Fill available height minus header/footer
+        const container = this.canvas.parentElement;
+        const vh = window.innerHeight;
+        const mapSize = Math.min(vh - 140, window.innerWidth * 0.45);
+        const s = Math.max(300, Math.floor(mapSize));
+        this.size = s;
+        this.canvas.width = s;
+        this.canvas.height = s;
+        this.canvas.style.width = s + 'px';
+        this.canvas.style.height = s + 'px';
+        this.draw();
+    },
+    
+    toggle() {
+        this.visible = !this.visible;
+        if (this.canvas) {
+            this.canvas.style.display = this.visible ? 'block' : 'none';
+        }
+    },
+    
+    addDot(x, y, segment, multiplier, playerIndex) {
+        if (x === 0 && y === 0) return; // no coordinates available
+        this.dots.push({ x, y, segment, multiplier, playerIndex: playerIndex || 0 });
+        this.draw();
+    },
+    
+    clear() {
+        this.dots = [];
+        this.draw();
+    },
+    
+    draw() {
+        if (!this.ctx) return;
+        const ctx = this.ctx;
+        const s = this.size;
+        const cx = s / 2;
+        const cy = s / 2;
+        const r = s / 2 - 10;
         
-        html += `<div class="cricket-row ${isActive ? 'cricket-active' : ''}">`;
-        html += `<div class="cricket-cell cricket-player-name">
-            <span class="cricket-name">${escapeHtml(player.name)}</span>
-            ${currentGame.legsToWin > 1 ? `<span class="cricket-legs">${player.legsWon}L</span>` : ''}
-        </div>`;
+        ctx.clearRect(0, 0, s, s);
         
-        CRICKET_NUMBERS.forEach(num => {
-            const count = playerMarks[num] || 0;
-            const symbol = getCricketMarkSymbol(count);
-            const markClass = getCricketMarkClass(count);
-            // Check if number is dead (all players closed it)
-            const isDead = players.every(p => (marks[p.id] || {})[num] >= 3);
+        // Dark background circle
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Board rings
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 0.5;
+        const rings = [1.0, 0.953, 0.629, 0.588, 0.094, 0.037];
+        for (const nr of rings) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, nr * r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        // Segment divider lines
+        for (let i = 0; i < 20; i++) {
+            const angle = (i * 18 - 9) * Math.PI / 180;
+            const wx = cx + Math.sin(angle) * r;
+            const wy = cy - Math.cos(angle) * r;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(wx, wy);
+            ctx.stroke();
+        }
+        
+        // Dart dots
+        const playerColors = ['#00ff88', '#ff4444', '#4488ff', '#ffaa00'];
+        for (const dot of this.dots) {
+            const px = cx + dot.x * r;
+            const py = cy - dot.y * r;
             
-            html += `<div class="cricket-cell cricket-mark ${markClass} ${isDead ? 'cricket-dead' : ''}">${symbol}</div>`;
-        });
-        
-        html += `<div class="cricket-cell cricket-score">${player.score}</div>`;
-        html += '</div>';
-    });
-
-    html += '</div>';
-    
-    // Subtitle showing mode
-    const modeLabel = isCutthroat ? 'CUT-THROAT' : 'STANDARD';
-    html += `<div class="cricket-mode-label">${modeLabel} CRICKET</div>`;
-
-    scoreboard.innerHTML = html;
-}
+            ctx.fillStyle = playerColors[dot.playerIndex % playerColors.length];
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath();
+            ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+    }
+};
