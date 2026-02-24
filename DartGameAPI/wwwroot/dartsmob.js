@@ -1034,11 +1034,11 @@ const gameConfig = {
     cricket: {
         label: '?? Cricket',
         variants: [
-            { value: 'CricketStandard', label: 'Standard' },
-            { value: 'CricketCutThroat', label: 'Cut-Throat' },
+            { value: 'Cricket', label: 'Standard' },
+            { value: 'CricketCutthroat', label: 'Cut-Throat' },
             { value: 'CricketNoPoints', label: 'No Points (Close Only)' }
         ],
-        defaultVariant: 'CricketStandard',
+        defaultVariant: 'Cricket',
         rules: []
     },
     around: {
@@ -1292,8 +1292,8 @@ function formatMode(mode) {
         case 'CountUp':
         case 'HighScore':
             return 'PRACTICE';
-        case 'CricketStandard': return 'CRICKET';
-        case 'CricketCutThroat': return 'CUT-THROAT';
+        case 'Cricket': return 'CRICKET';
+        case 'CricketCutthroat': return 'CUT-THROAT';
         case 'AroundTheClock': return 'AROUND';
         case 'Shanghai': return 'SHANGHAI';
         case 'Killer': return 'KILLER';
