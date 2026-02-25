@@ -224,6 +224,16 @@ public class CameraDetail
     public double TipX { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("tip_y")]
     public double TipY { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("line_vx")]
+    public double LineVx { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("line_vy")]
+    public double LineVy { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("line_x0")]
+    public double LineX0 { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("line_y0")]
+    public double LineY0 { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("line_elongation")]
+    public double LineElongation { get; set; }
 }
 
 public class CamDebugInfo

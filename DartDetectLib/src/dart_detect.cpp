@@ -472,7 +472,12 @@ DD_API const char* dd_detect(
                      << json_double("ransac_inlier_ratio", det.ransac_inlier_ratio) << ","
                      << json_double("barrel_aspect", det.barrel_aspect_ratio) << ","
                      << json_double("tip_x", det.tip ? det.tip->x : -1) << ","
-                     << json_double("tip_y", det.tip ? det.tip->y : -1)
+                     << json_double("tip_y", det.tip ? det.tip->y : -1) << ","
+                     << json_double("line_vx", det.pca_line ? det.pca_line->vx : -999) << ","
+                     << json_double("line_vy", det.pca_line ? det.pca_line->vy : 0) << ","
+                     << json_double("line_x0", det.pca_line ? det.pca_line->x0 : 0) << ","
+                     << json_double("line_y0", det.pca_line ? det.pca_line->y0 : 0) << ","
+                     << json_double("line_elongation", det.pca_line ? det.pca_line->elongation : 0)
                      << "}";
                 first_det = false;
             }

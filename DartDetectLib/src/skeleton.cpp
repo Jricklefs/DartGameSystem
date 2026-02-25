@@ -278,6 +278,7 @@ DetectionResult detect_dart(
     
     // Step 3a: Blob distance chaining
     cv::Mat pre_chain_mask = motion_mask.clone();
+    cv::Mat saved_barrel_mask;  // DEBUG: barrel mask for debug output
     
     std::vector<std::vector<cv::Point>> contours_dist;
     cv::findContours(motion_mask.clone(), contours_dist, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
@@ -493,6 +494,7 @@ DetectionResult detect_dart(
                 
                 if (best) {
                     barrel_mask = best->mask;
+                    saved_barrel_mask = barrel_mask.clone();  // DEBUG
                     barrel_info = BarrelInfo{
                         Point2f(best->bcx, best->bcy),
                         Point2f(best->pvx, best->pvy),
@@ -590,6 +592,7 @@ DetectionResult detect_dart(
                                 if (accept) {
                                     pca_line = PcaLine{fvx, fvy, fcx, fcy,
                                         (double)(left_pts.size()+right_pts.size()), "edge_pair"};
+                                    fprintf(stderr, "EDGE_PAIR: fvx=%.4f fvy=%.4f fcx=%.1f fcy=%.1f\n", fvx, fvy, fcx, fcy);
                                     result.ransac_inlier_ratio = 1.0;
                                     result.barrel_pixel_count = (int)ep_pts.size();
                                 }
@@ -1203,5 +1206,51 @@ DetectionResult detect_dart(
     result.view_quality = view_quality;
     result.motion_mask = motion_mask;
     
+    // DEBUG: Save masks and overlay to disk
+    {
+        static int dbg_idx = 0;
+        std::string dp = "C:\\Users\\clawd\\DartDebug\\cam" + std::to_string(dbg_idx);
+        
+        // Save motion mask (the diff mask)
+        if (!motion_mask.empty())
+            cv::imwrite(dp + "_mask.png", motion_mask);
+        
+        // Save pre_chain_mask (barrel-isolated mask)
+        if (!saved_barrel_mask.empty())
+            cv::imwrite(dp + "_barrel.png", saved_barrel_mask);
+        
+        // Save overlay on grayscale diff
+        {
+            cv::Mat vis = current_frame.clone();
+            if (vis.empty()) vis = cv::Mat::zeros(motion_mask.size(), CV_8UC3);
+            // Red = full mask
+            if (!motion_mask.empty()) {
+                for (int r = 0; r < vis.rows; r++)
+                    for (int c = 0; c < vis.cols; c++)
+                        if (motion_mask.at<uchar>(r,c) > 0)
+                            vis.at<cv::Vec3b>(r,c) = cv::Vec3b(0, 0, 255);
+            }
+            // Green = barrel mask
+            if (!saved_barrel_mask.empty()) {
+                for (int r = 0; r < vis.rows; r++)
+                    for (int c = 0; c < vis.cols; c++)
+                        if (saved_barrel_mask.at<uchar>(r,c) > 0)
+                            vis.at<cv::Vec3b>(r,c) = cv::Vec3b(0, 255, 0);
+            }
+            // Cyan line
+            if (pca_line) {
+                cv::Point p1(int(pca_line->x0 - pca_line->vx*400), int(pca_line->y0 - pca_line->vy*400));
+                cv::Point p2(int(pca_line->x0 + pca_line->vx*400), int(pca_line->y0 + pca_line->vy*400));
+                cv::line(vis, p1, p2, cv::Scalar(255,255,0), 2);
+                cv::circle(vis, cv::Point(int(pca_line->x0), int(pca_line->y0)), 5, cv::Scalar(0,255,0), 2);
+            }
+            if (tip)
+                cv::circle(vis, cv::Point(int(tip->x), int(tip->y)), 6, cv::Scalar(0,0,255), 2);
+            cv::imwrite(dp + "_overlay.jpg", vis);
+        }
+        
+        dbg_idx = (dbg_idx + 1) % 3;
+    }
+
     return result;
 }
