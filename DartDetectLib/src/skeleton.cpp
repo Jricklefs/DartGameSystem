@@ -140,6 +140,12 @@ void zhangSuenThinning(const cv::Mat& src, cv::Mat& dst) {
 #include <random>
 #include <queue>
 #include <map>
+// === FEATURE FLAGS: Dart Centerline V2 ===
+static bool g_use_ridge_centerline = true;
+static bool g_use_pca_barrel_split = true;
+static bool g_use_skeleton_tip = true;
+static bool g_use_centroid_constraint = true;
+
 
 // ============================================================================
 // Helper: Find flight blob (largest contour)
@@ -377,6 +383,120 @@ DetectionResult detect_dart(
             cv::findNonZero(motion_mask, dart_pts);
             
             if ((int)dart_pts.size() > 100) {
+
+            // === Phase V2-2: PCA-Oriented Barrel Split ===
+            if (g_use_pca_barrel_split && (int)dart_pts.size() > 100 && flight) {
+                // PCA on motion blob to get principal axis
+                cv::Mat pca_data((int)dart_pts.size(), 2, CV_64F);
+                for (int pi = 0; pi < (int)dart_pts.size(); ++pi) {
+                    pca_data.at<double>(pi, 0) = dart_pts[pi].x;
+                    pca_data.at<double>(pi, 1) = dart_pts[pi].y;
+                }
+                cv::PCA blob_pca(pca_data, cv::Mat(), cv::PCA::DATA_AS_ROW);
+                double pca_vx = blob_pca.eigenvectors.at<double>(0, 0);
+                double pca_vy = blob_pca.eigenvectors.at<double>(0, 1);
+                double pca_mx = blob_pca.mean.at<double>(0, 0);
+                double pca_my = blob_pca.mean.at<double>(0, 1);
+                
+                // Make direction point toward board center (away from flight)
+                double to_board_x = board_center.x - pca_mx;
+                double to_board_y = board_center.y - pca_my;
+                if (pca_vx * to_board_x + pca_vy * to_board_y < 0) {
+                    pca_vx = -pca_vx; pca_vy = -pca_vy;
+                }
+                
+                // Rotation angle to align PCA axis with Y-axis
+                double rot_angle = std::atan2(pca_vx, pca_vy);  // angle from Y-axis
+                double cos_a = std::cos(-rot_angle), sin_a = std::sin(-rot_angle);
+                
+                // Rotate all dart pixels to PCA frame
+                struct RotPt { double rx, ry; int ox, oy; };
+                std::vector<RotPt> rotated;
+                rotated.reserve(dart_pts.size());
+                for (const auto& pt : dart_pts) {
+                    double dx = pt.x - pca_mx, dy = pt.y - pca_my;
+                    double rx = cos_a * dx - sin_a * dy;
+                    double ry = sin_a * dx + cos_a * dy;
+                    rotated.push_back({rx, ry, pt.x, pt.y});
+                }
+                
+                // Build width profile along PCA axis (ry)
+                std::map<int, std::pair<double,double>> ry_minmax;
+                for (const auto& rp : rotated) {
+                    int ry_bin = (int)std::round(rp.ry);
+                    auto it = ry_minmax.find(ry_bin);
+                    if (it == ry_minmax.end()) ry_minmax[ry_bin] = {rp.rx, rp.rx};
+                    else {
+                        it->second.first = std::min(it->second.first, rp.rx);
+                        it->second.second = std::max(it->second.second, rp.rx);
+                    }
+                }
+                
+                // Find max width and junction (wide-to-narrow transition)
+                double max_width = 0;
+                for (auto& [ry, mm] : ry_minmax)
+                    max_width = std::max(max_width, mm.second - mm.first);
+                
+                double width_thr = max_width * 0.5;
+                
+                // Flight is in negative ry direction (toward flight centroid)
+                // Walk from negative ry (flight side) toward positive ry (tip side)
+                // Find first transition from wide to narrow
+                std::vector<std::pair<int, double>> sorted_widths;
+                for (auto& [ry, mm] : ry_minmax)
+                    sorted_widths.push_back({ry, mm.second - mm.first});
+                std::sort(sorted_widths.begin(), sorted_widths.end());
+                
+                int pca_junc = INT_MIN;
+                bool in_wide = false;
+                for (auto& [ry, w] : sorted_widths) {
+                    if (w >= width_thr) in_wide = true;
+                    else if (in_wide && w < width_thr && w > 0) { pca_junc = ry; break; }
+                }
+                
+                if (pca_junc != INT_MIN) {
+                    // Build barrel mask: keep only pixels with ry > junction (narrow/barrel side)
+                    cv::Mat pca_barrel = cv::Mat::zeros(motion_mask.size(), CV_8U);
+                    for (const auto& rp : rotated) {
+                        int ry_bin = (int)std::round(rp.ry);
+                        if (ry_bin >= pca_junc) {
+                            pca_barrel.at<uchar>(rp.oy, rp.ox) = 255;
+                        }
+                    }
+                    
+                    int pca_area = cv::countNonZero(pca_barrel);
+                    if (pca_area > 20) {
+                        // Check aspect ratio
+                        std::vector<cv::Point> pca_bp;
+                        cv::findNonZero(pca_barrel, pca_bp);
+                        double pca_aspect = 0;
+                        if ((int)pca_bp.size() >= 5) {
+                            cv::RotatedRect rr = cv::minAreaRect(pca_bp);
+                            double ls = std::max(rr.size.width, rr.size.height);
+                            double ss = std::min(rr.size.width, rr.size.height) + 1.0;
+                            pca_aspect = ls / ss;
+                        }
+                        
+                        if (pca_aspect >= 2.5) {
+                            // Compute centroid and pivot
+                            double bxs = 0, bys = 0;
+                            for (auto& p : pca_bp) { bxs += p.x; bys += p.y; }
+                            double bcx2 = bxs / pca_bp.size(), bcy2 = bys / pca_bp.size();
+                            
+                            barrel_mask = pca_barrel;
+                            saved_barrel_mask = barrel_mask.clone();
+                            barrel_info = BarrelInfo{
+                                Point2f(bcx2, bcy2),
+                                Point2f(bcx2 - pca_vx * 20, bcy2 - pca_vy * 20),  // pivot toward flight
+                                pca_area
+                            };
+                            result.barrel_aspect_ratio = pca_aspect;
+                            // Skip dual-axis split (PCA split succeeded)
+                        }
+                    }
+                }
+            }
+              if (barrel_mask.empty()) {
                 // === DUAL-AXIS BARREL SPLITTING (Feb 19, 2026) ===
                 struct SplitResult {
                     cv::Mat mask;
@@ -503,6 +623,7 @@ DetectionResult detect_dart(
                     result.barrel_aspect_ratio = best->aspect;
                 }
             }
+              } // end if barrel_mask.empty() guard for dual-axis
         }
         
         // === Phase 4A: Erode barrel mask before fitting ===
@@ -511,6 +632,94 @@ DetectionResult detect_dart(
             cv::Mat erode_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
             cv::erode(barrel_mask, barrel_mask_eroded, erode_kern);
             if (cv::countNonZero(barrel_mask_eroded) < 20) barrel_mask_eroded = barrel_mask;
+        }
+
+
+        // === Phase V2-1: Ridge-Based Centerline Fit ===
+        if (g_use_ridge_centerline && !barrel_mask.empty() && barrel_info) {
+            // Distance transform on barrel mask
+            cv::Mat dist_map;
+            cv::distanceTransform(barrel_mask, dist_map, cv::DIST_L2, 5);
+            
+            // Find ridge pixels: local maxima in distance transform (> all 8 neighbors)
+            std::vector<cv::Point2f> ridge_pts;
+            std::vector<double> ridge_weights;
+            int dm_rows = dist_map.rows, dm_cols = dist_map.cols;
+            for (int r = 1; r < dm_rows - 1; ++r) {
+                const float* prev_row = dist_map.ptr<float>(r - 1);
+                const float* curr_row = dist_map.ptr<float>(r);
+                const float* next_row = dist_map.ptr<float>(r + 1);
+                for (int c = 1; c < dm_cols - 1; ++c) {
+                    float val = curr_row[c];
+                    if (val < 1.5f) continue;  // skip thin regions
+                    if (val > prev_row[c-1] && val > prev_row[c] && val > prev_row[c+1] &&
+                        val > curr_row[c-1] && val > curr_row[c+1] &&
+                        val > next_row[c-1] && val > next_row[c] && val > next_row[c+1]) {
+                        ridge_pts.push_back(cv::Point2f((float)c, (float)r));
+                        ridge_weights.push_back((double)val);
+                    }
+                }
+            }
+            
+            if ((int)ridge_pts.size() >= 10) {
+                // Weighted least-squares line fit (weight = distance value)
+                double sw = 0, swx = 0, swy = 0;
+                for (size_t i = 0; i < ridge_pts.size(); ++i) {
+                    double w = ridge_weights[i];
+                    sw += w;
+                    swx += w * ridge_pts[i].x;
+                    swy += w * ridge_pts[i].y;
+                }
+                double mean_x = swx / sw, mean_y = swy / sw;
+                
+                // Weighted covariance for PCA direction
+                double cxx = 0, cxy = 0, cyy = 0;
+                for (size_t i = 0; i < ridge_pts.size(); ++i) {
+                    double w = ridge_weights[i];
+                    double dx = ridge_pts[i].x - mean_x;
+                    double dy = ridge_pts[i].y - mean_y;
+                    cxx += w * dx * dx;
+                    cxy += w * dx * dy;
+                    cyy += w * dy * dy;
+                }
+                
+                // Eigenvector of 2x2 covariance matrix
+                double trace = cxx + cyy;
+                double det = cxx * cyy - cxy * cxy;
+                double disc = trace * trace / 4.0 - det;
+                if (disc > 0) {
+                    double lambda1 = trace / 2.0 + std::sqrt(disc);
+                    double rvx = cxy;
+                    double rvy = lambda1 - cxx;
+                    double rlen = std::sqrt(rvx * rvx + rvy * rvy);
+                    if (rlen < 1e-6) { rvx = 1.0; rvy = 0.0; }
+                    else { rvx /= rlen; rvy /= rlen; }
+                    if (rvy < 0) { rvx = -rvx; rvy = -rvy; }
+                    
+                    // Check angle vs ref
+                    bool accept = true;
+                    if (ref_angle) {
+                        double la = std::atan2(rvy, rvx);
+                        double ad = std::abs(la - *ref_angle);
+                        if (ad > CV_PI) ad = 2 * CV_PI - ad;
+                        ad = std::min(ad, CV_PI - ad);
+                        if (ad > CV_PI * 60.0 / 180.0) accept = false;
+                    }
+                    
+                    // Elongation check: eigenvalue ratio
+                    double lambda2 = trace / 2.0 - std::sqrt(disc);
+                    double elong = (std::abs(lambda2) > 1e-6) ? lambda1 / std::abs(lambda2) : 100.0;
+                    
+                    if (accept && elong > 3.0) {
+                        pca_line = PcaLine{rvx, rvy, mean_x, mean_y,
+                            elong, "ridge_centerline"};
+                        fprintf(stderr, "RIDGE_CENTERLINE: vx=%.4f vy=%.4f cx=%.1f cy=%.1f pts=%d\n",
+                                rvx, rvy, mean_x, mean_y, (int)ridge_pts.size());
+                        result.ransac_inlier_ratio = 1.0;
+                        result.barrel_pixel_count = (int)ridge_pts.size();
+                    }
+                }
+            }
         }
 
         // === Phase 4C: Edge-pair barrel detection (try FIRST before RANSAC) ===
@@ -1000,6 +1209,62 @@ DetectionResult detect_dart(
         }
     }
     
+
+    // === Phase V2-4: Flight-Centroid Constrained Line Fit ===
+    if (g_use_centroid_constraint && pca_line && flight_centroid) {
+        // Check perpendicular distance from flight centroid to barrel line
+        double fc_dx = flight_centroid->x - pca_line->x0;
+        double fc_dy = flight_centroid->y - pca_line->y0;
+        double perp_dist = std::abs(fc_dx * (-pca_line->vy) + fc_dy * pca_line->vx);
+        
+        // If flight centroid is far from the barrel line, penalize confidence
+        // and attempt constrained refit through the flight centroid
+        double perp_threshold = 30.0 * rs;  // scaled by resolution
+        if (perp_dist > perp_threshold && !saved_barrel_mask.empty()) {
+            // Try refitting: include flight centroid as a heavily weighted point
+            std::vector<cv::Point> bp;
+            cv::findNonZero(saved_barrel_mask, bp);
+            if ((int)bp.size() > 10) {
+                // Build point set: barrel pixels + flight centroid (weighted by duplication)
+                std::vector<cv::Point2f> constrained_pts;
+                for (const auto& p : bp) constrained_pts.push_back(cv::Point2f((float)p.x, (float)p.y));
+                // Add flight centroid multiple times as anchor
+                int anchor_weight = std::max(1, (int)bp.size() / 5);
+                for (int aw = 0; aw < anchor_weight; ++aw)
+                    constrained_pts.push_back(cv::Point2f((float)flight_centroid->x, (float)flight_centroid->y));
+                
+                cv::Vec4f clp;
+                cv::fitLine(constrained_pts, clp, cv::DIST_HUBER, 0, 0.01, 0.01);
+                double cvx = clp[0], cvy = clp[1], ccx = clp[2], ccy = clp[3];
+                if (cvy < 0) { cvx = -cvx; cvy = -cvy; }
+                
+                // Check the new line's angle isn't crazy
+                bool c_accept = true;
+                if (ref_angle) {
+                    double la = std::atan2(cvy, cvx);
+                    double ad = std::abs(la - *ref_angle);
+                    if (ad > CV_PI) ad = 2 * CV_PI - ad;
+                    ad = std::min(ad, CV_PI - ad);
+                    if (ad > CV_PI * 60.0 / 180.0) c_accept = false;
+                }
+                
+                if (c_accept) {
+                    // Check new perp distance is actually better
+                    double new_fc_dx = flight_centroid->x - ccx;
+                    double new_fc_dy = flight_centroid->y - ccy;
+                    double new_perp = std::abs(new_fc_dx * (-cvy) + new_fc_dy * cvx);
+                    if (new_perp < perp_dist * 0.7) {
+                        pca_line = PcaLine{cvx, cvy, ccx, ccy, pca_line->elongation, "centroid_constrained"};
+                        fprintf(stderr, "CENTROID_CONSTRAINED: perp %.1f -> %.1f\n", perp_dist, new_perp);
+                    }
+                }
+            }
+            
+            // Penalize confidence if centroid is still far
+            result.mask_quality *= std::max(0.5, 1.0 - (perp_dist - perp_threshold) / (perp_threshold * 2.0));
+        }
+    }
+
     // Step 4b: Line-guided blob absorption
     if (pca_line && !pre_chain_mask.empty()) {
         cv::Mat filtered_out;
@@ -1164,6 +1429,59 @@ DetectionResult detect_dart(
         }
     }
     
+
+    // === Phase V2-3: Skeleton-Based Tip Detection ===
+    if (g_use_skeleton_tip && !tip && pca_line && !saved_barrel_mask.empty() && flight_centroid) {
+        cv::Mat skel_tip;
+        zhangSuenThinning(saved_barrel_mask, skel_tip);
+        
+        std::vector<cv::Point> sk_pts;
+        cv::findNonZero(skel_tip, sk_pts);
+        
+        if ((int)sk_pts.size() > 5) {
+            // Build adjacency set
+            std::set<std::pair<int,int>> sk_set;
+            for (const auto& p : sk_pts) sk_set.insert({p.y, p.x});
+            
+            // Find endpoints (pixels with exactly 1 neighbor in skeleton)
+            std::vector<cv::Point> sk_endpoints;
+            for (const auto& p : sk_pts) {
+                int nbr = 0;
+                for (int dy = -1; dy <= 1; ++dy)
+                    for (int dx = -1; dx <= 1; ++dx)
+                        if ((dy || dx) && sk_set.count({p.y + dy, p.x + dx}))
+                            ++nbr;
+                if (nbr == 1) sk_endpoints.push_back(p);
+            }
+            
+            if (!sk_endpoints.empty()) {
+                // Select endpoint farthest from flight centroid along barrel axis
+                double best_along = -1e18;
+                cv::Point best_ep;
+                bool found_ep = false;
+                for (const auto& ep : sk_endpoints) {
+                    double along = (ep.x - flight_centroid->x) * pca_line->vx +
+                                   (ep.y - flight_centroid->y) * pca_line->vy;
+                    if (along > best_along) {
+                        best_along = along;
+                        best_ep = ep;
+                        found_ep = true;
+                    }
+                }
+                
+                if (found_ep) {
+                    tip = Point2f(best_ep.x, best_ep.y);
+                    tip_method = "skeleton_tip";
+                    if (flight_centroid) {
+                        double dx = tip->x - flight_centroid->x;
+                        double dy = tip->y - flight_centroid->y;
+                        dart_length = std::sqrt(dx * dx + dy * dy);
+                    }
+                }
+            }
+        }
+    }
+
     // Fallback: highest Y pixel
     if (!tip && mask_pixels > 200) {
         std::vector<cv::Point> pts;

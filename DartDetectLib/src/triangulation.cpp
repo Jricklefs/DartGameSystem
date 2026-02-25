@@ -10,6 +10,9 @@
 #include <cmath>
 #include <set>
 #include <opencv2/calib3d.hpp>
+// === FEATURE FLAG: Dart Centerline V2 ===
+static bool g_use_robust_triangulation = true;
+
 
 // ============================================================================
 // TPS (Thin-Plate Spline) Transform
@@ -282,6 +285,76 @@ std::optional<Point2f> intersect_lines_2d(
 // Line Intersection Triangulation (Autodarts-style)
 // ============================================================================
 
+
+// === Phase V2-5: Robust Least-Squares Point from Lines ===
+// Given N lines in 2D (each defined by point + direction), find the point
+// minimizing sum of squared distances to all lines, with Huber loss for outlier suppression.
+static std::optional<Point2f> robust_least_squares_point(
+    const std::vector<std::pair<Point2f, Point2f>>& lines_start_end,
+    const std::vector<double>& weights,
+    int max_iter = 5, double huber_k = 0.1)
+{
+    int N = (int)lines_start_end.size();
+    if (N < 2) return std::nullopt;
+    
+    // Each line: point p_i, direction d_i -> normal n_i = (-d_iy, d_ix)
+    // Distance from point x to line i: n_i . (x - p_i)
+    // Minimize sum w_i * rho(n_i . (x - p_i))
+    
+    // First pass: standard weighted least squares
+    // n_i . x = n_i . p_i  =>  A x = b where A[i] = n_i, b[i] = n_i . p_i
+    // Normal equations: (A^T W A) x = A^T W b
+    
+    // Build A and b
+    std::vector<double> nx(N), ny(N), rhs(N), w(N);
+    for (int i = 0; i < N; ++i) {
+        double dx = lines_start_end[i].second.x - lines_start_end[i].first.x;
+        double dy = lines_start_end[i].second.y - lines_start_end[i].first.y;
+        double len = std::sqrt(dx * dx + dy * dy);
+        if (len < 1e-12) { nx[i] = 0; ny[i] = 0; rhs[i] = 0; w[i] = 0; continue; }
+        nx[i] = -dy / len;
+        ny[i] = dx / len;
+        rhs[i] = nx[i] * lines_start_end[i].first.x + ny[i] * lines_start_end[i].first.y;
+        w[i] = (i < (int)weights.size()) ? weights[i] : 1.0;
+    }
+    
+    double sol_x = 0, sol_y = 0;
+    
+    for (int iter = 0; iter < max_iter; ++iter) {
+        // Weighted normal equations: (A^T W A) x = A^T W b
+        double ata00 = 0, ata01 = 0, ata11 = 0;
+        double atb0 = 0, atb1 = 0;
+        
+        for (int i = 0; i < N; ++i) {
+            double wi = w[i];
+            if (wi < 1e-12) continue;
+            
+            // Huber reweighting (after first iteration)
+            if (iter > 0) {
+                double res = nx[i] * sol_x + ny[i] * sol_y - rhs[i];
+                double abs_res = std::abs(res);
+                if (abs_res > huber_k) {
+                    wi *= huber_k / abs_res;  // Huber downweight
+                }
+            }
+            
+            ata00 += wi * nx[i] * nx[i];
+            ata01 += wi * nx[i] * ny[i];
+            ata11 += wi * ny[i] * ny[i];
+            atb0 += wi * nx[i] * rhs[i];
+            atb1 += wi * ny[i] * rhs[i];
+        }
+        
+        double det = ata00 * ata11 - ata01 * ata01;
+        if (std::abs(det) < 1e-12) return std::nullopt;
+        
+        sol_x = (ata11 * atb0 - ata01 * atb1) / det;
+        sol_y = (ata00 * atb1 - ata01 * atb0) / det;
+    }
+    
+    return Point2f(sol_x, sol_y);
+}
+
 std::optional<IntersectionResult> triangulate_with_line_intersection(
     const std::map<std::string, DetectionResult>& camera_results,
     const std::map<std::string, CameraCalibration>& calibrations)
@@ -443,6 +516,21 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     }
     
     if (intersections.empty()) return std::nullopt;
+
+    // === Phase V2-5: Robust Least-Squares Integration ===
+    std::optional<Point2f> robust_point;
+    if (g_use_robust_triangulation && cam_lines.size() >= 2) {
+        std::vector<std::pair<Point2f, Point2f>> all_lines;
+        std::vector<double> all_weights;
+        for (const auto& cid : cam_ids) {
+            const auto& cl = cam_lines[cid];
+            all_lines.push_back({cl.line_start, cl.line_end});
+            all_weights.push_back(cl.detection_quality * cl.mask_quality);
+        }
+        robust_point = robust_least_squares_point(all_lines, all_weights);
+    }
+
+
     
     // Step 3: Voting hierarchy
     // Per-camera segment votes
@@ -545,13 +633,37 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         }
     }
     
+
+    // Phase V2-5: Use robust point if available and on-board
+    Point2f final_coords = best->coords;
+    if (g_use_robust_triangulation && robust_point) {
+        double rp_dist = std::sqrt(robust_point->x * robust_point->x + robust_point->y * robust_point->y);
+        if (rp_dist <= 1.3) {
+            // Use robust point, but only if it's close to the pairwise result
+            double dx = robust_point->x - best->coords.x;
+            double dy = robust_point->y - best->coords.y;
+            double disagreement = std::sqrt(dx * dx + dy * dy);
+            if (disagreement < 0.15) {
+                final_coords = *robust_point;
+            }
+        }
+    }
+
+    // Score the final coordinates
+    double final_dist = std::sqrt(final_coords.x * final_coords.x + final_coords.y * final_coords.y);
+    double final_angle_rad = std::atan2(final_coords.y, -final_coords.x);
+    double final_angle_deg = final_angle_rad * 180.0 / CV_PI;
+    if (final_angle_deg < 0) final_angle_deg += 360.0;
+    final_angle_deg = std::fmod(final_angle_deg, 360.0);
+    ScoreResult final_score = score_from_polar(final_angle_deg, final_dist);
+
     IntersectionResult result;
-    result.segment = best->score.segment;
-    result.multiplier = best->score.multiplier;
-    result.score = best->score.score;
+    result.segment = final_score.segment;
+    result.multiplier = final_score.multiplier;
+    result.score = final_score.score;
     result.method = method;
     result.confidence = confidence;
-    result.coords = best->coords;
+    result.coords = final_coords;
     result.total_error = best->total_error;
     for (const auto& [cam_id, data] : cam_lines)
         result.per_camera[cam_id] = data.vote;
