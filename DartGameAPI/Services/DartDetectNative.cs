@@ -39,6 +39,13 @@ public static class DartDetectNative
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
     private static extern void dd_free_string(IntPtr str);
 
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "GetFrontonView")]
+    private static extern int dd_get_fronton_view(
+        int cameraIndex,
+        byte[] inputJpeg, int inputLen,
+        byte[] outputJpeg, out int outputLen,
+        int outputSize);
+
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr dd_version();
 
@@ -148,6 +155,29 @@ public static class DartDetectNative
     /// Clear board cache (end of game).
     /// </summary>
     public static void ClearBoard(string boardId) => dd_clear_board(boardId);
+
+    /// <summary>
+    /// Generate a front-on (top-down) warped view of the dartboard from a camera image.
+    /// Returns the warped JPEG image bytes, or null on error.
+    /// </summary>
+    public static byte[]? GetFrontonViewImage(int cameraIndex, byte[] inputJpeg)
+    {
+        const int MAX_OUTPUT_SIZE = 2 * 1024 * 1024; // 2MB max output
+        var outputBuffer = new byte[MAX_OUTPUT_SIZE];
+        
+        int result = dd_get_fronton_view(
+            cameraIndex,
+            inputJpeg, inputJpeg.Length,
+            outputBuffer, out int outputLen,
+            MAX_OUTPUT_SIZE);
+        
+        if (result != 0 || outputLen <= 0)
+            return null;
+        
+        var output = new byte[outputLen];
+        Array.Copy(outputBuffer, output, outputLen);
+        return output;
+    }
 }
 
 /// <summary>

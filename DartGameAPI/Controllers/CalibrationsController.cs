@@ -205,6 +205,57 @@ public class CalibrationsController : ControllerBase
     }
 
     /// <summary>
+    /// Get a front-on (top-down) warped view of the dartboard for a camera.
+    /// Fetches a live frame from DartSensor and warps it using TPS calibration.
+    /// </summary>
+    [HttpGet("{cameraId}/fronton")]
+    public async Task<IActionResult> GetFrontonView(string cameraId)
+    {
+        // Parse camera index from cameraId (e.g., "cam0" -> 0)
+        if (!cameraId.StartsWith("cam") || !int.TryParse(cameraId[3..], out int camIndex))
+            return BadRequest(new { error = "Invalid cameraId format. Expected cam0, cam1, cam2." });
+
+        try
+        {
+            // Get a live frame from DartSensor
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(3);
+            
+            var snapResponse = await httpClient.GetAsync(
+                $"http://192.168.0.158:8001/cameras/{camIndex}/snapshot?raw=true");
+            
+            if (!snapResponse.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to get snapshot from DartSensor for {CameraId}: {Status}", 
+                    cameraId, snapResponse.StatusCode);
+                return StatusCode(502, new { error = "Could not get camera frame from DartSensor" });
+            }
+
+            var inputJpeg = await snapResponse.Content.ReadAsByteArrayAsync();
+            
+            // Call the native DLL to generate the fronton view
+            var outputJpeg = DartGameAPI.Services.DartDetectNative.GetFrontonViewImage(camIndex, inputJpeg);
+            
+            if (outputJpeg == null)
+            {
+                _logger.LogWarning("GetFrontonView failed for {CameraId} - DLL returned error", cameraId);
+                return StatusCode(500, new { error = "Fronton view generation failed. Check calibration is loaded." });
+            }
+
+            return File(outputJpeg, "image/jpeg");
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex, "DartSensor not reachable for fronton view");
+            return StatusCode(502, new { error = "DartSensor not reachable" });
+        }
+        catch (TaskCanceledException)
+        {
+            return StatusCode(504, new { error = "DartSensor request timed out" });
+        }
+    }
+
+    /// <summary>
     /// Delete calibration for a camera
     /// </summary>
     [HttpDelete("{cameraId}")]
