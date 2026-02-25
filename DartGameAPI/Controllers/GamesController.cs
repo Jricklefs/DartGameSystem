@@ -153,7 +153,7 @@ public class GamesController : ControllerBase
                 var bmPlayer = player?.Name ?? "player";
                 _ = Task.Run(() => _benchmark.SaveBenchmarkDataAsync(
                     requestId, dartNumber, boardId, game.Id, game.CurrentRound, bmPlayer,
-                    request.BeforeImages, request.Images, null, detectResult));
+                    request.BeforeImages, request.Images, null, detectResult, request.CameraSettings));
             }
 
             return Ok(new { message = "Miss recorded", darts = new[] { new { missDart.Zone, missDart.Score, missDart.Segment, missDart.Multiplier } } });
@@ -187,7 +187,7 @@ public class GamesController : ControllerBase
             var bmPlayer = player?.Name ?? "player";
             _ = Task.Run(() => _benchmark.SaveBenchmarkDataAsync(
                 requestId, dartNumber, boardId, game.Id, game.CurrentRound, bmPlayer,
-                request.BeforeImages, request.Images, newTip, detectResult));  // BeforeImages=raw(with dart), Images=previous(before dart)
+                request.BeforeImages, request.Images, newTip, detectResult, request.CameraSettings));  // BeforeImages=raw(with dart), Images=previous(before dart)
         }
         
         _logger.LogInformation("[TIMING][{RequestId}] DG: COMPLETE total={Total}ms", requestId, sw.ElapsedMilliseconds);
@@ -1088,6 +1088,8 @@ public class DetectRequest
     public List<ImagePayload>? BeforeImages { get; set; }
     public List<List<ImagePayload>>? MultiFrameImages { get; set; }
     public string? RequestId { get; set; }
+    /// <summary>Camera hardware settings at time of capture (from DartSensor)</summary>
+    public Dictionary<string, Dictionary<string, object>>? CameraSettings { get; set; }
 }
 
 public class ImagePayload

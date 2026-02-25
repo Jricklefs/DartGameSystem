@@ -54,7 +54,8 @@ public class BenchmarkService
         List<Controllers.ImagePayload>? images,
         List<Controllers.ImagePayload>? beforeImages,
         Models.DetectedTip? tip,
-        Models.DetectResponse? detectResponse)
+        Models.DetectResponse? detectResponse,
+        Dictionary<string, Dictionary<string, object>>? cameraSettings = null)
     {
         if (!_settings.Enabled) return;
 
@@ -131,6 +132,23 @@ public class BenchmarkService
 
             var json = JsonSerializer.Serialize(metadata, _jsonOpts);
             await File.WriteAllTextAsync(Path.Combine(folder, "metadata.json"), json);
+
+            // Save camera settings + DLL enhancement params alongside dart images
+            var captureSettings = new Dictionary<string, object?>
+            {
+                ["timestamp"] = DateTime.UtcNow.ToString("o"),
+                ["camera_settings"] = cameraSettings,
+                ["dll_enhancement_params"] = new Dictionary<string, object?>
+                {
+                    ["usm_sigma"] = 3.0,
+                    ["usm_strength"] = 0.7,
+                    ["gamma"] = 0.6,
+                    ["desaturation"] = 0.5,
+                    ["note"] = "Hardcoded in DartDetectLib dart_detect.cpp dd_detect(). Values here for benchmark reproducibility."
+                }
+            };
+            var settingsJson = JsonSerializer.Serialize(captureSettings, _jsonOpts);
+            await File.WriteAllTextAsync(Path.Combine(folder, "camera_settings.json"), settingsJson);
 
             _logger.LogInformation("[BENCHMARK] Saved dart {DartNumber} data to {Folder}", dartNumber, folder);
         }
