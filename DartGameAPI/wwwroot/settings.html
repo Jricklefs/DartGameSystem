@@ -157,6 +157,11 @@
             </div>
 
             <!-- Large Camera Preview with Canvas Overlay -->
+            <!-- View Mode Toggle -->
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <button class="view-toggle-btn btn btn-sm active" data-view="combined">📷 Overlay</button>
+                <button class="view-toggle-btn btn btn-sm" data-view="fronton">🎯 Fronton</button>
+            </div>
             <div class="camera-preview-full" id="calibration-preview">
                 <img id="camera-base-img" class="calibration-camera-img" alt="Camera Feed" style="display:none">
                 <canvas id="calibration-canvas" class="calibration-canvas"></canvas>

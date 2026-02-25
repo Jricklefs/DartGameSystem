@@ -243,7 +243,7 @@ let customBackgrounds = [];
 let storedCalibrations = {};  // From database
 let selectedCamera = 0;
 let mark20Mode = false;
-let calibrationViewMode = 'combined';  // 'overlay' or 'combined'
+let calibrationViewMode = 'combined';  // 'overlay', 'combined', or 'fronton'
 let lastCameraSnapshot = null;  // Store the base camera image
 
 // Segment numbers are now drawn by DartDetectionAI in the overlay image
@@ -639,7 +639,11 @@ async function initCalibration() {
             document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             calibrationViewMode = btn.dataset.view;
-            updateCalibrationView();
+            if (calibrationViewMode === 'fronton') {
+                loadFrontonView();
+            } else {
+                updateCalibrationView();
+            }
         });
     });
     
@@ -657,6 +661,12 @@ async function initCalibration() {
 // Update the calibration view based on mode
 function updateCalibrationView() {
     const img = document.getElementById('camera-base-img');
+    const canvas = document.getElementById('calibration-canvas');
+    
+    // Hide fronton canvas if switching away from fronton mode
+    if (calibrationViewMode !== 'fronton' && canvas) {
+        canvas.style.display = 'none';
+    }
     
     // The overlay image already contains both camera + overlay drawn on it
     // So we don't need separate images - just show the overlay
@@ -664,6 +674,60 @@ function updateCalibrationView() {
         img.style.display = 'block';
         img.style.position = 'absolute';
         img.style.zIndex = '15';
+    }
+}
+
+// Load fronton (top-down warped) view from the API
+async function loadFrontonView() {
+    const camId = `cam${selectedCamera}`;
+    const img = document.getElementById('camera-base-img');
+    const canvas = document.getElementById('calibration-canvas');
+    const loading = document.getElementById('main-camera-loading');
+    const offline = document.getElementById('main-camera-offline');
+    const qualityLabel = document.getElementById('cam-quality-label');
+    
+    // Show loading state
+    loading.classList.remove('hidden');
+    loading.querySelector('span').textContent = '\u{1f3af} Generating fronton view...';
+    if (canvas) canvas.style.display = 'none';
+    img.style.display = 'none';
+    offline.classList.add('hidden');
+    
+    try {
+        const res = await fetch(`${DART_GAME_URL}/api/calibrations/${camId}/fronton`, {
+            signal: AbortSignal.timeout(5000)
+        });
+        
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        
+        img.onload = () => {
+            loading.classList.add('hidden');
+            img.style.display = 'block';
+            img.style.position = 'relative';
+            img.style.zIndex = '15';
+            qualityLabel.textContent = '\u{1f3af} Fronton View (top-down)';
+            qualityLabel.className = 'cam-quality-label calibrated';
+        };
+        img.onerror = () => {
+            loading.classList.add('hidden');
+            offline.classList.remove('hidden');
+            offline.querySelector('span').textContent = '\u274c Failed to load fronton image';
+        };
+        img.src = url;
+        
+    } catch (e) {
+        console.error('Fronton view error:', e);
+        loading.classList.add('hidden');
+        offline.classList.remove('hidden');
+        offline.querySelector('span').textContent = `\u274c Fronton: ${e.message}`;
+        qualityLabel.textContent = `\u274c Fronton failed: ${e.message}`;
+        qualityLabel.className = 'cam-quality-label failed';
     }
 }
 
