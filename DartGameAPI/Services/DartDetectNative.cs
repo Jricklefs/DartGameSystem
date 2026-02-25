@@ -206,6 +206,45 @@ public class DetectionResult
     
     [System.Text.Json.Serialization.JsonPropertyName("camera_details")]
     public Dictionary<string, CameraDetail>? CameraDetails { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("tri_debug")]
+    public TriangulationDebugInfo? TriDebug { get; set; }
+}
+
+public class TriangulationDebugInfo
+{
+    [System.Text.Json.Serialization.JsonPropertyName("angle_spread_deg")]
+    public double AngleSpreadDeg { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("median_residual")]
+    public double MedianResidual { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("max_residual")]
+    public double MaxResidual { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("residual_spread")]
+    public double ResidualSpread { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("final_confidence")]
+    public double FinalConfidence { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("camera_dropped")]
+    public bool CameraDropped { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("dropped_cam_id")]
+    public string DroppedCamId { get; set; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("cam_debug")]
+    public Dictionary<string, CamTriDebug>? CamDebug { get; set; }
+}
+
+public class CamTriDebug
+{
+    [System.Text.Json.Serialization.JsonPropertyName("warped_dir_x")]
+    public double WarpedDirX { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("warped_dir_y")]
+    public double WarpedDirY { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("perp_residual")]
+    public double PerpResidual { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("barrel_pixel_count")]
+    public int BarrelPixelCount { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("barrel_aspect_ratio")]
+    public double BarrelAspectRatio { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("detection_quality")]
+    public double DetectionQuality { get; set; }
 }
 
 public class CameraDetail

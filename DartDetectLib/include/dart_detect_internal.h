@@ -148,6 +148,27 @@ struct IntersectionResult {
     Point2f coords;
     double total_error = 0.0;
     std::map<std::string, ScoreResult> per_camera;
+
+    // Phase 7: Debug export fields for triangulation confidence
+    struct TriangulationDebug {
+        struct CamDebug {
+            double warped_dir_x = 0.0;
+            double warped_dir_y = 0.0;
+            double perp_residual = 0.0;
+            int barrel_pixel_count = 0;
+            double barrel_aspect_ratio = 0.0;
+            double detection_quality = 0.0;
+        };
+        std::map<std::string, CamDebug> cam_debug;
+        double angle_spread_deg = 0.0;
+        double median_residual = 0.0;
+        double max_residual = 0.0;
+        double residual_spread = 0.0;
+        double final_confidence = 0.0;
+        bool camera_dropped = false;
+        std::string dropped_cam_id;
+    };
+    std::optional<TriangulationDebug> tri_debug;
 };
 
 // Ellipse calibration data per camera

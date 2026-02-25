@@ -483,6 +483,34 @@ DD_API const char* dd_detect(
             }
             json << "}";
 
+            // Phase 7: Triangulation debug export
+            if (tri->tri_debug) {
+                const auto& td = *tri->tri_debug;
+                json << ",\"tri_debug\":{"
+                     << json_double("angle_spread_deg", td.angle_spread_deg) << ","
+                     << json_double("median_residual", td.median_residual) << ","
+                     << json_double("max_residual", td.max_residual) << ","
+                     << json_double("residual_spread", td.residual_spread) << ","
+                     << json_double("final_confidence", td.final_confidence) << ","
+                     << "\"camera_dropped\":" << (td.camera_dropped ? "true" : "false") << ","
+                     << json_string("dropped_cam_id", td.dropped_cam_id);
+                json << ",\"cam_debug\":{";
+                bool first_cd = true;
+                for (const auto& [cid, cd] : td.cam_debug) {
+                    if (!first_cd) json << ",";
+                    json << "\"" << cid << "\":{"
+                         << json_double("warped_dir_x", cd.warped_dir_x) << ","
+                         << json_double("warped_dir_y", cd.warped_dir_y) << ","
+                         << json_double("perp_residual", cd.perp_residual) << ","
+                         << json_int("barrel_pixel_count", cd.barrel_pixel_count) << ","
+                         << json_double("barrel_aspect_ratio", cd.barrel_aspect_ratio) << ","
+                         << json_double("detection_quality", cd.detection_quality)
+                         << "}";
+                    first_cd = false;
+                }
+                json << "}}";
+            }
+
             // === PCA DUAL PIPELINE ===
             // Run PCA-based barrel detection (only when enabled)
             if (g_pca_enabled) { // PCA toggle gate
