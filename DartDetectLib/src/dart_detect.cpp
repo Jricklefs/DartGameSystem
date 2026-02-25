@@ -625,3 +625,231 @@ DD_API const char* dd_version(void)
 {
     return "DartDetectLib 1.0.0 (ported from Python v10.2)";
 }
+
+
+// ============================================================================
+// Fronton (Top-Down) View
+// ============================================================================
+
+// Build inverse TPS: from normalized board coords back to pixel coords
+static TpsTransform build_inverse_tps(const CameraCalibration& cal)
+{
+    // The forward TPS goes pixel -> normalized.
+    // We need normalized -> pixel, so swap src/dst.
+    TpsTransform inv;
+    inv.valid = false;
+
+    const auto& fwd = cal.tps_cache;
+    if (!fwd.valid) return inv;
+
+    int N = fwd.src_points.rows;
+    if (N < 4) return inv;
+
+    // For inverse: src = normalized board coords, dst = pixel coords
+    std::vector<double> src_x(N), src_y(N), dst_x(N), dst_y(N);
+    for (int i = 0; i < N; ++i) {
+        src_x[i] = fwd.dst_points.at<double>(i, 0);  // normalized
+        src_y[i] = fwd.dst_points.at<double>(i, 1);
+        dst_x[i] = fwd.src_points.at<double>(i, 0);  // pixel
+        dst_y[i] = fwd.src_points.at<double>(i, 1);
+    }
+
+    // Build TPS system (same math as build_tps_transform but with swapped points)
+    auto tps_basis_d = [](double x1, double y1, double x2, double y2) -> double {
+        double r = std::sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+        if (r < 1e-10) return 0.0;
+        return r * r * std::log(r);
+    };
+
+    cv::Mat K(N, N, CV_64F);
+    for (int i = 0; i < N; ++i)
+        for (int j = 0; j < N; ++j)
+            K.at<double>(i, j) = tps_basis_d(src_x[i], src_y[i], src_x[j], src_y[j]);
+
+    cv::Mat P(N, 3, CV_64F);
+    for (int i = 0; i < N; ++i) {
+        P.at<double>(i, 0) = 1.0;
+        P.at<double>(i, 1) = src_x[i];
+        P.at<double>(i, 2) = src_y[i];
+    }
+
+    int M = N + 3;
+    cv::Mat L = cv::Mat::zeros(M, M, CV_64F);
+    K.copyTo(L(cv::Range(0, N), cv::Range(0, N)));
+    P.copyTo(L(cv::Range(0, N), cv::Range(N, M)));
+    cv::Mat(P.t()).copyTo(L(cv::Range(N, M), cv::Range(0, N)));
+
+    cv::Mat rhs_x = cv::Mat::zeros(M, 1, CV_64F);
+    cv::Mat rhs_y = cv::Mat::zeros(M, 1, CV_64F);
+    for (int i = 0; i < N; ++i) {
+        rhs_x.at<double>(i) = dst_x[i];
+        rhs_y.at<double>(i) = dst_y[i];
+    }
+
+    cv::Mat sol_x, sol_y;
+    if (!cv::solve(L, rhs_x, sol_x, cv::DECOMP_SVD)) return inv;
+    if (!cv::solve(L, rhs_y, sol_y, cv::DECOMP_SVD)) return inv;
+
+    inv.src_points = cv::Mat(N, 2, CV_64F);
+    inv.dst_points = cv::Mat(N, 2, CV_64F);
+    for (int i = 0; i < N; ++i) {
+        inv.src_points.at<double>(i, 0) = src_x[i];
+        inv.src_points.at<double>(i, 1) = src_y[i];
+        inv.dst_points.at<double>(i, 0) = dst_x[i];
+        inv.dst_points.at<double>(i, 1) = dst_y[i];
+    }
+
+    inv.weights = cv::Mat(M, 2, CV_64F);
+    for (int i = 0; i < M; ++i) {
+        inv.weights.at<double>(i, 0) = sol_x.at<double>(i);
+        inv.weights.at<double>(i, 1) = sol_y.at<double>(i);
+    }
+
+    inv.valid = true;
+    return inv;
+}
+
+// Draw the spider (wire overlay) on a fronton image
+static void draw_spider_overlay(cv::Mat& img, int size)
+{
+    double cx = size / 2.0;
+    double cy = size / 2.0;
+    double scale = size / 2.0;  // 1.0 normalized = edge of image
+
+    cv::Scalar wire_color(0, 255, 255);  // Yellow
+    int thickness = 1;
+
+    // Ring radii (normalized, same as in build_tps_transform)
+    double rings[] = {
+        6.35 / 170.0,   // bullseye
+        16.0 / 170.0,   // bull
+        99.0 / 170.0,   // triple inner
+        107.0 / 170.0,  // triple outer
+        162.0 / 170.0,  // double inner
+        170.0 / 170.0   // double outer
+    };
+
+    for (double r : rings) {
+        int radius_px = (int)(r * scale);
+        cv::circle(img, cv::Point((int)cx, (int)cy), radius_px, wire_color, thickness);
+    }
+
+    // Segment lines: 20 lines at 18-degree intervals
+    // Segment 20 is at top (12 o'clock), boundaries at -9 and +9 degrees
+    double bull_r = 16.0 / 170.0 * scale;
+    double outer_r = 170.0 / 170.0 * scale;
+    for (int i = 0; i < 20; ++i) {
+        double angle_deg = i * 18.0 - 9.0;  // boundary angle in CW degrees from 12 o'clock
+        double angle_rad = angle_deg * CV_PI / 180.0;
+        // In our coordinate system: x = sin(angle), y = -cos(angle) for CW from top
+        // But fronton maps: board_x -> img_x, board_y -> img_y (with y inverted to put 20 at top)
+        double dx = std::sin(angle_rad);
+        double dy = -std::cos(angle_rad);
+        int x1 = (int)(cx + bull_r * dx);
+        int y1 = (int)(cy + bull_r * dy);
+        int x2 = (int)(cx + outer_r * dx);
+        int y2 = (int)(cy + outer_r * dy);
+        cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), wire_color, thickness);
+    }
+
+    // Segment number labels
+    static const int SEG_ORDER[20] = {20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5};
+    double label_r = 185.0 / 170.0 * scale;  // Just outside the board
+    for (int i = 0; i < 20; ++i) {
+        double angle_deg = i * 18.0;  // center of segment
+        double angle_rad = angle_deg * CV_PI / 180.0;
+        double dx = std::sin(angle_rad);
+        double dy = -std::cos(angle_rad);
+        int lx = (int)(cx + label_r * dx);
+        int ly = (int)(cy + label_r * dy);
+
+        std::string label = std::to_string(SEG_ORDER[i]);
+        int baseline = 0;
+        cv::Size ts = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseline);
+        cv::putText(img, label, cv::Point(lx - ts.width/2, ly + ts.height/2),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 255, 255), 1);
+    }
+}
+
+DD_API int GetFrontonView(
+    int camera_index,
+    const unsigned char* input_jpeg, int input_len,
+    unsigned char* output_jpeg, int* output_len,
+    int output_size)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+
+    if (!g_initialized || !input_jpeg || !output_jpeg || !output_len) return -1;
+
+    // Find calibration for this camera
+    std::string cam_id = "cam" + std::to_string(camera_index);
+    auto cal_it = g_calibrations.find(cam_id);
+    if (cal_it == g_calibrations.end()) return -1;
+    const auto& cal = cal_it->second;
+    if (!cal.tps_cache.valid) return -1;
+
+    // Decode input JPEG
+    std::vector<unsigned char> buf(input_jpeg, input_jpeg + input_len);
+    cv::Mat input_img = cv::imdecode(buf, cv::IMREAD_COLOR);
+    if (input_img.empty()) return -1;
+
+    // Build inverse TPS (normalized -> pixel)
+    TpsTransform inv_tps = build_inverse_tps(cal);
+    if (!inv_tps.valid) return -1;
+
+    // Create 600x600 output
+    const int OUT_SIZE = 600;
+    cv::Mat output(OUT_SIZE, OUT_SIZE, CV_8UC3, cv::Scalar(0, 0, 0));
+
+    // Map each output pixel back to camera pixel
+    // Output coordinate system: center = (300, 300)
+    // Normalized board coords: x = sin(angle_cw), y = cos(angle_cw)
+    // We want 20 at top (12 o'clock), so y-axis points up in board space
+    // In output image: row 0 = top, so we negate y
+    double out_cx = OUT_SIZE / 2.0;
+    double out_cy = OUT_SIZE / 2.0;
+    double out_scale = OUT_SIZE / 2.0;  // 1.0 normalized = 300 pixels
+
+    for (int row = 0; row < OUT_SIZE; ++row) {
+        for (int col = 0; col < OUT_SIZE; ++col) {
+            // Convert output pixel to normalized board coords
+            double norm_x = (col - out_cx) / out_scale;
+            double norm_y = (row - out_cy) / out_scale;
+            // Note: In build_tps_transform, dst_y = norm_radius * cos(angle_cw)
+            // and dst_x = norm_radius * sin(angle_cw)
+            // So norm_x = sin(angle), norm_y = cos(angle) with 20 at y=+1 (top)
+            // But in image space, row 0 is top, so we need norm_y inverted
+            double board_x = norm_x;
+            double board_y = -norm_y;  // flip Y so 20 (positive y in board) is at top of image
+
+            // Skip pixels outside the board (with some margin)
+            double dist = std::sqrt(board_x * board_x + board_y * board_y);
+            if (dist > 1.15) continue;
+
+            // Inverse warp: normalized board -> camera pixel
+            Point2f px = inv_tps.transform(board_x, board_y);
+
+            int src_x = (int)std::round(px.x);
+            int src_y = (int)std::round(px.y);
+
+            if (src_x >= 0 && src_x < input_img.cols && src_y >= 0 && src_y < input_img.rows) {
+                output.at<cv::Vec3b>(row, col) = input_img.at<cv::Vec3b>(src_y, src_x);
+            }
+        }
+    }
+
+    // Draw spider overlay
+    draw_spider_overlay(output, OUT_SIZE);
+
+    // Encode to JPEG
+    std::vector<unsigned char> out_buf;
+    std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, 85};
+    if (!cv::imencode(".jpg", output, out_buf, params)) return -1;
+
+    if ((int)out_buf.size() > output_size) return -1;
+
+    std::memcpy(output_jpeg, out_buf.data(), out_buf.size());
+    *output_len = (int)out_buf.size();
+
+    return 0;
+}

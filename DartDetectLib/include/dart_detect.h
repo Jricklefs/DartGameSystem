@@ -88,6 +88,26 @@ DD_API void dd_free_string(const char* str);
  */
 DD_API const char* dd_version(void);
 
+
+/**
+ * Generate a front-on (top-down) warped view of the dartboard.
+ * Uses the TPS warp to create a 600x600 image viewed from directly above.
+ *
+ * @param camera_index Camera index (0, 1, or 2)
+ * @param input_jpeg   Pointer to input JPEG image bytes
+ * @param input_len    Length of input JPEG data
+ * @param output_jpeg  Buffer to receive output JPEG
+ * @param output_len   Receives actual output JPEG length
+ * @param output_size  Max size of output buffer
+ * @return 0 on success, -1 on error
+ */
+DD_API int GetFrontonView(
+    int camera_index,
+    const unsigned char* input_jpeg, int input_len,
+    unsigned char* output_jpeg, int* output_len,
+    int output_size
+);
+
 #ifdef __cplusplus
 }
 #endif
