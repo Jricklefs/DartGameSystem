@@ -13,6 +13,18 @@
 // === FEATURE FLAG: Dart Centerline V2 ===
 static bool g_use_robust_triangulation = true;
 
+// === FEATURE FLAGS: Triangulation Confidence (7-Phase Upgrade) ===
+static bool g_use_perpendicular_residual_gating = true;  // Phase 1
+static bool g_use_barrel_signal_gate = true;              // Phase 3
+static bool g_use_board_radius_gate = true;               // Board radius miss override
+
+static constexpr double R_SOFT = 1.015;
+static constexpr double R_HARD = 1.030;
+
+static bool g_use_wire_boundary_voting = true;
+static constexpr double WIRE_EPS_DEG = 0.50;
+static constexpr double WIRE_HARD_EPS_DEG = 0.25;
+
 
 // ============================================================================
 // TPS (Thin-Plate Spline) Transform
@@ -364,12 +376,18 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
         Point2f line_start, line_end;
         Point2f tip_normalized;
         Point2f tip_pixel;
-        TpsTransform tps;
         ScoreResult vote;
         bool tip_reliable;
         double tip_dist;
         double mask_quality;
         double detection_quality;  // Phase 4A: combined quality weight
+        // Phase 1/2/7: warped board-space line direction
+        double warped_dir_x = 0.0;
+        double warped_dir_y = 0.0;
+        // Phase 3/7: barrel signal metrics
+        int barrel_pixel_count = 0;
+        double barrel_aspect_ratio = 0.0;
+        bool weak_barrel_signal = false;
     };
     
     std::map<std::string, CamLine> cam_lines;
@@ -448,15 +466,60 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         double detection_quality = 0.5 * dq_inlier + 0.3 * dq_pixels + 0.2 * dq_aspect;
         detection_quality = std::max(0.1, detection_quality);
 
-        cam_lines[cam_id] = CamLine{
-            p1_n, p2_n, tip_n,
-            Point2f(det.tip->x, det.tip->y),
-            std::move(tps), vote, tip_reliable, tip_dist,
-            det.mask_quality, detection_quality
-        };
+        // Phase 3: Barrel metric consistency fix
+        bool weak_barrel_signal = false;
+        if (det.barrel_pixel_count == 0) {
+            detection_quality *= 0.5;
+            weak_barrel_signal = true;
+        }
+
+        // Store warped direction for Phase 1/2
+        double wdir_len = std::sqrt(wvx * wvx + wvy * wvy);
+        double norm_wvx = (wdir_len > 1e-12) ? wvx / wdir_len : 0.0;
+        double norm_wvy = (wdir_len > 1e-12) ? wvy / wdir_len : 0.0;
+
+        CamLine cl;
+        cl.line_start = p1_n;
+        cl.line_end = p2_n;
+        cl.tip_normalized = tip_n;
+        cl.tip_pixel = Point2f(det.tip->x, det.tip->y);
+        // Note: tps is a const ref to cached transform, copy not needed for CamLine lifetime
+        cl.vote = vote;
+        cl.tip_reliable = tip_reliable;
+        cl.tip_dist = tip_dist;
+        cl.mask_quality = det.mask_quality;
+        cl.detection_quality = detection_quality;
+        cl.warped_dir_x = norm_wvx;
+        cl.warped_dir_y = norm_wvy;
+        cl.barrel_pixel_count = det.barrel_pixel_count;
+        cl.barrel_aspect_ratio = det.barrel_aspect_ratio;
+        cl.weak_barrel_signal = weak_barrel_signal;
+        cam_lines[cam_id] = std::move(cl);
     }
     
     if (cam_lines.size() < 2) return std::nullopt;
+
+    // === Phase 3: Barrel Signal Gate ===
+    if (g_use_barrel_signal_gate && cam_lines.size() >= 2) {
+        bool all_weak = true;
+        for (const auto& [cid, cl] : cam_lines) {
+            if (cl.barrel_pixel_count >= 40 || cl.barrel_aspect_ratio >= 2.2) {
+                all_weak = false;
+                break;
+            }
+        }
+        if (all_weak) {
+            IntersectionResult result;
+            result.segment = 0; result.multiplier = 0; result.score = 0;
+            result.method = "MissOverride_BarrelSignal";
+            result.confidence = 0.8;
+            result.coords = Point2f(0, 0);
+            result.total_error = 0;
+            for (const auto& [cam_id, data] : cam_lines)
+                result.per_camera[cam_id] = data.vote;
+            return result;
+        }
+    }
     
     // Step 2: Pairwise intersections
     std::vector<std::string> cam_ids;
@@ -657,14 +720,330 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     final_angle_deg = std::fmod(final_angle_deg, 360.0);
     ScoreResult final_score = score_from_polar(final_angle_deg, final_dist);
 
+    // === Phase 1: Perpendicular Residual Metric ===
+    std::vector<double> perp_residuals;
+    std::map<std::string, double> per_cam_residual;
+    for (const auto& cid : cam_ids) {
+        const auto& cl = cam_lines[cid];
+        // normal = (-dir_y, dir_x)
+        double nx = -cl.warped_dir_y;
+        double ny = cl.warped_dir_x;
+        // point on line = line_end (which is tip_normalized)
+        double dx = final_coords.x - cl.line_end.x;
+        double dy = final_coords.y - cl.line_end.y;
+        double residual = std::abs(nx * dx + ny * dy);
+        perp_residuals.push_back(residual);
+        per_cam_residual[cid] = residual;
+    }
+    std::sort(perp_residuals.begin(), perp_residuals.end());
+    double median_residual = perp_residuals[perp_residuals.size() / 2];
+    double max_residual = perp_residuals.back();
+    double residual_spread = max_residual - perp_residuals.front();
+
+    // === Phase 2: Board-Space Angular Spread ===
+    std::vector<double> angles;
+    for (const auto& cid : cam_ids) {
+        const auto& cl = cam_lines[cid];
+        double angle_deg = std::atan2(cl.warped_dir_y, cl.warped_dir_x) * 180.0 / CV_PI;
+        angles.push_back(angle_deg);
+    }
+    std::sort(angles.begin(), angles.end());
+    double angle_spread = angles.back() - angles.front();
+    // Handle wraparound: if spread > 180, use complementary
+    if (angle_spread > 180.0) angle_spread = 360.0 - angle_spread;
+
+    // === Phase 4: Camera Outlier Rejection ===
+    bool camera_dropped = false;
+    std::string dropped_cam_id;
+    if (cam_ids.size() >= 3 && max_residual > 2.0 * median_residual) {
+        // Find the camera with max residual
+        std::string worst_cam;
+        double worst_res = 0;
+        for (const auto& [cid, res] : per_cam_residual) {
+            if (res > worst_res) { worst_res = res; worst_cam = cid; }
+        }
+        // Recompute robust least-squares without that camera
+        std::vector<std::pair<Point2f, Point2f>> reduced_lines;
+        std::vector<double> reduced_weights;
+        for (const auto& cid : cam_ids) {
+            if (cid == worst_cam) continue;
+            const auto& cl = cam_lines[cid];
+            reduced_lines.push_back({cl.line_start, cl.line_end});
+            reduced_weights.push_back(cl.detection_quality * cl.mask_quality);
+        }
+        auto recomputed = robust_least_squares_point(reduced_lines, reduced_weights);
+        if (recomputed) {
+            double rp_dist = std::sqrt(recomputed->x * recomputed->x + recomputed->y * recomputed->y);
+            if (rp_dist <= 1.3) {
+                final_coords = *recomputed;
+                camera_dropped = true;
+                dropped_cam_id = worst_cam;
+                // Rescore
+                final_dist = rp_dist;
+                final_angle_rad = std::atan2(final_coords.y, -final_coords.x);
+                final_angle_deg = final_angle_rad * 180.0 / CV_PI;
+                if (final_angle_deg < 0) final_angle_deg += 360.0;
+                final_angle_deg = std::fmod(final_angle_deg, 360.0);
+                final_score = score_from_polar(final_angle_deg, final_dist);
+            }
+        }
+    }
+
+
+    // === Wire Boundary Voting ===
+    double adjusted_for_wire = std::fmod(final_angle_deg - 90.0 + 9.0 + 360.0, 360.0);
+    double frac_wire = std::fmod(adjusted_for_wire, 18.0);
+    double boundary_distance_deg = std::min(frac_wire, 18.0 - frac_wire);
+    int base_wedge_idx = ((int)(adjusted_for_wire / 18.0)) % 20;
+    int neighbor_wedge_idx;
+    if (frac_wire < 9.0)
+        neighbor_wedge_idx = (base_wedge_idx - 1 + 20) % 20;
+    else
+        neighbor_wedge_idx = (base_wedge_idx + 1) % 20;
+
+    bool is_wire_ambiguous = (boundary_distance_deg < WIRE_EPS_DEG);
+    std::string wedge_chosen_by = "direct";
+    std::map<int, int> wedge_votes_map;
+    double winner_pct = 1.0;
+    double vote_margin = 1.0;
+    std::string wire_low_conf;
+
+    if (is_wire_ambiguous && g_use_wire_boundary_voting) {
+        double sigma = std::clamp(2.0 * median_residual, 0.001, 0.010);
+        static const double offsets[][2] = {
+            {+1,0},{-1,0},{0,+1},{0,-1},
+            {+1,+1},{+1,-1},{-1,+1},{-1,-1},
+            {+2,0},{-2,0},{0,+2},{0,-2},
+            {+2,+1},{+2,-1},{-2,+1},{-2,-1}
+        };
+        wedge_votes_map[base_wedge_idx] = 1;
+        for (int k = 0; k < 16; ++k) {
+            double px = final_coords.x + offsets[k][0] * sigma;
+            double py = final_coords.y + offsets[k][1] * sigma;
+            double a_rad = std::atan2(py, -px);
+            double a_deg = a_rad * 180.0 / CV_PI;
+            if (a_deg < 0) a_deg += 360.0;
+            a_deg = std::fmod(a_deg, 360.0);
+            double adj = std::fmod(a_deg - 90.0 + 9.0 + 360.0, 360.0);
+            int w = ((int)(adj / 18.0)) % 20;
+            if (w == base_wedge_idx || w == neighbor_wedge_idx) {
+                wedge_votes_map[w]++;
+            } else {
+                wedge_votes_map[base_wedge_idx]++;
+            }
+        }
+        int total_votes = 0;
+        int winner_wedge = base_wedge_idx;
+        int winner_count = 0;
+        for (auto& [w, c] : wedge_votes_map) {
+            total_votes += c;
+            if (c > winner_count) { winner_count = c; winner_wedge = w; }
+        }
+        int runner_up_count = total_votes - winner_count;
+        winner_pct = (total_votes > 0) ? (double)winner_count / total_votes : 1.0;
+        vote_margin = (total_votes > 0) ? (double)(winner_count - runner_up_count) / total_votes : 1.0;
+        if (winner_pct >= 0.65) {
+            if (winner_wedge != base_wedge_idx) {
+                final_score.segment = SEGMENT_ORDER[winner_wedge];
+                final_score.score = final_score.segment * final_score.multiplier;
+                wedge_chosen_by = "wire_vote";
+            } else {
+                wedge_chosen_by = "wire_vote";
+            }
+        } else if (boundary_distance_deg < WIRE_HARD_EPS_DEG) {
+            if (winner_wedge != base_wedge_idx) {
+                final_score.segment = SEGMENT_ORDER[winner_wedge];
+                final_score.score = final_score.segment * final_score.multiplier;
+                wedge_chosen_by = "wire_vote";
+            }
+            wire_low_conf = "WireBoundaryAmbiguity";
+        } else {
+            wedge_chosen_by = "direct";
+            wire_low_conf = "WireBoundaryAmbiguity";
+        }
+    }
+
+    // === Phase 5: Confidence Score ===
+    double avg_dq = 0;
+    for (const auto& cid : cam_ids) avg_dq += cam_lines[cid].detection_quality;
+    avg_dq /= cam_ids.size();
+    double computed_confidence = std::exp(-5.0 * median_residual)
+        * std::min(1.0, std::max(0.0, angle_spread / 60.0))
+        * avg_dq;
+
+    // === Phase 1 Gating + Phase 2 Gating + Phase 5 Gating ===
+    bool force_miss = false;
+    if (g_use_perpendicular_residual_gating) {
+        if (max_residual > 0.18) {
+            force_miss = true;
+        } else if (max_residual > 0.12) {
+            confidence = std::min(confidence, 0.3);  // LOW_CONFIDENCE
+        }
+    }
+    // Phase 2 gating
+    if (angle_spread < 20.0 && median_residual > 0.10) {
+        force_miss = true;
+    } else if (angle_spread < 25.0 && median_residual > 0.06) {
+        confidence = std::min(confidence, 0.3);
+    }
+    // Phase 5 gating
+    if (computed_confidence < 0.35) {
+        confidence = std::min(confidence, 0.3);
+    }
+
+    if (force_miss) {
+        IntersectionResult result;
+        result.segment = 0; result.multiplier = 0; result.score = 0;
+        result.method = "MissOverride_Residual";
+        result.confidence = computed_confidence;
+        result.coords = final_coords;
+        result.total_error = best->total_error;
+        for (const auto& [cam_id, data] : cam_lines)
+            result.per_camera[cam_id] = data.vote;
+        return result;
+    }
+
+    // Phase 6: Use computed_confidence as primary (tip-based error kept for diagnostics only)
+    confidence = std::min(confidence, std::max(0.1, computed_confidence));
+
+    // === Board Radius Miss Override ===
+    double board_radius = std::sqrt(final_coords.x*final_coords.x + final_coords.y*final_coords.y);
+    std::string radius_gate_reason;
+    if (g_use_board_radius_gate) {
+        if (board_radius > R_HARD) {
+            IntersectionResult result;
+            result.segment = 0; result.multiplier = 0; result.score = 0;
+            result.method = "MissOverride_RadiusHard";
+            result.confidence = 0;
+            result.coords = final_coords;
+            result.total_error = best->total_error;
+            for (const auto& [cam_id, data] : cam_lines)
+                result.per_camera[cam_id] = data.vote;
+            // Add tri_debug to early return
+            {
+                IntersectionResult::TriangulationDebug td;
+                td.board_radius = board_radius;
+                td.radius_gate_reason = "RadiusHard";
+                td.median_residual = median_residual;
+                td.max_residual = max_residual;
+                td.residual_spread = residual_spread;
+                td.angle_spread_deg = angle_spread;
+                td.final_confidence = computed_confidence;
+                td.camera_dropped = camera_dropped;
+                td.dropped_cam_id = dropped_cam_id;
+                for (const auto& [cid2, cl2] : cam_lines) {
+                    IntersectionResult::TriangulationDebug::CamDebug cd2;
+                    cd2.warped_dir_x = cl2.warped_dir_x; cd2.warped_dir_y = cl2.warped_dir_y;
+                    cd2.perp_residual = per_cam_residual.count(cid2) ? per_cam_residual.at(cid2) : 0;
+                    cd2.barrel_pixel_count = cl2.barrel_pixel_count;
+                    cd2.barrel_aspect_ratio = cl2.barrel_aspect_ratio;
+                    cd2.detection_quality = cl2.detection_quality;
+                    cd2.weak_barrel_signal = cl2.weak_barrel_signal;
+                    cd2.warped_point_x = cl2.line_end.x; cd2.warped_point_y = cl2.line_end.y;
+                    td.cam_debug[cid2] = cd2;
+                }
+                result.tri_debug = td;
+            }
+            return result;
+        } else if (board_radius > R_SOFT && confidence < 0.55) {
+            IntersectionResult result;
+            result.segment = 0; result.multiplier = 0; result.score = 0;
+            result.method = "MissOverride_RadiusSoftLowConf";
+            result.confidence = 0;
+            result.coords = final_coords;
+            result.total_error = best->total_error;
+            for (const auto& [cam_id, data] : cam_lines)
+                result.per_camera[cam_id] = data.vote;
+            // Add tri_debug to early return
+            {
+                IntersectionResult::TriangulationDebug td;
+                td.board_radius = board_radius;
+                td.radius_gate_reason = "RadiusSoftLowConf";
+                td.median_residual = median_residual;
+                td.max_residual = max_residual;
+                td.residual_spread = residual_spread;
+                td.angle_spread_deg = angle_spread;
+                td.final_confidence = computed_confidence;
+                td.camera_dropped = camera_dropped;
+                td.dropped_cam_id = dropped_cam_id;
+                for (const auto& [cid2, cl2] : cam_lines) {
+                    IntersectionResult::TriangulationDebug::CamDebug cd2;
+                    cd2.warped_dir_x = cl2.warped_dir_x; cd2.warped_dir_y = cl2.warped_dir_y;
+                    cd2.perp_residual = per_cam_residual.count(cid2) ? per_cam_residual.at(cid2) : 0;
+                    cd2.barrel_pixel_count = cl2.barrel_pixel_count;
+                    cd2.barrel_aspect_ratio = cl2.barrel_aspect_ratio;
+                    cd2.detection_quality = cl2.detection_quality;
+                    cd2.weak_barrel_signal = cl2.weak_barrel_signal;
+                    cd2.warped_point_x = cl2.line_end.x; cd2.warped_point_y = cl2.line_end.y;
+                    td.cam_debug[cid2] = cd2;
+                }
+                result.tri_debug = td;
+            }
+            return result;
+        } else if (board_radius > R_SOFT) {
+            confidence = std::min(confidence, 0.3);
+            radius_gate_reason = "RadiusSoft";
+        }
+    }
+
+    // === Phase 7: Build debug struct ===
+    IntersectionResult::TriangulationDebug tri_dbg;
+    tri_dbg.angle_spread_deg = angle_spread;
+    tri_dbg.median_residual = median_residual;
+    tri_dbg.max_residual = max_residual;
+    tri_dbg.residual_spread = residual_spread;
+    tri_dbg.final_confidence = computed_confidence;
+    tri_dbg.camera_dropped = camera_dropped;
+    tri_dbg.dropped_cam_id = dropped_cam_id;
+    tri_dbg.board_radius = board_radius;
+    tri_dbg.radius_gate_reason = radius_gate_reason;
+    for (const auto& cid : cam_ids) {
+        const auto& cl = cam_lines[cid];
+        IntersectionResult::TriangulationDebug::CamDebug cd;
+        cd.warped_dir_x = cl.warped_dir_x;
+        cd.warped_dir_y = cl.warped_dir_y;
+        cd.perp_residual = per_cam_residual[cid];
+        cd.barrel_pixel_count = cl.barrel_pixel_count;
+        cd.barrel_aspect_ratio = cl.barrel_aspect_ratio;
+        cd.detection_quality = cl.detection_quality;
+        cd.weak_barrel_signal = cl.weak_barrel_signal;
+        cd.warped_point_x = cl.line_end.x;
+        cd.warped_point_y = cl.line_end.y;
+        tri_dbg.cam_debug[cid] = cd;
+    }
+
     IntersectionResult result;
     result.segment = final_score.segment;
     result.multiplier = final_score.multiplier;
     result.score = final_score.score;
+    // Phase 2: Segment label / multiplier consistency
+    bool segment_label_corrected = false;
+    if (final_score.zone == "double" && result.multiplier != 2) {
+        result.multiplier = 2; result.score = result.segment * 2;
+        segment_label_corrected = true;
+    } else if (final_score.zone == "triple" && result.multiplier != 3) {
+        result.multiplier = 3; result.score = result.segment * 3;
+        segment_label_corrected = true;
+    } else if (final_score.zone == "single" && result.multiplier != 1) {
+        result.multiplier = 1; result.score = result.segment * 1;
+        segment_label_corrected = true;
+    }
+
+    tri_dbg.segment_label_corrected = segment_label_corrected;
+    tri_dbg.boundary_distance_deg = boundary_distance_deg;
+    tri_dbg.is_wire_ambiguous = is_wire_ambiguous;
+    tri_dbg.wedge_chosen_by = wedge_chosen_by;
+    tri_dbg.base_wedge = base_wedge_idx;
+    tri_dbg.neighbor_wedge = neighbor_wedge_idx;
+    tri_dbg.wedge_votes = wedge_votes_map;
+    tri_dbg.winner_pct = winner_pct;
+    tri_dbg.vote_margin = vote_margin;
+    tri_dbg.low_conf_reason = wire_low_conf;
     result.method = method;
     result.confidence = confidence;
     result.coords = final_coords;
     result.total_error = best->total_error;
+    result.tri_debug = tri_dbg;
     for (const auto& [cam_id, data] : cam_lines)
         result.per_camera[cam_id] = data.vote;
     

@@ -483,6 +483,62 @@ DD_API const char* dd_detect(
             }
             json << "}";
 
+            // Phase 7: Triangulation debug export
+            if (tri->tri_debug) {
+                const auto& td = *tri->tri_debug;
+                json << ",\"tri_debug\":{"
+                     << json_double("angle_spread_deg", td.angle_spread_deg) << ","
+                     << json_double("median_residual", td.median_residual) << ","
+                     << json_double("max_residual", td.max_residual) << ","
+                     << json_double("residual_spread", td.residual_spread) << ","
+                     << json_double("final_confidence", td.final_confidence) << ","
+                     << "\"camera_dropped\":" << (td.camera_dropped ? "true" : "false") << ","
+                     << json_string("dropped_cam_id", td.dropped_cam_id) << ","
+                     << json_double("board_radius", td.board_radius) << ","
+                     << json_string("radius_gate_reason", td.radius_gate_reason) << ","
+                     << "\"segment_label_corrected\":" << (td.segment_label_corrected ? "true" : "false")
+                     << ",\"boundary_distance_deg\":" << td.boundary_distance_deg
+                     << ",\"is_wire_ambiguous\":" << (td.is_wire_ambiguous ? "true" : "false")
+                     << ",\"wedge_chosen_by\":\"" << td.wedge_chosen_by << "\""
+                     << ",\"base_wedge\":" << td.base_wedge
+                     << ",\"neighbor_wedge\":" << td.neighbor_wedge
+                     << ",\"winner_pct\":" << td.winner_pct
+                     << ",\"vote_margin\":" << td.vote_margin;
+                json << ",\"wedge_votes\":{";
+                {
+                    bool first_wv = true;
+                    for (const auto& [wk, wv] : td.wedge_votes) {
+                        if (!first_wv) json << ",";
+                        json << "\"" << wk << "\":" << wv;
+                        first_wv = false;
+                    }
+                }
+                json << "}";
+                if (!td.low_conf_reason.empty()) {
+                    json << ",\"low_conf_reason\":\"" << td.low_conf_reason << "\"";
+                }
+                json << ",\"cam_debug\":{";
+
+
+                bool first_cd = true;
+                for (const auto& [cid, cd] : td.cam_debug) {
+                    if (!first_cd) json << ",";
+                    json << "\"" << cid << "\":{"
+                         << json_double("warped_dir_x", cd.warped_dir_x) << ","
+                         << json_double("warped_dir_y", cd.warped_dir_y) << ","
+                         << json_double("perp_residual", cd.perp_residual) << ","
+                         << json_int("barrel_pixel_count", cd.barrel_pixel_count) << ","
+                         << json_double("barrel_aspect_ratio", cd.barrel_aspect_ratio) << ","
+                         << json_double("detection_quality", cd.detection_quality) << ","
+                         << "\"weak_barrel_signal\":" << (cd.weak_barrel_signal ? "true" : "false") << ","
+                         << json_double("warped_point_x", cd.warped_point_x) << ","
+                         << json_double("warped_point_y", cd.warped_point_y)
+                         << "}";
+                    first_cd = false;
+                }
+                json << "}}";
+            }
+
             // === PCA DUAL PIPELINE ===
             // Run PCA-based barrel detection (only when enabled)
             if (g_pca_enabled) { // PCA toggle gate

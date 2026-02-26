@@ -248,7 +248,7 @@ public class BenchmarkController : ControllerBase
     // ===== REPLAY ENDPOINTS =====
 
     [HttpPost("replay")]
-    public async Task<ActionResult> RunReplay([FromQuery] string? gameId = null)
+    public async Task<ActionResult> RunReplay([FromQuery] string? gameId = null, [FromQuery] bool includeDetails = false)
     {
         var basePath = _settings.BasePath;
         if (!Directory.Exists(basePath))
@@ -279,9 +279,10 @@ public class BenchmarkController : ControllerBase
         if (allDartFolders.Count == 0)
             return Ok(new ReplayResults());
 
-        _dartDetect.InitBoard("replay_bench");
+        DartGameAPI.Services.DartDetectNative.InitBoard("replay_bench");
 
         var errors = new List<ReplayError>();
+        var dartDetails = new List<ReplayDartDetail>();
         var gameBreakdowns = new Dictionary<string, GameBreakdown>();
         int totalCorrect = 0;
 
@@ -325,18 +326,21 @@ public class BenchmarkController : ControllerBase
 
                 if (afterImages.Count == 0) continue;
 
-                _dartDetect.ClearBoard("replay_bench");
-                _dartDetect.InitBoard("replay_bench");
+                DartGameAPI.Services.DartDetectNative.ClearBoard("replay_bench");
+                DartGameAPI.Services.DartDetectNative.InitBoard("replay_bench");
 
-                var result = await _dartDetect.DetectAsync(afterImages, "replay_bench", 1, beforeImages);
+                var camIds = new List<string>();
+                var curBytes = new List<byte[]>();
+                var befBytes = new List<byte[]>();
+                foreach (var img in afterImages) { camIds.Add(img.CameraId); curBytes.Add(Convert.FromBase64String(img.Image)); }
+                foreach (var img in beforeImages) { befBytes.Add(Convert.FromBase64String(img.Image)); }
 
-                int detSeg = 0, detMul = 0;
-                if (result?.Tips != null && result.Tips.Any())
-                {
-                    var tip = result.Tips.OrderByDescending(t => t.Confidence).First();
-                    detSeg = tip.Segment;
-                    detMul = tip.Multiplier;
-                }
+                var dartSw = System.Diagnostics.Stopwatch.StartNew();
+                var nativeResult = DartGameAPI.Services.DartDetectNative.Detect(1, "replay_bench", camIds, curBytes.ToArray(), befBytes.ToArray());
+                var dartMs = dartSw.ElapsedMilliseconds;
+
+                int detSeg = nativeResult?.Segment ?? 0;
+                int detMul = nativeResult?.Multiplier ?? 0;
 
                 bool correct = (detSeg == truthSeg && detMul == truthMul);
                 if (correct) totalCorrect++;
@@ -356,6 +360,25 @@ public class BenchmarkController : ControllerBase
                         Category = ClassifyError(truthSeg, truthMul, detSeg, detMul)
                     });
                 }
+
+                // Collect per-dart detail if requested
+                if (includeDetails)
+                {
+                    dartDetails.Add(new ReplayDartDetail
+                    {
+                        Round = roundFolder, Dart = dartFolder,
+                        TruthSegment = truthSeg, TruthMultiplier = truthMul,
+                        DetectedSegment = detSeg, DetectedMultiplier = detMul,
+                        Correct = correct,
+                        Method = nativeResult?.Method ?? "",
+                        Confidence = nativeResult?.Confidence ?? 0,
+                        CoordsX = nativeResult?.CoordsX ?? 0,
+                        CoordsY = nativeResult?.CoordsY ?? 0,
+                        CameraDetails = nativeResult?.CameraDetails,
+                        TriDebug = nativeResult?.TriDebug,
+                        DetectMs = dartMs
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -363,7 +386,7 @@ public class BenchmarkController : ControllerBase
             }
         }
 
-        _dartDetect.ClearBoard("replay_bench");
+        DartGameAPI.Services.DartDetectNative.ClearBoard("replay_bench");
 
         var results = new ReplayResults
         {
@@ -372,7 +395,8 @@ public class BenchmarkController : ControllerBase
             AccuracyPct = allDartFolders.Count > 0 ? Math.Round(100.0 * totalCorrect / allDartFolders.Count, 1) : 0,
             ElapsedMs = sw.ElapsedMilliseconds,
             Games = gameBreakdowns.Values.Select(g => { g.AccuracyPct = g.TotalDarts > 0 ? Math.Round(100.0 * g.Correct / g.TotalDarts, 1) : 0; return g; }).ToList(),
-            Errors = errors
+            Errors = errors,
+            DartDetails = includeDetails ? dartDetails : null
         };
 
         lock (_replayLock) { _lastReplayResults = results; }
@@ -484,6 +508,7 @@ public class ReplayResults
     [JsonPropertyName("elapsedMs")] public long ElapsedMs { get; set; }
     [JsonPropertyName("games")] public List<GameBreakdown> Games { get; set; } = new();
     [JsonPropertyName("errors")] public List<ReplayError> Errors { get; set; } = new();
+    [JsonPropertyName("dart_details")] public List<ReplayDartDetail>? DartDetails { get; set; }
 }
 
 public class GameBreakdown
@@ -504,6 +529,24 @@ public class ReplayError
     [JsonPropertyName("detectedSegment")] public int DetectedSegment { get; set; }
     [JsonPropertyName("detectedMultiplier")] public int DetectedMultiplier { get; set; }
     [JsonPropertyName("category")] public string Category { get; set; } = "";
+}
+
+public class ReplayDartDetail
+{
+    [JsonPropertyName("round")] public string Round { get; set; } = "";
+    [JsonPropertyName("dart")] public string Dart { get; set; } = "";
+    [JsonPropertyName("truth_segment")] public int TruthSegment { get; set; }
+    [JsonPropertyName("truth_multiplier")] public int TruthMultiplier { get; set; }
+    [JsonPropertyName("detected_segment")] public int DetectedSegment { get; set; }
+    [JsonPropertyName("detected_multiplier")] public int DetectedMultiplier { get; set; }
+    [JsonPropertyName("correct")] public bool Correct { get; set; }
+    [JsonPropertyName("method")] public string Method { get; set; } = "";
+    [JsonPropertyName("confidence")] public double Confidence { get; set; }
+    [JsonPropertyName("coords_x")] public double CoordsX { get; set; }
+    [JsonPropertyName("coords_y")] public double CoordsY { get; set; }
+    [JsonPropertyName("camera_details")] public Dictionary<string, CameraDetail>? CameraDetails { get; set; }
+    [JsonPropertyName("tri_debug")] public TriangulationDebugInfo? TriDebug { get; set; }
+    [JsonPropertyName("detect_ms")] public long DetectMs { get; set; }
 }
 
 public class DebugDetectRequest
