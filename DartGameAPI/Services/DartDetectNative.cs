@@ -229,6 +229,12 @@ public class TriangulationDebugInfo
     public string DroppedCamId { get; set; } = "";
     [System.Text.Json.Serialization.JsonPropertyName("cam_debug")]
     public Dictionary<string, CamTriDebug>? CamDebug { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("board_radius")]
+    public double BoardRadius { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("radius_gate_reason")]
+    public string RadiusGateReason { get; set; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("segment_label_corrected")]
+    public bool SegmentLabelCorrected { get; set; }
 }
 
 public class CamTriDebug
@@ -245,6 +251,12 @@ public class CamTriDebug
     public double BarrelAspectRatio { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("detection_quality")]
     public double DetectionQuality { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("weak_barrel_signal")]
+    public bool WeakBarrelSignal { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("warped_point_x")]
+    public double WarpedPointX { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("warped_point_y")]
+    public double WarpedPointY { get; set; }
 }
 
 public class CameraDetail

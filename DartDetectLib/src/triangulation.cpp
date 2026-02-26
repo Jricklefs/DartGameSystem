@@ -16,6 +16,10 @@ static bool g_use_robust_triangulation = true;
 // === FEATURE FLAGS: Triangulation Confidence (7-Phase Upgrade) ===
 static bool g_use_perpendicular_residual_gating = true;  // Phase 1
 static bool g_use_barrel_signal_gate = true;              // Phase 3
+static bool g_use_board_radius_gate = true;               // Board radius miss override
+
+static constexpr double R_SOFT = 1.010;
+static constexpr double R_HARD = 1.030;
 
 
 // ============================================================================
@@ -379,6 +383,7 @@ std::optional<IntersectionResult> triangulate_with_line_intersection(
         // Phase 3/7: barrel signal metrics
         int barrel_pixel_count = 0;
         double barrel_aspect_ratio = 0.0;
+        bool weak_barrel_signal = false;
     };
     
     std::map<std::string, CamLine> cam_lines;
@@ -457,6 +462,13 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         double detection_quality = 0.5 * dq_inlier + 0.3 * dq_pixels + 0.2 * dq_aspect;
         detection_quality = std::max(0.1, detection_quality);
 
+        // Phase 3: Barrel metric consistency fix
+        bool weak_barrel_signal = false;
+        if (det.barrel_pixel_count == 0) {
+            detection_quality *= 0.5;
+            weak_barrel_signal = true;
+        }
+
         // Store warped direction for Phase 1/2
         double wdir_len = std::sqrt(wvx * wvx + wvy * wvy);
         double norm_wvx = (wdir_len > 1e-12) ? wvx / wdir_len : 0.0;
@@ -477,6 +489,7 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         cl.warped_dir_y = norm_wvy;
         cl.barrel_pixel_count = det.barrel_pixel_count;
         cl.barrel_aspect_ratio = det.barrel_aspect_ratio;
+        cl.weak_barrel_signal = weak_barrel_signal;
         cam_lines[cam_id] = std::move(cl);
     }
     
@@ -815,6 +828,36 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     // Phase 6: Use computed_confidence as primary (tip-based error kept for diagnostics only)
     confidence = std::min(confidence, std::max(0.1, computed_confidence));
 
+    // === Board Radius Miss Override ===
+    double board_radius = std::sqrt(final_coords.x*final_coords.x + final_coords.y*final_coords.y);
+    std::string radius_gate_reason;
+    if (g_use_board_radius_gate) {
+        if (board_radius > R_HARD) {
+            IntersectionResult result;
+            result.segment = 0; result.multiplier = 0; result.score = 0;
+            result.method = "MissOverride_RadiusHard";
+            result.confidence = 0;
+            result.coords = final_coords;
+            result.total_error = best->total_error;
+            for (const auto& [cam_id, data] : cam_lines)
+                result.per_camera[cam_id] = data.vote;
+            return result;
+        } else if (board_radius > R_SOFT && confidence < 0.55) {
+            IntersectionResult result;
+            result.segment = 0; result.multiplier = 0; result.score = 0;
+            result.method = "MissOverride_RadiusSoftLowConf";
+            result.confidence = 0;
+            result.coords = final_coords;
+            result.total_error = best->total_error;
+            for (const auto& [cam_id, data] : cam_lines)
+                result.per_camera[cam_id] = data.vote;
+            return result;
+        } else if (board_radius > R_SOFT) {
+            confidence = std::min(confidence, 0.3);
+            radius_gate_reason = "RadiusSoft";
+        }
+    }
+
     // === Phase 7: Build debug struct ===
     IntersectionResult::TriangulationDebug tri_dbg;
     tri_dbg.angle_spread_deg = angle_spread;
@@ -824,6 +867,8 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     tri_dbg.final_confidence = computed_confidence;
     tri_dbg.camera_dropped = camera_dropped;
     tri_dbg.dropped_cam_id = dropped_cam_id;
+    tri_dbg.board_radius = board_radius;
+    tri_dbg.radius_gate_reason = radius_gate_reason;
     for (const auto& cid : cam_ids) {
         const auto& cl = cam_lines[cid];
         IntersectionResult::TriangulationDebug::CamDebug cd;
@@ -833,6 +878,9 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         cd.barrel_pixel_count = cl.barrel_pixel_count;
         cd.barrel_aspect_ratio = cl.barrel_aspect_ratio;
         cd.detection_quality = cl.detection_quality;
+        cd.weak_barrel_signal = cl.weak_barrel_signal;
+        cd.warped_point_x = cl.line_end.x;
+        cd.warped_point_y = cl.line_end.y;
         tri_dbg.cam_debug[cid] = cd;
     }
 
@@ -840,6 +888,20 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     result.segment = final_score.segment;
     result.multiplier = final_score.multiplier;
     result.score = final_score.score;
+    // Phase 2: Segment label / multiplier consistency
+    bool segment_label_corrected = false;
+    if (final_score.zone == "double" && result.multiplier != 2) {
+        result.multiplier = 2; result.score = result.segment * 2;
+        segment_label_corrected = true;
+    } else if (final_score.zone == "triple" && result.multiplier != 3) {
+        result.multiplier = 3; result.score = result.segment * 3;
+        segment_label_corrected = true;
+    } else if (final_score.zone == "single" && result.multiplier != 1) {
+        result.multiplier = 1; result.score = result.segment * 1;
+        segment_label_corrected = true;
+    }
+
+    tri_dbg.segment_label_corrected = segment_label_corrected;
     result.method = method;
     result.confidence = confidence;
     result.coords = final_coords;

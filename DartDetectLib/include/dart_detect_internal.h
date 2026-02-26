@@ -158,6 +158,9 @@ struct IntersectionResult {
             int barrel_pixel_count = 0;
             double barrel_aspect_ratio = 0.0;
             double detection_quality = 0.0;
+            bool weak_barrel_signal = false;
+            double warped_point_x = 0.0;
+            double warped_point_y = 0.0;
         };
         std::map<std::string, CamDebug> cam_debug;
         double angle_spread_deg = 0.0;
@@ -165,6 +168,9 @@ struct IntersectionResult {
         double max_residual = 0.0;
         double residual_spread = 0.0;
         double final_confidence = 0.0;
+        double board_radius = 0.0;
+        std::string radius_gate_reason;
+        bool segment_label_corrected = false;
         bool camera_dropped = false;
         std::string dropped_cam_id;
     };
