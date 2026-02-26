@@ -18,7 +18,7 @@ static bool g_use_perpendicular_residual_gating = true;  // Phase 1
 static bool g_use_barrel_signal_gate = true;              // Phase 3
 static bool g_use_board_radius_gate = true;               // Board radius miss override
 
-static constexpr double R_SOFT = 1.010;
+static constexpr double R_SOFT = 1.015;
 static constexpr double R_HARD = 1.030;
 
 
@@ -841,6 +841,31 @@ const TpsTransform& tps = cal_it->second.tps_cache;
             result.total_error = best->total_error;
             for (const auto& [cam_id, data] : cam_lines)
                 result.per_camera[cam_id] = data.vote;
+            // Add tri_debug to early return
+            {
+                IntersectionResult::TriangulationDebug td;
+                td.board_radius = board_radius;
+                td.radius_gate_reason = "RadiusHard";
+                td.median_residual = median_residual;
+                td.max_residual = max_residual;
+                td.residual_spread = residual_spread;
+                td.angle_spread_deg = angle_spread;
+                td.final_confidence = computed_confidence;
+                td.camera_dropped = camera_dropped;
+                td.dropped_cam_id = dropped_cam_id;
+                for (const auto& [cid2, cl2] : cam_lines) {
+                    IntersectionResult::TriangulationDebug::CamDebug cd2;
+                    cd2.warped_dir_x = cl2.warped_dir_x; cd2.warped_dir_y = cl2.warped_dir_y;
+                    cd2.perp_residual = per_cam_residual.count(cid2) ? per_cam_residual.at(cid2) : 0;
+                    cd2.barrel_pixel_count = cl2.barrel_pixel_count;
+                    cd2.barrel_aspect_ratio = cl2.barrel_aspect_ratio;
+                    cd2.detection_quality = cl2.detection_quality;
+                    cd2.weak_barrel_signal = cl2.weak_barrel_signal;
+                    cd2.warped_point_x = cl2.line_end.x; cd2.warped_point_y = cl2.line_end.y;
+                    td.cam_debug[cid2] = cd2;
+                }
+                result.tri_debug = td;
+            }
             return result;
         } else if (board_radius > R_SOFT && confidence < 0.55) {
             IntersectionResult result;
@@ -851,6 +876,31 @@ const TpsTransform& tps = cal_it->second.tps_cache;
             result.total_error = best->total_error;
             for (const auto& [cam_id, data] : cam_lines)
                 result.per_camera[cam_id] = data.vote;
+            // Add tri_debug to early return
+            {
+                IntersectionResult::TriangulationDebug td;
+                td.board_radius = board_radius;
+                td.radius_gate_reason = "RadiusSoftLowConf";
+                td.median_residual = median_residual;
+                td.max_residual = max_residual;
+                td.residual_spread = residual_spread;
+                td.angle_spread_deg = angle_spread;
+                td.final_confidence = computed_confidence;
+                td.camera_dropped = camera_dropped;
+                td.dropped_cam_id = dropped_cam_id;
+                for (const auto& [cid2, cl2] : cam_lines) {
+                    IntersectionResult::TriangulationDebug::CamDebug cd2;
+                    cd2.warped_dir_x = cl2.warped_dir_x; cd2.warped_dir_y = cl2.warped_dir_y;
+                    cd2.perp_residual = per_cam_residual.count(cid2) ? per_cam_residual.at(cid2) : 0;
+                    cd2.barrel_pixel_count = cl2.barrel_pixel_count;
+                    cd2.barrel_aspect_ratio = cl2.barrel_aspect_ratio;
+                    cd2.detection_quality = cl2.detection_quality;
+                    cd2.weak_barrel_signal = cl2.weak_barrel_signal;
+                    cd2.warped_point_x = cl2.line_end.x; cd2.warped_point_y = cl2.line_end.y;
+                    td.cam_debug[cid2] = cd2;
+                }
+                result.tri_debug = td;
+            }
             return result;
         } else if (board_radius > R_SOFT) {
             confidence = std::min(confidence, 0.3);

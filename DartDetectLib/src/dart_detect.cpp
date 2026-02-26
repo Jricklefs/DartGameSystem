@@ -496,7 +496,7 @@ DD_API const char* dd_detect(
                      << json_string("dropped_cam_id", td.dropped_cam_id) << ","
                      << json_double("board_radius", td.board_radius) << ","
                      << json_string("radius_gate_reason", td.radius_gate_reason) << ","
-                     << ",\"segment_label_corrected\":" << (td.segment_label_corrected ? "true" : "false");
+                     << "\"segment_label_corrected\":" << (td.segment_label_corrected ? "true" : "false");
                 json << ",\"cam_debug\":{";
                 bool first_cd = true;
                 for (const auto& [cid, cd] : td.cam_debug) {
@@ -508,7 +508,7 @@ DD_API const char* dd_detect(
                          << json_int("barrel_pixel_count", cd.barrel_pixel_count) << ","
                          << json_double("barrel_aspect_ratio", cd.barrel_aspect_ratio) << ","
                          << json_double("detection_quality", cd.detection_quality) << ","
-                         << ",\"weak_barrel_signal\":" << (cd.weak_barrel_signal ? "true" : "false") << ","
+                         << "\"weak_barrel_signal\":" << (cd.weak_barrel_signal ? "true" : "false") << ","
                          << json_double("warped_point_x", cd.warped_point_x) << ","
                          << json_double("warped_point_y", cd.warped_point_y)
                          << "}";
