@@ -8,6 +8,21 @@
 #include <cmath>
 #include <algorithm>
 #include <map>
+#include <limits>
+
+namespace {
+double normalize_angle_rad(double angle)
+{
+    double a = std::fmod(angle, 2.0 * CV_PI);
+    return (a < 0.0) ? a + 2.0 * CV_PI : a;
+}
+
+double circular_distance_rad(double a, double b)
+{
+    double d = std::abs(normalize_angle_rad(a) - normalize_angle_rad(b));
+    return std::min(d, 2.0 * CV_PI - d);
+}
+} // anonymous namespace
 
 // ============================================================================
 // Ellipse radius at angle (polar form)
@@ -121,26 +136,17 @@ ScoreResult score_from_ellipse_calibration(
         
         // Find which angular wedge the tip falls in
         int found_idx = -1;
+        double tip_angle = normalize_angle_rad(angle);
         for (int i = 0; i < 20; ++i) {
-            double a1 = cal.segment_angles[i];
-            double a2 = cal.segment_angles[(i + 1) % 20];
-            
-            // Normalize angles for comparison
-            double tip_angle = angle;
-            
+            double a1 = normalize_angle_rad(cal.segment_angles[i]);
+            double a2 = normalize_angle_rad(cal.segment_angles[(i + 1) % 20]);
+
             // Handle wraparound
             auto angle_between = [](double a, double lo, double hi) -> bool {
-                // Normalize all to [0, 2╧Ç)
-                auto norm = [](double x) -> double {
-                    while (x < 0) x += 2 * CV_PI;
-                    while (x >= 2 * CV_PI) x -= 2 * CV_PI;
-                    return x;
-                };
-                a = norm(a); lo = norm(lo); hi = norm(hi);
                 if (lo <= hi) return a >= lo && a < hi;
-                return a >= lo || a < hi;  // Wraps around 0/2╧Ç
+                return a >= lo || a < hi;  // Wraps around 0/2pi
             };
-            
+
             if (angle_between(tip_angle, a1, a2)) {
                 found_idx = i;
                 break;
@@ -154,11 +160,27 @@ ScoreResult score_from_ellipse_calibration(
             // Boundary distance (approximate)
             double a1 = cal.segment_angles[found_idx];
             double a2 = cal.segment_angles[(found_idx + 1) % 20];
-            double diff1 = std::abs(angle - a1);
-            if (diff1 > CV_PI) diff1 = 2 * CV_PI - diff1;
-            double diff2 = std::abs(angle - a2);
-            if (diff2 > CV_PI) diff2 = 2 * CV_PI - diff2;
+            double diff1 = circular_distance_rad(angle, a1);
+            double diff2 = circular_distance_rad(angle, a2);
             r.boundary_distance_deg = std::min(diff1, diff2) * 180.0 / CV_PI;
+        } else {
+            // Fallback: choose closest segment center.
+            // This avoids returning segment=0 when angle lands exactly on a noisy/calibration boundary.
+            int best_idx = 0;
+            double best_dist = std::numeric_limits<double>::max();
+            for (int i = 0; i < 20; ++i) {
+                double a1 = normalize_angle_rad(cal.segment_angles[i]);
+                double a2 = normalize_angle_rad(cal.segment_angles[(i + 1) % 20]);
+                double center = (a1 <= a2) ? (a1 + a2) * 0.5 : normalize_angle_rad(a1 + (a2 + 2.0 * CV_PI - a1) * 0.5);
+                double dist_to_center = circular_distance_rad(tip_angle, center);
+                if (dist_to_center < best_dist) {
+                    best_dist = dist_to_center;
+                    best_idx = i;
+                }
+            }
+            int board_idx = ((best_idx - seg20_idx) % 20 + 20) % 20;
+            r.segment = SEGMENT_ORDER[board_idx];
+            r.boundary_distance_deg = std::max(0.0, 9.0 - (best_dist * 180.0 / CV_PI));
         }
     }
     
