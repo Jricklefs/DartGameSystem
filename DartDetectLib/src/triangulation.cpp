@@ -21,6 +21,10 @@ static bool g_use_board_radius_gate = true;               // Board radius miss o
 static constexpr double R_SOFT = 1.015;
 static constexpr double R_HARD = 1.030;
 
+static bool g_use_wire_boundary_voting = true;
+static constexpr double WIRE_EPS_DEG = 0.50;
+static constexpr double WIRE_HARD_EPS_DEG = 0.25;
+
 
 // ============================================================================
 // TPS (Thin-Plate Spline) Transform
@@ -785,6 +789,80 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         }
     }
 
+
+    // === Wire Boundary Voting ===
+    double adjusted_for_wire = std::fmod(final_angle_deg - 90.0 + 9.0 + 360.0, 360.0);
+    double frac_wire = std::fmod(adjusted_for_wire, 18.0);
+    double boundary_distance_deg = std::min(frac_wire, 18.0 - frac_wire);
+    int base_wedge_idx = ((int)(adjusted_for_wire / 18.0)) % 20;
+    int neighbor_wedge_idx;
+    if (frac_wire < 9.0)
+        neighbor_wedge_idx = (base_wedge_idx - 1 + 20) % 20;
+    else
+        neighbor_wedge_idx = (base_wedge_idx + 1) % 20;
+
+    bool is_wire_ambiguous = (boundary_distance_deg < WIRE_EPS_DEG);
+    std::string wedge_chosen_by = "direct";
+    std::map<int, int> wedge_votes_map;
+    double winner_pct = 1.0;
+    double vote_margin = 1.0;
+    std::string wire_low_conf;
+
+    if (is_wire_ambiguous && g_use_wire_boundary_voting) {
+        double sigma = std::clamp(2.0 * median_residual, 0.001, 0.010);
+        static const double offsets[][2] = {
+            {+1,0},{-1,0},{0,+1},{0,-1},
+            {+1,+1},{+1,-1},{-1,+1},{-1,-1},
+            {+2,0},{-2,0},{0,+2},{0,-2},
+            {+2,+1},{+2,-1},{-2,+1},{-2,-1}
+        };
+        wedge_votes_map[base_wedge_idx] = 1;
+        for (int k = 0; k < 16; ++k) {
+            double px = final_coords.x + offsets[k][0] * sigma;
+            double py = final_coords.y + offsets[k][1] * sigma;
+            double a_rad = std::atan2(py, -px);
+            double a_deg = a_rad * 180.0 / CV_PI;
+            if (a_deg < 0) a_deg += 360.0;
+            a_deg = std::fmod(a_deg, 360.0);
+            double adj = std::fmod(a_deg - 90.0 + 9.0 + 360.0, 360.0);
+            int w = ((int)(adj / 18.0)) % 20;
+            if (w == base_wedge_idx || w == neighbor_wedge_idx) {
+                wedge_votes_map[w]++;
+            } else {
+                wedge_votes_map[base_wedge_idx]++;
+            }
+        }
+        int total_votes = 0;
+        int winner_wedge = base_wedge_idx;
+        int winner_count = 0;
+        for (auto& [w, c] : wedge_votes_map) {
+            total_votes += c;
+            if (c > winner_count) { winner_count = c; winner_wedge = w; }
+        }
+        int runner_up_count = total_votes - winner_count;
+        winner_pct = (total_votes > 0) ? (double)winner_count / total_votes : 1.0;
+        vote_margin = (total_votes > 0) ? (double)(winner_count - runner_up_count) / total_votes : 1.0;
+        if (winner_pct >= 0.65) {
+            if (winner_wedge != base_wedge_idx) {
+                final_score.segment = SEGMENT_ORDER[winner_wedge];
+                final_score.score = final_score.segment * final_score.multiplier;
+                wedge_chosen_by = "wire_vote";
+            } else {
+                wedge_chosen_by = "wire_vote";
+            }
+        } else if (boundary_distance_deg < WIRE_HARD_EPS_DEG) {
+            if (winner_wedge != base_wedge_idx) {
+                final_score.segment = SEGMENT_ORDER[winner_wedge];
+                final_score.score = final_score.segment * final_score.multiplier;
+                wedge_chosen_by = "wire_vote";
+            }
+            wire_low_conf = "WireBoundaryAmbiguity";
+        } else {
+            wedge_chosen_by = "direct";
+            wire_low_conf = "WireBoundaryAmbiguity";
+        }
+    }
+
     // === Phase 5: Confidence Score ===
     double avg_dq = 0;
     for (const auto& cid : cam_ids) avg_dq += cam_lines[cid].detection_quality;
@@ -952,6 +1030,15 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     }
 
     tri_dbg.segment_label_corrected = segment_label_corrected;
+    tri_dbg.boundary_distance_deg = boundary_distance_deg;
+    tri_dbg.is_wire_ambiguous = is_wire_ambiguous;
+    tri_dbg.wedge_chosen_by = wedge_chosen_by;
+    tri_dbg.base_wedge = base_wedge_idx;
+    tri_dbg.neighbor_wedge = neighbor_wedge_idx;
+    tri_dbg.wedge_votes = wedge_votes_map;
+    tri_dbg.winner_pct = winner_pct;
+    tri_dbg.vote_margin = vote_margin;
+    tri_dbg.low_conf_reason = wire_low_conf;
     result.method = method;
     result.confidence = confidence;
     result.coords = final_coords;

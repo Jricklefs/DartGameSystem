@@ -173,6 +173,16 @@ struct IntersectionResult {
         bool segment_label_corrected = false;
         bool camera_dropped = false;
         std::string dropped_cam_id;
+        // Wire boundary voting debug
+        double boundary_distance_deg = 0.0;
+        bool is_wire_ambiguous = false;
+        std::string wedge_chosen_by = "direct";
+        int base_wedge = -1;
+        int neighbor_wedge = -1;
+        std::map<int, int> wedge_votes;
+        double winner_pct = 0.0;
+        double vote_margin = 0.0;
+        std::string low_conf_reason;
     };
     std::optional<TriangulationDebug> tri_debug;
 };

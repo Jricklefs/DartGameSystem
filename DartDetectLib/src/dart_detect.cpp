@@ -496,8 +496,30 @@ DD_API const char* dd_detect(
                      << json_string("dropped_cam_id", td.dropped_cam_id) << ","
                      << json_double("board_radius", td.board_radius) << ","
                      << json_string("radius_gate_reason", td.radius_gate_reason) << ","
-                     << "\"segment_label_corrected\":" << (td.segment_label_corrected ? "true" : "false");
+                     << "\"segment_label_corrected\":" << (td.segment_label_corrected ? "true" : "false")
+                     << ",\"boundary_distance_deg\":" << td.boundary_distance_deg
+                     << ",\"is_wire_ambiguous\":" << (td.is_wire_ambiguous ? "true" : "false")
+                     << ",\"wedge_chosen_by\":\"" << td.wedge_chosen_by << "\""
+                     << ",\"base_wedge\":" << td.base_wedge
+                     << ",\"neighbor_wedge\":" << td.neighbor_wedge
+                     << ",\"winner_pct\":" << td.winner_pct
+                     << ",\"vote_margin\":" << td.vote_margin;
+                json << ",\"wedge_votes\":{";
+                {
+                    bool first_wv = true;
+                    for (const auto& [wk, wv] : td.wedge_votes) {
+                        if (!first_wv) json << ",";
+                        json << "\"" << wk << "\":" << wv;
+                        first_wv = false;
+                    }
+                }
+                json << "}";
+                if (!td.low_conf_reason.empty()) {
+                    json << ",\"low_conf_reason\":\"" << td.low_conf_reason << "\"";
+                }
                 json << ",\"cam_debug\":{";
+
+
                 bool first_cd = true;
                 for (const auto& [cid, cd] : td.cam_debug) {
                     if (!first_cd) json << ",";
