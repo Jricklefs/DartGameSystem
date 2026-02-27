@@ -25,6 +25,23 @@ static bool g_use_wire_boundary_voting = true;
 static constexpr double WIRE_EPS_DEG = 0.50;
 static constexpr double WIRE_HARD_EPS_DEG = 0.25;
 
+// === FEATURE FLAGS: Phase 10 BCWT ===
+static bool g_use_bcwt = false;
+static bool g_bcwt_allow_soft_include = true;
+static double g_bcwt_min_weight = 0.15;
+static double g_bcwt_max_weight_cap = 1.0;
+// Phase 10: Flag setter for triangulation flags (called from skeleton.cpp)
+int set_triangulation_flag(const char* name, int value) {
+    std::string s(name);
+    if (s == "UseBarrelConfidenceWeightedTriangulation") { g_use_bcwt = (value != 0); return 0; }
+    if (s == "BCWT_AllowSoftIncludeWeakCam") { g_bcwt_allow_soft_include = (value != 0); return 0; }
+    if (s == "BCWT_MinWeightToInclude") { g_bcwt_min_weight = value / 100.0; return 0; }  // pass as int percent
+    if (s == "BCWT_MaxWeightCap") { g_bcwt_max_weight_cap = value / 100.0; return 0; }
+    return -1;  // not our flag
+}
+
+
+
 
 // ============================================================================
 // TPS (Thin-Plate Spline) Transform
@@ -297,6 +314,61 @@ std::optional<Point2f> intersect_lines_2d(
 // Line Intersection Triangulation (Autodarts-style)
 // ============================================================================
 
+
+
+// === Phase 10: BCWT Per-Camera Confidence Weight ===
+static double clamp01(double x) { return std::max(0.0, std::min(1.0, x)); }
+
+struct BcwtCamWeight {
+    double w_final = 0.0;
+    double pix_score = 0.0;
+    double asp_score = 0.0;
+    double inl_score = 0.0;
+    double ang_pca_score = 0.0;
+    double ang_ft_score = 0.0;
+    double tip_score = 0.0;
+    double mask_score_val = 0.0;
+    bool cam_invalid = false;
+    bool dropped_by_legacy = false;
+    bool included_by_bcwt = false;
+};
+
+static BcwtCamWeight bcwt_compute_weight(const DetectionResult& det, double mask_quality) {
+    BcwtCamWeight bw;
+    
+    if (det.barrel_pixel_count == 0 || det.barrel_aspect_ratio == 0.0) {
+        bw.cam_invalid = true;
+        bw.w_final = 0.0;
+        return bw;
+    }
+    
+    bw.pix_score = clamp01(det.barrel_pixel_count / 200.0);
+    bw.asp_score = clamp01((det.barrel_aspect_ratio - 2.0) / 4.0);
+    
+    // ransac inlier ratio - if not RANSAC, default 0.5
+    double inl = det.ransac_inlier_ratio;
+    if (inl <= 0.0) inl = 0.5;
+    bw.inl_score = clamp01((inl - 0.35) / 0.45);
+    
+    // Phase 9 fields not yet on Dev4.0 — use defaults per spec
+    bw.ang_pca_score = 0.7;
+    bw.ang_ft_score = 0.7;
+    bw.tip_score = 0.8;
+    
+    // mask_quality
+    bw.mask_score_val = (mask_quality > 0.0) ? clamp01(mask_quality) : 0.7;
+    
+    double w_raw = 0.20 * bw.pix_score
+                 + 0.15 * bw.asp_score
+                 + 0.15 * bw.inl_score
+                 + 0.15 * bw.ang_pca_score
+                 + 0.10 * bw.ang_ft_score
+                 + 0.10 * bw.tip_score
+                 + 0.15 * bw.mask_score_val;
+    
+    bw.w_final = clamp01(w_raw) * g_bcwt_max_weight_cap;
+    return bw;
+}
 
 // === Phase V2-5: Robust Least-Squares Point from Lines ===
 // Given N lines in 2D (each defined by point + direction), find the point
@@ -581,8 +653,95 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     if (intersections.empty()) return std::nullopt;
 
     // === Phase V2-5: Robust Least-Squares Integration ===
+    // === Phase 10: BCWT weights ===
+    std::map<std::string, BcwtCamWeight> bcwt_weights;
     std::optional<Point2f> robust_point;
-    if (g_use_robust_triangulation && cam_lines.size() >= 2) {
+    std::optional<Point2f> bcwt_point;
+    std::string bcwt_method_used = "legacy";
+    
+    if (g_use_bcwt) {
+        // Compute BCWT weights for all cameras
+        for (const auto& cid : cam_ids) {
+            const auto& cl = cam_lines[cid];
+            // Need DetectionResult for this cam
+            auto det_it = camera_results.find(cid);
+            if (det_it == camera_results.end()) continue;
+            BcwtCamWeight bw = bcwt_compute_weight(det_it->second, cl.mask_quality);
+            bcwt_weights[cid] = bw;
+        }
+        
+        // Determine included cameras
+        std::vector<std::pair<Point2f, Point2f>> bcwt_lines;
+        std::vector<double> bcwt_w;
+        std::vector<std::string> bcwt_included_ids;
+        
+        for (const auto& cid : cam_ids) {
+            auto& bw = bcwt_weights[cid];
+            if (bw.cam_invalid) continue;
+            
+            bool legacy_would_drop = cam_lines[cid].weak_barrel_signal;
+            bw.dropped_by_legacy = legacy_would_drop;
+            
+            if (g_bcwt_allow_soft_include) {
+                // Include if weight >= min threshold, even if legacy would drop
+                if (bw.w_final >= g_bcwt_min_weight) {
+                    bw.included_by_bcwt = true;
+                    const auto& cl = cam_lines[cid];
+                    bcwt_lines.push_back({cl.line_start, cl.line_end});
+                    bcwt_w.push_back(bw.w_final);
+                    bcwt_included_ids.push_back(cid);
+                }
+            } else {
+                // Use existing drop logic but replace binary with weight
+                if (!legacy_would_drop && bw.w_final >= g_bcwt_min_weight) {
+                    bw.included_by_bcwt = true;
+                    const auto& cl = cam_lines[cid];
+                    bcwt_lines.push_back({cl.line_start, cl.line_end});
+                    bcwt_w.push_back(bw.w_final);
+                    bcwt_included_ids.push_back(cid);
+                }
+            }
+        }
+        
+        // Check angle spread among included lines
+        double bcwt_angle_spread = 0.0;
+        if (bcwt_included_ids.size() >= 2) {
+            std::vector<double> bcwt_angles;
+            for (const auto& cid : bcwt_included_ids) {
+                const auto& cl = cam_lines[cid];
+                double a = std::atan2(cl.warped_dir_y, cl.warped_dir_x) * 180.0 / CV_PI;
+                bcwt_angles.push_back(a);
+            }
+            std::sort(bcwt_angles.begin(), bcwt_angles.end());
+            bcwt_angle_spread = bcwt_angles.back() - bcwt_angles.front();
+            if (bcwt_angle_spread > 180.0) bcwt_angle_spread = 360.0 - bcwt_angle_spread;
+        }
+        
+        // Solve BCWT if >= 2 cameras and sufficient angle spread
+        if (bcwt_lines.size() >= 2 && bcwt_angle_spread >= 15.0) {
+            bcwt_point = robust_least_squares_point(bcwt_lines, bcwt_w, 5, 0.01);
+            if (bcwt_point) {
+                double rp_dist = std::sqrt(bcwt_point->x * bcwt_point->x + bcwt_point->y * bcwt_point->y);
+                if (rp_dist <= 1.3) {
+                    bcwt_method_used = "BCWT";
+                } else {
+                    bcwt_point.reset();  // off board, fall back
+                }
+            }
+        }
+        
+        // Also compute legacy robust point as fallback
+        if (cam_lines.size() >= 2) {
+            std::vector<std::pair<Point2f, Point2f>> all_lines;
+            std::vector<double> all_weights;
+            for (const auto& cid : cam_ids) {
+                const auto& cl = cam_lines[cid];
+                all_lines.push_back({cl.line_start, cl.line_end});
+                all_weights.push_back(cl.detection_quality * cl.mask_quality);
+            }
+            robust_point = robust_least_squares_point(all_lines, all_weights);
+        }
+    } else if (g_use_robust_triangulation && cam_lines.size() >= 2) {
         std::vector<std::pair<Point2f, Point2f>> all_lines;
         std::vector<double> all_weights;
         for (const auto& cid : cam_ids) {
@@ -697,9 +856,12 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     }
     
 
-    // Phase V2-5: Use robust point if available and on-board
+    // Phase V2-5 / Phase 10: Use BCWT or robust point if available
     Point2f final_coords = best->coords;
-    if (g_use_robust_triangulation && robust_point) {
+    if (g_use_bcwt && bcwt_point) {
+        // BCWT is primary when enabled and valid
+        final_coords = *bcwt_point;
+    } else if (g_use_robust_triangulation && robust_point) {
         double rp_dist = std::sqrt(robust_point->x * robust_point->x + robust_point->y * robust_point->y);
         if (rp_dist <= 1.3) {
             // Use robust point, but only if it's close to the pairwise result
@@ -1039,7 +1201,7 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     tri_dbg.winner_pct = winner_pct;
     tri_dbg.vote_margin = vote_margin;
     tri_dbg.low_conf_reason = wire_low_conf;
-    result.method = method;
+    result.method = (g_use_bcwt && bcwt_method_used == "BCWT") ? "BCWT" : method;
     result.confidence = confidence;
     result.coords = final_coords;
     result.total_error = best->total_error;

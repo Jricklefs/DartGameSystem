@@ -108,6 +108,12 @@ DD_API int GetFrontonView(
     int output_size
 );
 
+/**
+ * Set a feature flag.
+ * @return 0 on success, -1 if flag not found
+ */
+DD_API int dd_set_flag(const char* flag_name, int value);
+
 #ifdef __cplusplus
 }
 #endif
