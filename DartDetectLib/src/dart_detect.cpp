@@ -914,3 +914,13 @@ DD_API int GetFrontonView(
 
     return 0;
 }
+
+// Forward declaration for triangulation.cpp flag setter
+extern int set_triangulation_flag(const char* name, int value);
+
+DD_API int dd_set_flag(const char* flag_name, int value)
+{
+    if (!flag_name) return -1;
+    return set_triangulation_flag(flag_name, value);
+}
+
