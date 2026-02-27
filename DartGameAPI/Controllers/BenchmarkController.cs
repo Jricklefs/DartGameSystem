@@ -28,6 +28,14 @@ public class BenchmarkController : ControllerBase
     /// <summary>
     /// List all benchmark games with stats and timestamps, ordered newest first.
     /// </summary>
+    
+    [HttpPost("set-flag")]
+    public IActionResult SetFlag([FromQuery] string name, [FromQuery] int value)
+    {
+        var result = DartGameAPI.Services.DartDetectNative.SetFlag(name, value);
+        return Ok(new { flag = name, value, result = result == 0 ? "ok" : "not_found" });
+    }
+
     [HttpGet("games")]
     public ActionResult GetGames()
     {

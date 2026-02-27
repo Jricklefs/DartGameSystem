@@ -37,6 +37,11 @@ public static class DartDetectNative
     private static extern void dd_set_pca_enabled(int enabled);
 
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int dd_set_flag([MarshalAs(UnmanagedType.LPUTF8Str)] string flagName, int value);
+
+    public static int SetFlag(string name, int value) => dd_set_flag(name, value);
+
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
     private static extern void dd_free_string(IntPtr str);
 
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "GetFrontonView")]
@@ -235,6 +240,9 @@ public class TriangulationDebugInfo
     public string RadiusGateReason { get; set; } = "";
     [System.Text.Json.Serialization.JsonPropertyName("segment_label_corrected")]
     public bool SegmentLabelCorrected { get; set; }
+
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get; set; }
 }
 
 public class CamTriDebug

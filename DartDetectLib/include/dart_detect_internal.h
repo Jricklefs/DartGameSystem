@@ -183,6 +183,19 @@ struct IntersectionResult {
         double winner_pct = 0.0;
         double vote_margin = 0.0;
         std::string low_conf_reason;
+        // Phase 10B: Radial Stability Clamp
+        bool radial_clamp_applied = false;
+        std::string radial_clamp_reason;
+        double r_bcwt = 0.0;
+        double r_bestpair = 0.0;
+        double radial_delta = 0.0;
+        bool near_ring_bcwt = false;
+        bool near_ring_best = false;
+        bool near_ring_any = false;
+        double x_preclamp_x = 0.0;
+        double x_preclamp_y = 0.0;
+        double x_bestpair_x = 0.0;
+        double x_bestpair_y = 0.0;
     };
     std::optional<TriangulationDebug> tri_debug;
 };
