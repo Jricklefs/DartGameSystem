@@ -30,6 +30,33 @@ static bool g_use_bcwt = false;
 static bool g_bcwt_allow_soft_include = true;
 static double g_bcwt_min_weight = 0.15;
 static double g_bcwt_max_weight_cap = 1.0;
+
+// === FEATURE FLAGS: Phase 10B BCWT Radial Stability Clamp ===
+static bool g_use_bcwt_radial_clamp = false;
+static int g_radial_clamp_mode = 0;  // 0=fallback_to_bestpair, 1=hybrid
+static bool g_radial_clamp_only_near_rings = true;
+static bool g_radial_clamp_respect_miss = true;
+static double RADIAL_DELTA_THRESHOLD = 0.030;
+static double NEAR_RING_EPS = 0.020;
+
+// Ring boundary radii in normalized space (radius / 170.0)
+static const double RING_RADII[] = {
+    6.35 / 170.0,   // bullseye outer
+    16.0 / 170.0,   // bull outer
+    99.0 / 170.0,   // triple inner
+    107.0 / 170.0,  // triple outer
+    162.0 / 170.0,  // double inner
+    170.0 / 170.0,  // double outer (board edge)
+};
+static const int NUM_RING_RADII = 6;
+
+static bool near_any_ring(double r) {
+    for (int i = 0; i < NUM_RING_RADII; ++i) {
+        if (std::abs(r - RING_RADII[i]) <= NEAR_RING_EPS) return true;
+    }
+    return false;
+}
+
 // Phase 10: Flag setter for triangulation flags (called from skeleton.cpp)
 int set_triangulation_flag(const char* name, int value) {
     std::string s(name);
@@ -37,6 +64,12 @@ int set_triangulation_flag(const char* name, int value) {
     if (s == "BCWT_AllowSoftIncludeWeakCam") { g_bcwt_allow_soft_include = (value != 0); return 0; }
     if (s == "BCWT_MinWeightToInclude") { g_bcwt_min_weight = value / 100.0; return 0; }  // pass as int percent
     if (s == "BCWT_MaxWeightCap") { g_bcwt_max_weight_cap = value / 100.0; return 0; }
+    if (s == "UseBCWTRadialStabilityClamp") { g_use_bcwt_radial_clamp = (value != 0); return 0; }
+    if (s == "RadialClamp_Mode") { g_radial_clamp_mode = value; return 0; }
+    if (s == "RadialClamp_OnlyNearRings") { g_radial_clamp_only_near_rings = (value != 0); return 0; }
+    if (s == "RadialClamp_RespectMissOverride") { g_radial_clamp_respect_miss = (value != 0); return 0; }
+    if (s == "RadialClamp_DeltaThreshold") { RADIAL_DELTA_THRESHOLD = value / 1000.0; return 0; }
+    if (s == "RadialClamp_NearRingEps") { NEAR_RING_EPS = value / 1000.0; return 0; }
     return -1;  // not our flag
 }
 
@@ -350,7 +383,7 @@ static BcwtCamWeight bcwt_compute_weight(const DetectionResult& det, double mask
     if (inl <= 0.0) inl = 0.5;
     bw.inl_score = clamp01((inl - 0.35) / 0.45);
     
-    // Phase 9 fields not yet on Dev4.0 — use defaults per spec
+    // Phase 9 fields not yet on Dev4.0 ï¿½ use defaults per spec
     bw.ang_pca_score = 0.7;
     bw.ang_ft_score = 0.7;
     bw.tip_score = 0.8;
@@ -874,6 +907,53 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         }
     }
 
+    // === Phase 10B: BCWT Radial Stability Clamp ===
+    bool radial_clamp_applied = false;
+    std::string radial_clamp_reason;
+    std::string radial_clamp_method;
+    double r_bcwt_10b = 0, r_bestpair_10b = 0, radial_delta_10b = 0;
+    bool near_ring_bcwt = false, near_ring_best = false, near_ring_any_10b = false;
+    Point2f x_bestpair_10b(0,0);
+    Point2f x_preclamp = final_coords;
+    
+    if (g_use_bcwt && g_use_bcwt_radial_clamp && bcwt_point) {
+        // x_bestpair = legacy robust point or best pairwise intersection
+        if (robust_point) {
+            double rp_d = std::sqrt(robust_point->x * robust_point->x + robust_point->y * robust_point->y);
+            if (rp_d <= 1.3) x_bestpair_10b = *robust_point;
+            else x_bestpair_10b = best->coords;
+        } else {
+            x_bestpair_10b = best->coords;
+        }
+        
+        r_bcwt_10b = std::sqrt(bcwt_point->x * bcwt_point->x + bcwt_point->y * bcwt_point->y);
+        r_bestpair_10b = std::sqrt(x_bestpair_10b.x * x_bestpair_10b.x + x_bestpair_10b.y * x_bestpair_10b.y);
+        radial_delta_10b = std::abs(r_bcwt_10b - r_bestpair_10b);
+        
+        near_ring_bcwt = near_any_ring(r_bcwt_10b);
+        near_ring_best = near_any_ring(r_bestpair_10b);
+        near_ring_any_10b = near_ring_bcwt || near_ring_best;
+        
+        if (!g_radial_clamp_only_near_rings) near_ring_any_10b = true;
+        
+        if (near_ring_any_10b && radial_delta_10b > RADIAL_DELTA_THRESHOLD) {
+            radial_clamp_applied = true;
+            if (g_radial_clamp_mode == 0) {
+                // Mode A: fallback to bestpair
+                final_coords = x_bestpair_10b;
+                radial_clamp_reason = "radial_delta";
+                radial_clamp_method = "BestPair_Fallback_RadialClamp";
+            } else {
+                // Mode B: hybrid - BCWT angle, bestpair radius
+                double theta_bcwt = std::atan2(bcwt_point->y, bcwt_point->x);
+                final_coords = Point2f(std::cos(theta_bcwt) * r_bestpair_10b,
+                                       std::sin(theta_bcwt) * r_bestpair_10b);
+                radial_clamp_reason = "radial_delta_hybrid";
+                radial_clamp_method = "BCWT_HybridAngle_RadiusBestPair";
+            }
+        }
+    }
+
     // Score the final coordinates
     double final_dist = std::sqrt(final_coords.x * final_coords.x + final_coords.y * final_coords.y);
     double final_angle_rad = std::atan2(final_coords.y, -final_coords.x);
@@ -1201,7 +1281,25 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     tri_dbg.winner_pct = winner_pct;
     tri_dbg.vote_margin = vote_margin;
     tri_dbg.low_conf_reason = wire_low_conf;
-    result.method = (g_use_bcwt && bcwt_method_used == "BCWT") ? "BCWT" : method;
+    // Phase 10B debug fields
+    tri_dbg.radial_clamp_applied = radial_clamp_applied;
+    tri_dbg.radial_clamp_reason = radial_clamp_reason;
+    tri_dbg.r_bcwt = r_bcwt_10b;
+    tri_dbg.r_bestpair = r_bestpair_10b;
+    tri_dbg.radial_delta = radial_delta_10b;
+    tri_dbg.near_ring_bcwt = near_ring_bcwt;
+    tri_dbg.near_ring_best = near_ring_best;
+    tri_dbg.near_ring_any = near_ring_any_10b;
+    tri_dbg.x_preclamp_x = x_preclamp.x;
+    tri_dbg.x_preclamp_y = x_preclamp.y;
+    tri_dbg.x_bestpair_x = x_bestpair_10b.x;
+    tri_dbg.x_bestpair_y = x_bestpair_10b.y;
+
+    if (radial_clamp_applied) {
+        result.method = radial_clamp_method;
+    } else {
+        result.method = (g_use_bcwt && bcwt_method_used == "BCWT") ? "BCWT" : method;
+    }
     result.confidence = confidence;
     result.coords = final_coords;
     result.total_error = best->total_error;

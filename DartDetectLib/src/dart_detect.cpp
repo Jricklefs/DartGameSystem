@@ -517,6 +517,21 @@ DD_API const char* dd_detect(
                 if (!td.low_conf_reason.empty()) {
                     json << ",\"low_conf_reason\":\"" << td.low_conf_reason << "\"";
                 }
+                // Phase 10B: Radial clamp fields
+                json << ",\"radial_clamp_applied\":" << (td.radial_clamp_applied ? "true" : "false");
+                if (td.radial_clamp_applied) {
+                    json << ",\"radial_clamp_reason\":\"" << td.radial_clamp_reason << "\"";
+                }
+                json << ",\"r_bcwt\":" << td.r_bcwt
+                     << ",\"r_bestpair\":" << td.r_bestpair
+                     << ",\"radial_delta\":" << td.radial_delta
+                     << ",\"near_ring_bcwt\":" << (td.near_ring_bcwt ? "true" : "false")
+                     << ",\"near_ring_best\":" << (td.near_ring_best ? "true" : "false")
+                     << ",\"near_ring_any\":" << (td.near_ring_any ? "true" : "false")
+                     << ",\"x_preclamp_x\":" << td.x_preclamp_x
+                     << ",\"x_preclamp_y\":" << td.x_preclamp_y
+                     << ",\"x_bestpair_x\":" << td.x_bestpair_x
+                     << ",\"x_bestpair_y\":" << td.x_bestpair_y;
                 json << ",\"cam_debug\":{";
 
 
