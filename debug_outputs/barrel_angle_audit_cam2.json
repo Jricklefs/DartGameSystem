@@ -1,0 +1,459 @@
+{
+  "phase": "8C",
+  "description": "Barrel Geometry Angle Audit - cam2",
+  "total_darts": 1073,
+  "outlier_A_count": 6,
+  "outlier_B_count": 376,
+  "control_count": 549,
+  "distributions": {
+    "OUTLIER_A": {
+      "label": "OUTLIER_A",
+      "count": 6,
+      "angle_line_vs_pca": {
+        "p50": 20.740389758145653,
+        "p90": 65.34004287376231,
+        "p95": 65.34004287376231,
+        "max": 65.34004287376231,
+        "count": 6
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 14.232862732448028,
+        "p90": 61.04364701769738,
+        "p95": 61.04364701769738,
+        "max": 61.04364701769738,
+        "count": 6
+      },
+      "tip_ahead_of_flight_rate": 0.5,
+      "barrel_pixel_count": {
+        "p50": 34,
+        "p90": 127,
+        "p95": 127,
+        "max": 127,
+        "count": 6
+      },
+      "barrel_aspect_ratio": {
+        "p50": 3.125,
+        "p90": 4.35347,
+        "p95": 4.35347,
+        "max": 4.35347,
+        "count": 6
+      },
+      "detection_quality": {
+        "p50": 0.659837,
+        "p90": 0.778,
+        "p95": 0.778,
+        "max": 0.778,
+        "count": 6
+      }
+    },
+    "OUTLIER_B": {
+      "label": "OUTLIER_B",
+      "count": 376,
+      "angle_line_vs_pca": {
+        "p50": 6.805356966283032,
+        "p90": 65.88465959713125,
+        "p95": 80.64238480951016,
+        "max": 88.59780329840224,
+        "count": 376
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 3.8084038916223206,
+        "p90": 22.768688669762902,
+        "p95": 52.21159473799548,
+        "max": 88.50170371214728,
+        "count": 371
+      },
+      "tip_ahead_of_flight_rate": 0.9730458221024259,
+      "barrel_pixel_count": {
+        "p50": 0,
+        "p90": 984,
+        "p95": 1131,
+        "max": 2267,
+        "count": 376
+      },
+      "barrel_aspect_ratio": {
+        "p50": 4.00617,
+        "p90": 6.95885,
+        "p95": 9.39648,
+        "max": 22.5,
+        "count": 376
+      },
+      "detection_quality": {
+        "p50": 0.140871,
+        "p90": 0.920644,
+        "p95": 0.936758,
+        "max": 0.99477,
+        "count": 376
+      }
+    },
+    "CONTROL": {
+      "label": "CONTROL",
+      "count": 549,
+      "angle_line_vs_pca": {
+        "p50": 3.770588462725302,
+        "p90": 29.649120948465765,
+        "p95": 56.279958878294494,
+        "max": 88.94533756865467,
+        "count": 546
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 2.361756345335233,
+        "p90": 18.640293289306676,
+        "p95": 30.17292575850917,
+        "max": 85.16821733196484,
+        "count": 530
+      },
+      "tip_ahead_of_flight_rate": 0.9415094339622642,
+      "barrel_pixel_count": {
+        "p50": 386,
+        "p90": 840,
+        "p95": 994,
+        "max": 1963,
+        "count": 546
+      },
+      "barrel_aspect_ratio": {
+        "p50": 5.20888,
+        "p90": 8.75,
+        "p95": 12.6667,
+        "max": 35.5,
+        "count": 546
+      },
+      "detection_quality": {
+        "p50": 0.888908,
+        "p90": 0.973846,
+        "p95": 0.9925,
+        "max": 1,
+        "count": 546
+      }
+    }
+  },
+  "by_error_category": {
+    "correct": {
+      "label": "correct",
+      "count": 880,
+      "angle_line_vs_pca": {
+        "p50": 4.812791547384705,
+        "p90": 45.16573807100212,
+        "p95": 70.028010700097,
+        "max": 88.94533756865467,
+        "count": 877
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 2.8406807088518566,
+        "p90": 20.96114553867137,
+        "p95": 40.05135154676729,
+        "max": 88.50170371214728,
+        "count": 856
+      },
+      "tip_ahead_of_flight_rate": 0.9521028037383178,
+      "barrel_pixel_count": {
+        "p50": 69,
+        "p90": 897,
+        "p95": 1064,
+        "max": 2267,
+        "count": 877
+      },
+      "barrel_aspect_ratio": {
+        "p50": 4.69546,
+        "p90": 8.33428,
+        "p95": 11,
+        "max": 35.5,
+        "count": 877
+      },
+      "detection_quality": {
+        "p50": 0.747,
+        "p90": 0.960089,
+        "p95": 0.983195,
+        "max": 1,
+        "count": 877
+      }
+    },
+    "adjacent_seg": {
+      "label": "adjacent_seg",
+      "count": 50,
+      "angle_line_vs_pca": {
+        "p50": 5.253955606421942,
+        "p90": 61.67300777059597,
+        "p95": 67.64320711737382,
+        "max": 86.63321309805929,
+        "count": 48
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 1.1709880337261802,
+        "p90": 19.41925463607509,
+        "p95": 43.25633121130458,
+        "max": 69.06911257316989,
+        "count": 48
+      },
+      "tip_ahead_of_flight_rate": 1.0,
+      "barrel_pixel_count": {
+        "p50": 456,
+        "p90": 1094,
+        "p95": 1107,
+        "max": 1252,
+        "count": 48
+      },
+      "barrel_aspect_ratio": {
+        "p50": 5.13221,
+        "p90": 8.22178,
+        "p95": 9,
+        "max": 14,
+        "count": 48
+      },
+      "detection_quality": {
+        "p50": 0.896544,
+        "p90": 0.970413,
+        "p95": 1,
+        "max": 1,
+        "count": 48
+      }
+    },
+    "miss_false_neg": {
+      "label": "miss_false_neg",
+      "count": 93,
+      "angle_line_vs_pca": {
+        "p50": 15.86841773514711,
+        "p90": 60.2912236056707,
+        "p95": 77.03946006107218,
+        "max": 88.23349945123516,
+        "count": 86
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 18.495953950265182,
+        "p90": 69.31016547862576,
+        "p95": 73.25813559987154,
+        "max": 86.29439050066244,
+        "count": 84
+      },
+      "tip_ahead_of_flight_rate": 0.75,
+      "barrel_pixel_count": {
+        "p50": 0,
+        "p90": 637,
+        "p95": 877,
+        "max": 877,
+        "count": 13
+      },
+      "barrel_aspect_ratio": {
+        "p50": 3.63718,
+        "p90": 6.38119,
+        "p95": 6.46771,
+        "max": 6.46771,
+        "count": 13
+      },
+      "detection_quality": {
+        "p50": 0.121001,
+        "p90": 0.926554,
+        "p95": 0.961693,
+        "max": 0.961693,
+        "count": 13
+      }
+    },
+    "ring_error": {
+      "label": "ring_error",
+      "count": 39,
+      "angle_line_vs_pca": {
+        "p50": 6.191559665769769,
+        "p90": 50.57450131649776,
+        "p95": 80.64238480951016,
+        "max": 83.83546586532508,
+        "count": 36
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 2.569616503659388,
+        "p90": 12.249437105085143,
+        "p95": 14.897842097792946,
+        "max": 18.77338606220583,
+        "count": 36
+      },
+      "tip_ahead_of_flight_rate": 0.9444444444444444,
+      "barrel_pixel_count": {
+        "p50": 89,
+        "p90": 1020,
+        "p95": 1322,
+        "max": 1393,
+        "count": 36
+      },
+      "barrel_aspect_ratio": {
+        "p50": 3.89099,
+        "p90": 8.06967,
+        "p95": 13.3333,
+        "max": 16.5,
+        "count": 36
+      },
+      "detection_quality": {
+        "p50": 0.7345,
+        "p90": 0.920796,
+        "p95": 0.964093,
+        "max": 1,
+        "count": 36
+      }
+    },
+    "miss_false_pos": {
+      "label": "miss_false_pos",
+      "count": 8,
+      "angle_line_vs_pca": {
+        "p50": 2.5600592819439982,
+        "p90": 85.50508409080435,
+        "p95": 85.50508409080435,
+        "max": 85.50508409080435,
+        "count": 8
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 7.07577407715858,
+        "p90": 52.13812354156995,
+        "p95": 52.13812354156995,
+        "max": 52.13812354156995,
+        "count": 8
+      },
+      "tip_ahead_of_flight_rate": 1.0,
+      "barrel_pixel_count": {
+        "p50": 0,
+        "p90": 897,
+        "p95": 897,
+        "max": 897,
+        "count": 8
+      },
+      "barrel_aspect_ratio": {
+        "p50": 3.64492,
+        "p90": 7.77232,
+        "p95": 7.77232,
+        "max": 7.77232,
+        "count": 8
+      },
+      "detection_quality": {
+        "p50": 0.145773,
+        "p90": 0.933654,
+        "p95": 0.933654,
+        "max": 0.933654,
+        "count": 8
+      }
+    },
+    "other_error": {
+      "label": "other_error",
+      "count": 3,
+      "angle_line_vs_pca": {
+        "p50": 65.34004287376231,
+        "p90": 65.34004287376231,
+        "p95": 65.34004287376231,
+        "max": 65.34004287376231,
+        "count": 1
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 9.179282223607375,
+        "p90": 9.179282223607375,
+        "p95": 9.179282223607375,
+        "max": 9.179282223607375,
+        "count": 1
+      },
+      "tip_ahead_of_flight_rate": 1.0,
+      "barrel_pixel_count": {
+        "p50": 34,
+        "p90": 34,
+        "p95": 34,
+        "max": 34,
+        "count": 1
+      },
+      "barrel_aspect_ratio": {
+        "p50": 4.35347,
+        "p90": 4.35347,
+        "p95": 4.35347,
+        "max": 4.35347,
+        "count": 1
+      },
+      "detection_quality": {
+        "p50": 0.659837,
+        "p90": 0.659837,
+        "p95": 0.659837,
+        "max": 0.659837,
+        "count": 1
+      }
+    }
+  },
+  "correlations_cam2": {
+    "corr_pca_angle_vs_d_cam2": 0.0744494918169945,
+    "corr_flighttip_angle_vs_d_cam2": 0.10292341296506768,
+    "corr_pca_angle_vs_dropped": 0.11116887908127494,
+    "corr_flighttip_angle_vs_dropped": -0.007260316963200154
+  },
+  "bucketed_error_rates": {
+    "by_pca_angle": {
+      "0-2": {
+        "count": 323,
+        "drop_rate": 0.29102167182662536,
+        "error_rate": 0.13003095975232198,
+        "avg_d_cam2": 0.07529430260391247
+      },
+      "2-5": {
+        "count": 189,
+        "drop_rate": 0.36507936507936506,
+        "error_rate": 0.14285714285714285,
+        "avg_d_cam2": 0.09570114392197106
+      },
+      "5-10": {
+        "count": 175,
+        "drop_rate": 0.32571428571428573,
+        "error_rate": 0.13142857142857142,
+        "avg_d_cam2": 0.09964524891551411
+      },
+      "10-20": {
+        "count": 148,
+        "drop_rate": 0.41216216216216217,
+        "error_rate": 0.18243243243243243,
+        "avg_d_cam2": 0.11216220139592932
+      },
+      "20-90": {
+        "count": 221,
+        "drop_rate": 0.4298642533936652,
+        "error_rate": 0.27149321266968324,
+        "avg_d_cam2": 0.12282455351312122
+      }
+    },
+    "by_flighttip_angle": {
+      "0-2": {
+        "count": 428,
+        "drop_rate": 0.338785046728972,
+        "error_rate": 0.12850467289719625,
+        "avg_d_cam2": 0.07196358890968699
+      },
+      "2-5": {
+        "count": 175,
+        "drop_rate": 0.3657142857142857,
+        "error_rate": 0.14285714285714285,
+        "avg_d_cam2": 0.0968574426045824
+      },
+      "5-10": {
+        "count": 167,
+        "drop_rate": 0.4311377245508982,
+        "error_rate": 0.1497005988023952,
+        "avg_d_cam2": 0.12589860346071527
+      },
+      "10-20": {
+        "count": 128,
+        "drop_rate": 0.34375,
+        "error_rate": 0.21875,
+        "avg_d_cam2": 0.13197749627910904
+      },
+      "20-90": {
+        "count": 135,
+        "drop_rate": 0.34074074074074073,
+        "error_rate": 0.32592592592592595,
+        "avg_d_cam2": 0.126659060667537
+      }
+    }
+  },
+  "suggested_gates": {
+    "note": "REPORT ONLY - DO NOT IMPLEMENT",
+    "candidates": [
+      {
+        "gate": "if tip_ahead_of_flight == false then cam2 unreliable",
+        "tip_ahead_rate_control": 0.9415094339622642,
+        "tip_ahead_rate_outlierA": 0.5
+      }
+    ]
+  },
+  "best_separator": "angle_line_vs_flighttip_deg",
+  "separation_detail": {
+    "pca_separation_p90": 35.69092192529655,
+    "flighttip_separation_p90": 42.403353728390705
+  }
+}

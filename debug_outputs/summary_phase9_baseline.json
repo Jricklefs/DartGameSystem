@@ -1,0 +1,27 @@
+{
+  "label": "baseline",
+  "total_darts": 1163,
+  "correct": 880,
+  "accuracy_pct": 75.7,
+  "miss_false_neg": 80,
+  "ring_error": 52,
+  "adjacent_seg": 50,
+  "wrong_other": 11,
+  "camera_drop_rate": {
+    "cam0": 7.36,
+    "cam1": 16.96,
+    "cam2": 35.04
+  },
+  "camera_used_rate": {
+    "cam0": 90.96,
+    "cam1": 91.8,
+    "cam2": 91.61
+  },
+  "p9_metric_counts": {
+    "barrel_cand_px": 0,
+    "ridge_point_count": 0,
+    "ridge_inlier_ratio": 0,
+    "angle_vs_pca": 0,
+    "angle_vs_flighttip": 0
+  }
+}

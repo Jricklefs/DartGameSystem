@@ -1,0 +1,7884 @@
+[
+  {
+    "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+    "round_index": 2,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.576207,
+    "boundary_distance_deg": 0.017336242099418087,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 10,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.436765,
+    "boundary_distance_deg": 0.01981963809288345,
+    "near_boundary": true,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 1,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.589459,
+    "boundary_distance_deg": 0.05613827200079413,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 19,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.680539,
+    "boundary_distance_deg": 0.06557838222704504,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 14,
+    "dart_index": 2,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.818064,
+    "boundary_distance_deg": 0.07854881473576825,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 1,
+    "dart_index": 2,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "confidence": 0.1,
+    "boundary_distance_deg": 0.10874230256490591,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 17,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 2
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 0.1127830962735743,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 15,
+    "dart_index": 3,
+    "truth": {
+      "segment": 6,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 13,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 13,
+      "multiplier": 1
+    },
+    "confidence": 0.737319,
+    "boundary_distance_deg": 0.12469404261770478,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "round_index": 13,
+    "dart_index": 2,
+    "truth": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 0.13553731283542447,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 1,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+    "round_index": 7,
+    "dart_index": 1,
+    "truth": {
+      "segment": 16,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 16,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 3
+    },
+    "confidence": 0.587986,
+    "boundary_distance_deg": 0.13660238205170572,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "round_index": 3,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.8578,
+    "boundary_distance_deg": 0.14689210151914267,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf"
+    ]
+  },
+  {
+    "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+    "round_index": 9,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 2
+    },
+    "confidence": 0.35252,
+    "boundary_distance_deg": 0.15379711731225143,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 9,
+    "dart_index": 2,
+    "truth": {
+      "segment": 1,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 3
+    },
+    "confidence": 0.875924,
+    "boundary_distance_deg": 0.16616378243054442,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf"
+    ]
+  },
+  {
+    "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+    "round_index": 6,
+    "dart_index": 1,
+    "truth": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.58053,
+    "boundary_distance_deg": 0.1688579644019228,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 0.169563987051788,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 19,
+    "dart_index": 2,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 3,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 3,
+      "multiplier": 3
+    },
+    "confidence": 0.63746,
+    "boundary_distance_deg": 0.1705595567070759,
+    "near_boundary": true,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "round_index": 1,
+    "dart_index": 1,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.628959,
+    "boundary_distance_deg": 0.18937250272654182,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 16,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.508462,
+    "boundary_distance_deg": 0.19364465305176282,
+    "near_boundary": true,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 6,
+    "dart_index": 1,
+    "truth": {
+      "segment": 25,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 0.21469532962737503,
+    "near_boundary": true,
+    "error_category_legacy": "other",
+    "error_category_phase6": "other",
+    "camera_wedge_spread": 9,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 13,
+    "dart_index": 3,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.85063,
+    "boundary_distance_deg": 0.2195981649499572,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 10,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.7,
+    "boundary_distance_deg": 0.22759323061688974,
+    "near_boundary": true,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.62511,
+    "boundary_distance_deg": 0.23276472174438823,
+    "near_boundary": true,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 13,
+    "dart_index": 3,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 0.23385629786446316,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 25,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 0.2368873471734787,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 4,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 3
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 0.24155155183859733,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+    "round_index": 1,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.494314,
+    "boundary_distance_deg": 0.24911416510491335,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 9,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.833209,
+    "boundary_distance_deg": 0.2569519205180768,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+    "round_index": 11,
+    "dart_index": 3,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.378733,
+    "boundary_distance_deg": 0.2625844053770834,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 12,
+    "dart_index": 1,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.938066,
+    "boundary_distance_deg": 0.27041499773588384,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 13,
+    "dart_index": 2,
+    "truth": {
+      "segment": 5,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 12,
+      "multiplier": 3
+    },
+    "confidence": 0.933278,
+    "boundary_distance_deg": 0.27973162250765427,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 11,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 0.28519872107608535,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 10,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+    "round_index": 6,
+    "dart_index": 3,
+    "truth": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.814677,
+    "boundary_distance_deg": 0.2925452717529424,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+    "round_index": 3,
+    "dart_index": 2,
+    "truth": {
+      "segment": 6,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 6,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 13,
+      "multiplier": 2
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 0.29471657430201503,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 2,
+    "dart_index": 1,
+    "truth": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.913335,
+    "boundary_distance_deg": 0.2979969584505966,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 0.30052993126815863,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 1,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.884902,
+    "boundary_distance_deg": 0.329601275504956,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 2,
+    "dart_index": 3,
+    "truth": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.609915,
+    "boundary_distance_deg": 0.3312996608436265,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 9,
+    "dart_index": 2,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.372363,
+    "boundary_distance_deg": 0.35267100727924117,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 14,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "confidence": 0.503484,
+    "boundary_distance_deg": 0.3760530439920444,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+    "round_index": 4,
+    "dart_index": 2,
+    "truth": {
+      "segment": 13,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 6,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 13,
+      "multiplier": 1
+    },
+    "confidence": 0.95,
+    "boundary_distance_deg": 0.39359508533038934,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "near_boundary_high_conf",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 1,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.505837,
+    "boundary_distance_deg": 0.3999037214106238,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+    "round_index": 7,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 0.40894722721782273,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 5,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 2,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 2,
+      "multiplier": 1
+    },
+    "confidence": 0.422161,
+    "boundary_distance_deg": 0.41442165365413075,
+    "near_boundary": true,
+    "error_category_legacy": "far_seg",
+    "error_category_phase6": "far_seg",
+    "camera_wedge_spread": 5,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 17,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.563563,
+    "boundary_distance_deg": 0.4179993249281324,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 12,
+    "dart_index": 2,
+    "truth": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.796659,
+    "boundary_distance_deg": 0.4219493892560422,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 5,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.115257,
+    "boundary_distance_deg": 0.44269685037295403,
+    "near_boundary": true,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 1,
+    "dart_index": 1,
+    "truth": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 12,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 0.4644018794300564,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "wedge_outlier",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 6,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 13,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 13,
+      "multiplier": 2
+    },
+    "confidence": 0.389942,
+    "boundary_distance_deg": 0.47673230914671194,
+    "near_boundary": true,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 16,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 0.49218793133354666,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": true,
+    "flags": [
+      "incorrect",
+      "decision_changed"
+    ]
+  },
+  {
+    "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+    "round_index": 12,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "confidence": 0.574845,
+    "boundary_distance_deg": 0.5046739883496798,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 5,
+    "dart_index": 2,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.389281,
+    "boundary_distance_deg": 0.5273735440703717,
+    "near_boundary": false,
+    "error_category_legacy": "other",
+    "error_category_phase6": "other",
+    "camera_wedge_spread": 6,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.237151,
+    "boundary_distance_deg": 0.5432919672272192,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 6,
+    "dart_index": 2,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 0.5929269962014132,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 12,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "confidence": 0.482434,
+    "boundary_distance_deg": 0.6272095883331303,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 22,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.565664,
+    "boundary_distance_deg": 0.6378653159985106,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.557134,
+    "boundary_distance_deg": 0.677710580505277,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 24,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.594256,
+    "boundary_distance_deg": 0.7510353684708662,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 2,
+    "dart_index": 1,
+    "truth": {
+      "segment": 19,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.7,
+    "boundary_distance_deg": 0.7530623470365754,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 18,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.290844,
+    "boundary_distance_deg": 0.8290957844448599,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 11,
+    "dart_index": 3,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.711313,
+    "boundary_distance_deg": 0.8461207964382993,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+    "round_index": 12,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.623096,
+    "boundary_distance_deg": 0.9362184158066498,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 10,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.456659,
+    "boundary_distance_deg": 0.9848927257579589,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 3,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.607042,
+    "boundary_distance_deg": 0.9880455234984424,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 7,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 1.0056480844392581,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 10,
+    "dart_index": 3,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.591556,
+    "boundary_distance_deg": 1.0977468125749965,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+    "round_index": 1,
+    "dart_index": 1,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.825634,
+    "boundary_distance_deg": 1.1321775702497234,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 13,
+    "dart_index": 2,
+    "truth": {
+      "segment": 20,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.568354,
+    "boundary_distance_deg": 1.1375350016143102,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 26,
+    "dart_index": 1,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.942094,
+    "boundary_distance_deg": 1.1755905612072866,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 18,
+    "dart_index": 2,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 1.2109000056354375,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 13,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "confidence": 0.617303,
+    "boundary_distance_deg": 1.2749447650137427,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+    "round_index": 2,
+    "dart_index": 2,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "confidence": 0.631502,
+    "boundary_distance_deg": 1.2833874235033136,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 4,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "confidence": 0.779269,
+    "boundary_distance_deg": 1.3503037203773829,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 11,
+    "dart_index": 1,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.59256,
+    "boundary_distance_deg": 1.36990241966123,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+    "round_index": 1,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.54612,
+    "boundary_distance_deg": 1.4613109883733841,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 7,
+    "dart_index": 1,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 2
+    },
+    "confidence": 0.158497,
+    "boundary_distance_deg": 1.4622917621635452,
+    "near_boundary": false,
+    "error_category_legacy": "other",
+    "error_category_phase6": "other",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 22,
+    "dart_index": 3,
+    "truth": {
+      "segment": 12,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 1.499754541338575,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+    "round_index": 9,
+    "dart_index": 3,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.401723,
+    "boundary_distance_deg": 1.5045439333612194,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 20,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.7,
+    "boundary_distance_deg": 1.5394976953280093,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+    "round_index": 3,
+    "dart_index": 2,
+    "truth": {
+      "segment": 12,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 12,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 12,
+      "multiplier": 3
+    },
+    "confidence": 0.903891,
+    "boundary_distance_deg": 1.5794171687489325,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "round_index": 5,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "confidence": 0.60563,
+    "boundary_distance_deg": 1.6413986198971315,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 21,
+    "dart_index": 1,
+    "truth": {
+      "segment": 12,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.821226,
+    "boundary_distance_deg": 1.8202668869531635,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+    "round_index": 2,
+    "dart_index": 1,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.821722,
+    "boundary_distance_deg": 1.9073536827321504,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 12,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.576057,
+    "boundary_distance_deg": 1.9883988640920052,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+    "round_index": 3,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.763369,
+    "boundary_distance_deg": 2.0166231854323655,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+    "round_index": 3,
+    "dart_index": 1,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 12,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 12,
+      "multiplier": 2
+    },
+    "confidence": 0.37229,
+    "boundary_distance_deg": 2.1628667189748967,
+    "near_boundary": false,
+    "error_category_legacy": "other",
+    "error_category_phase6": "other",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 5,
+    "dart_index": 1,
+    "truth": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.305696,
+    "boundary_distance_deg": 2.210731626181996,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 25,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 2.2297365929958346,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 6,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 1,
+    "dart_index": 2,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.378259,
+    "boundary_distance_deg": 2.3722756113136825,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 2,
+    "dart_index": 1,
+    "truth": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.481264,
+    "boundary_distance_deg": 2.3894280265442376,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 11,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.527717,
+    "boundary_distance_deg": 2.458810634039992,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 10,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 16,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 2.4774216858476734,
+    "near_boundary": false,
+    "error_category_legacy": "other",
+    "error_category_phase6": "other",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 2
+    },
+    "confidence": 0.386215,
+    "boundary_distance_deg": 2.5148496317676745,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 5,
+    "dart_index": 2,
+    "truth": {
+      "segment": 8,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.397985,
+    "boundary_distance_deg": 2.5197661518259338,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+    "round_index": 1,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "confidence": 0.588696,
+    "boundary_distance_deg": 2.5223497826143557,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 2.5474047699799485,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 3,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "confidence": 0.759116,
+    "boundary_distance_deg": 2.583445966182069,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 15,
+    "dart_index": 2,
+    "truth": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.629434,
+    "boundary_distance_deg": 2.629016202401317,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 12,
+    "dart_index": 3,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.758105,
+    "boundary_distance_deg": 2.6580780409447016,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 9,
+    "dart_index": 3,
+    "truth": {
+      "segment": 25,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 25,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 25,
+      "multiplier": 2
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 2.6957359302957684,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 10,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+    "round_index": 1,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.778225,
+    "boundary_distance_deg": 2.715924266519039,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+    "round_index": 11,
+    "dart_index": 1,
+    "truth": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.557642,
+    "boundary_distance_deg": 2.7479861591496046,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 2,
+    "dart_index": 1,
+    "truth": {
+      "segment": 12,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.95,
+    "boundary_distance_deg": 2.770247603710743,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+    "round_index": 9,
+    "dart_index": 1,
+    "truth": {
+      "segment": 3,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "confidence": 0.93682,
+    "boundary_distance_deg": 2.84343905720948,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+    "round_index": 11,
+    "dart_index": 1,
+    "truth": {
+      "segment": 19,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.723297,
+    "boundary_distance_deg": 2.9088751720761366,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 4,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.7,
+    "boundary_distance_deg": 3.035587566608342,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 9,
+    "dart_index": 3,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.385338,
+    "boundary_distance_deg": 3.0416044330190743,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.905243,
+    "boundary_distance_deg": 3.1007582179904034,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 12,
+    "dart_index": 2,
+    "truth": {
+      "segment": 10,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 3.11537248720731,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 5,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.144504,
+    "boundary_distance_deg": 3.1597836030741178,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.819445,
+    "boundary_distance_deg": 3.1821179403864903,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 4,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.556945,
+    "boundary_distance_deg": 3.191362956641683,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 2,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "confidence": 0.236973,
+    "boundary_distance_deg": 3.2781411451015856,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 13,
+    "dart_index": 2,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.582566,
+    "boundary_distance_deg": 3.4099160967630837,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 8,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "confidence": 0.655219,
+    "boundary_distance_deg": 3.4279033274190738,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 10,
+    "dart_index": 2,
+    "truth": {
+      "segment": 3,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.626073,
+    "boundary_distance_deg": 3.458415482809187,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 8,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.259652,
+    "boundary_distance_deg": 3.680275770438527,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+    "round_index": 4,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.529249,
+    "boundary_distance_deg": 3.741136089282236,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 11,
+    "dart_index": 3,
+    "truth": {
+      "segment": 19,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.638061,
+    "boundary_distance_deg": 3.9044907649450806,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 10,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 17,
+    "dart_index": 2,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.611217,
+    "boundary_distance_deg": 3.931169830699446,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 9,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.489129,
+    "boundary_distance_deg": 3.941298511253649,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 15,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 3.969185843407729,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 23,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.585459,
+    "boundary_distance_deg": 4.009665889088126,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 10,
+    "dart_index": 3,
+    "truth": {
+      "segment": 1,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "confidence": 0.553371,
+    "boundary_distance_deg": 4.0777144715359555,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 10,
+    "dart_index": 1,
+    "truth": {
+      "segment": 9,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.826768,
+    "boundary_distance_deg": 4.143408139532767,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 10,
+    "dart_index": 1,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 4.160936556388833,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+    "round_index": 9,
+    "dart_index": 3,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.654483,
+    "boundary_distance_deg": 4.4195321174913715,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.310196,
+    "boundary_distance_deg": 4.426143629514172,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 3,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 4.438464173991065,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 5,
+    "dart_index": 1,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.496539,
+    "boundary_distance_deg": 4.4734677896808535,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 4,
+    "dart_index": 1,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 4.526407435354372,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 25,
+    "dart_index": 1,
+    "truth": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.669348,
+    "boundary_distance_deg": 4.624172178652884,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+    "round_index": 3,
+    "dart_index": 3,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "confidence": 0.721897,
+    "boundary_distance_deg": 4.629501357269987,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 13,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.398587,
+    "boundary_distance_deg": 4.649069583140772,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 17,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.508819,
+    "boundary_distance_deg": 4.653653813752726,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 7,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.551146,
+    "boundary_distance_deg": 4.681903205983019,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 11,
+    "dart_index": 1,
+    "truth": {
+      "segment": 10,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 4.7492557138896245,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 17,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.471556,
+    "boundary_distance_deg": 4.7799350377904375,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+    "round_index": 8,
+    "dart_index": 3,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "confidence": 0.582994,
+    "boundary_distance_deg": 4.830800474874536,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 19,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.37112,
+    "boundary_distance_deg": 4.831538254623581,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 2,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.572925,
+    "boundary_distance_deg": 4.8714632613964,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "round_index": 11,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.779666,
+    "boundary_distance_deg": 4.8909134742605715,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+    "round_index": 11,
+    "dart_index": 1,
+    "truth": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.761478,
+    "boundary_distance_deg": 4.928945009338577,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 14,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "confidence": 0.286549,
+    "boundary_distance_deg": 4.970422842313724,
+    "near_boundary": false,
+    "error_category_legacy": "other",
+    "error_category_phase6": "other",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 9,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.40989,
+    "boundary_distance_deg": 4.976797971570761,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 21,
+    "dart_index": 3,
+    "truth": {
+      "segment": 10,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.647373,
+    "boundary_distance_deg": 5.0153159559021105,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+    "round_index": 8,
+    "dart_index": 1,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.546265,
+    "boundary_distance_deg": 5.09373148722284,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 1,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 2
+    },
+    "confidence": 0.409565,
+    "boundary_distance_deg": 5.3389697585363365,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 21,
+    "dart_index": 2,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.645577,
+    "boundary_distance_deg": 5.613013359144645,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 3,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "confidence": 0.633318,
+    "boundary_distance_deg": 5.796798270084707,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 7,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.758605,
+    "boundary_distance_deg": 5.836731302178464,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 12,
+    "dart_index": 2,
+    "truth": {
+      "segment": 1,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.715001,
+    "boundary_distance_deg": 5.870617366032832,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "round_index": 6,
+    "dart_index": 1,
+    "truth": {
+      "segment": 9,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.569679,
+    "boundary_distance_deg": 5.900326966543332,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 7,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 2
+    },
+    "confidence": 0.484013,
+    "boundary_distance_deg": 5.920478285909098,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 27,
+    "dart_index": 1,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.466362,
+    "boundary_distance_deg": 6.008655356225063,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 20,
+    "dart_index": 3,
+    "truth": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.538896,
+    "boundary_distance_deg": 6.041036197593144,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 15,
+    "dart_index": 1,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 6.079747587514021,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+    "round_index": 4,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 6.115652373893454,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+    "round_index": 12,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.635181,
+    "boundary_distance_deg": 6.135537195884183,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 15,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.7,
+    "boundary_distance_deg": 6.3129170750139565,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 1,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "confidence": 0.701801,
+    "boundary_distance_deg": 6.421820733132904,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+    "round_index": 6,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 6.490178544831679,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 2,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 6.5799021745501705,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 18,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.412656,
+    "boundary_distance_deg": 6.587713596496542,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 18,
+    "dart_index": 3,
+    "truth": {
+      "segment": 19,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.774523,
+    "boundary_distance_deg": 6.622862090230456,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 22,
+    "dart_index": 1,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 12,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 12,
+      "multiplier": 2
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 6.634597777379156,
+    "near_boundary": false,
+    "error_category_legacy": "other",
+    "error_category_phase6": "other",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 6.644883238316879,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+    "round_index": 3,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.275652,
+    "boundary_distance_deg": 6.701822567818226,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 11,
+    "dart_index": 1,
+    "truth": {
+      "segment": 15,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.140196,
+    "boundary_distance_deg": 6.76407693081228,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 10,
+    "dart_index": 3,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.517437,
+    "boundary_distance_deg": 6.7659758052013785,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+    "round_index": 14,
+    "dart_index": 2,
+    "truth": {
+      "segment": 1,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "confidence": 0.590261,
+    "boundary_distance_deg": 6.787612841321163,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 8,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.623366,
+    "boundary_distance_deg": 6.801846554031499,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+    "round_index": 7,
+    "dart_index": 2,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.642342,
+    "boundary_distance_deg": 6.806382399650374,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.612991,
+    "boundary_distance_deg": 6.825411965976855,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 23,
+    "dart_index": 1,
+    "truth": {
+      "segment": 1,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 6.849950252530334,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 21,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 7.001637307695432,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 16,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.400164,
+    "boundary_distance_deg": 7.019320406779002,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 19,
+    "dart_index": 1,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.594804,
+    "boundary_distance_deg": 7.026712734061334,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+    "round_index": 10,
+    "dart_index": 1,
+    "truth": {
+      "segment": 2,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 2,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 2,
+      "multiplier": 1
+    },
+    "confidence": 0.242413,
+    "boundary_distance_deg": 7.064946646464932,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+    "round_index": 4,
+    "dart_index": 1,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 1,
+      "multiplier": 3
+    },
+    "confidence": 0.640424,
+    "boundary_distance_deg": 7.1100015708480555,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 20,
+    "dart_index": 3,
+    "truth": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 16,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 16,
+      "multiplier": 3
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 7.391693280532991,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 4,
+    "dart_index": 1,
+    "truth": {
+      "segment": 7,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.944972,
+    "boundary_distance_deg": 7.496317549634568,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 7,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.619467,
+    "boundary_distance_deg": 7.511154312266285,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 9,
+    "dart_index": 3,
+    "truth": {
+      "segment": 6,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.708563,
+    "boundary_distance_deg": 7.561125203909114,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 10,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.361692,
+    "boundary_distance_deg": 7.719548338803463,
+    "near_boundary": false,
+    "error_category_legacy": "other",
+    "error_category_phase6": "other",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 15,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.264941,
+    "boundary_distance_deg": 7.725536185068677,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 28,
+    "dart_index": 1,
+    "truth": {
+      "segment": 12,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.595747,
+    "boundary_distance_deg": 7.985168530126884,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 12,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 2
+    },
+    "confidence": 0.752853,
+    "boundary_distance_deg": 8.003378514346366,
+    "near_boundary": false,
+    "error_category_legacy": "other",
+    "error_category_phase6": "other",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+    "round_index": 2,
+    "dart_index": 3,
+    "truth": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.821916,
+    "boundary_distance_deg": 8.088643319292146,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 15,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.274492,
+    "boundary_distance_deg": 8.119926677341823,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 3
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 8.38658855745416,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 9,
+    "dart_index": 2,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.479164,
+    "boundary_distance_deg": 8.387172903077953,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+    "round_index": 5,
+    "dart_index": 1,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 8.420493657541101,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect",
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.491929,
+    "boundary_distance_deg": 8.590163736010481,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 20,
+    "dart_index": 2,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0,
+    "boundary_distance_deg": 8.663053721344,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 7,
+    "dart_index": 2,
+    "truth": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.597339,
+    "boundary_distance_deg": 8.71994133251792,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 1,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 6,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.332753,
+    "boundary_distance_deg": 8.881225539144793,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 20,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "confidence": 0.351574,
+    "boundary_distance_deg": 8.897537801028307,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 1,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 30,
+    "dart_index": 3,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 8,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 12,
+    "dart_index": 2,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 4,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 3,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 3
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "far_seg",
+    "error_category_phase6": "far_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 25,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "miss_false_neg",
+    "error_category_phase6": "miss_false_neg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 14,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 16,
+    "dart_index": 1,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 0
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 3
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "ring_error",
+    "error_category_phase6": "ring_error",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 7,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "adjacent_seg",
+    "error_category_phase6": "adjacent_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 2,
+    "dart_index": 3,
+    "truth": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "confidence": 0.4,
+    "boundary_distance_deg": 9.0,
+    "near_boundary": false,
+    "error_category_legacy": "far_seg",
+    "error_category_phase6": "far_seg",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "incorrect"
+    ]
+  },
+  {
+    "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+    "round_index": 10,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 0.09476046054123799,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+    "round_index": 2,
+    "dart_index": 2,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.663612,
+    "boundary_distance_deg": 0.20966784681263562,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 25,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.881879,
+    "boundary_distance_deg": 0.4202913721552477,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 0,
+    "decision_changed": false,
+    "flags": [
+      "near_boundary_high_conf"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 11,
+    "dart_index": 2,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "confidence": 0.697252,
+    "boundary_distance_deg": 0.485010978108221,
+    "near_boundary": true,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 7,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 26,
+    "dart_index": 2,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.614603,
+    "boundary_distance_deg": 0.5540716985440213,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 13,
+    "dart_index": 3,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "confidence": 0.295153,
+    "boundary_distance_deg": 0.638309625312786,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+    "round_index": 5,
+    "dart_index": 2,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 0.8594777775243756,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 12,
+    "dart_index": 3,
+    "truth": {
+      "segment": 8,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 2
+    },
+    "confidence": 0.261966,
+    "boundary_distance_deg": 0.8834910229634261,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 24,
+    "dart_index": 2,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 1.202619949045129,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 8,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 15,
+    "dart_index": 3,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.635497,
+    "boundary_distance_deg": 1.2843632839826569,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 10,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 3,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 1.3917816555701847,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+    "round_index": 6,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.552235,
+    "boundary_distance_deg": 1.5218351122758236,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 3,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.518551,
+    "boundary_distance_deg": 1.5437612754898282,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 5,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 21,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.632257,
+    "boundary_distance_deg": 1.6517664632929723,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 19,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.354105,
+    "boundary_distance_deg": 1.6602502824397334,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 22,
+    "dart_index": 1,
+    "truth": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "confidence": 0.376449,
+    "boundary_distance_deg": 1.6769806837224905,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 1,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 3
+    },
+    "confidence": 0.377429,
+    "boundary_distance_deg": 1.7394057182245888,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 7,
+    "dart_index": 1,
+    "truth": {
+      "segment": 7,
+      "multiplier": 3
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 3
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 3
+    },
+    "confidence": 0.717289,
+    "boundary_distance_deg": 1.7978238777607203,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 10,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.360444,
+    "boundary_distance_deg": 1.798400126273691,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 8,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.452904,
+    "boundary_distance_deg": 1.8853720476652711,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 6,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.656023,
+    "boundary_distance_deg": 1.9476943033052976,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 6,
+    "dart_index": 2,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 2.09695581786616,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 16,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 2.313965548016597,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+    "round_index": 8,
+    "dart_index": 1,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.668188,
+    "boundary_distance_deg": 2.3639103050500125,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 8,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 13,
+    "dart_index": 1,
+    "truth": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.600895,
+    "boundary_distance_deg": 2.4199637073586473,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 3,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 2.5960322297905805,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 3,
+    "dart_index": 3,
+    "truth": {
+      "segment": 13,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 13,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 13,
+      "multiplier": 1
+    },
+    "confidence": 0.493801,
+    "boundary_distance_deg": 2.6618683410270023,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 2,
+    "dart_index": 2,
+    "truth": {
+      "segment": 17,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 17,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 17,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 2.735668124418453,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 12,
+    "dart_index": 2,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.629134,
+    "boundary_distance_deg": 2.7559630344414927,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+    "round_index": 6,
+    "dart_index": 2,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "confidence": 0.634032,
+    "boundary_distance_deg": 3.1160307506540335,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+    "round_index": 5,
+    "dart_index": 2,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 3.162579878166298,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 2,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.584526,
+    "boundary_distance_deg": 3.209769574266943,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 6,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 7,
+    "dart_index": 1,
+    "truth": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 3.4686803485813584,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+    "round_index": 9,
+    "dart_index": 1,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.724614,
+    "boundary_distance_deg": 3.7667153594475167,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 6,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "round_index": 10,
+    "dart_index": 2,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.525282,
+    "boundary_distance_deg": 3.8316143321249,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 21,
+    "dart_index": 1,
+    "truth": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.62329,
+    "boundary_distance_deg": 3.9083672487275862,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 19,
+    "dart_index": 3,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "confidence": 0.613222,
+    "boundary_distance_deg": 3.9101108990912508,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+    "round_index": 5,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 4.051157739074597,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 7,
+    "dart_index": 2,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 4.2195323846126485,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 8,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 2,
+    "dart_index": 1,
+    "truth": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 15,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 4.243738101383144,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "round_index": 13,
+    "dart_index": 3,
+    "truth": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "confidence": 0.767299,
+    "boundary_distance_deg": 4.30908274583976,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 1,
+    "dart_index": 1,
+    "truth": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "confidence": 0.552791,
+    "boundary_distance_deg": 4.346317336037828,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 8,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 2,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.634556,
+    "boundary_distance_deg": 4.476252216635771,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 14,
+    "dart_index": 1,
+    "truth": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "confidence": 0.715175,
+    "boundary_distance_deg": 4.484680335358007,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+    "round_index": 3,
+    "dart_index": 2,
+    "truth": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 4.548308675162218,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+    "round_index": 2,
+    "dart_index": 1,
+    "truth": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 16,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 4.619035302801194,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 4,
+    "dart_index": 2,
+    "truth": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "confidence": 0.271041,
+    "boundary_distance_deg": 4.824081055541797,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "round_index": 12,
+    "dart_index": 1,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 4.826728172786261,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "round_index": 9,
+    "dart_index": 3,
+    "truth": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 4,
+      "multiplier": 1
+    },
+    "confidence": 0.667868,
+    "boundary_distance_deg": 4.883566572523705,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 8,
+    "dart_index": 3,
+    "truth": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 18,
+      "multiplier": 1
+    },
+    "confidence": 0.669807,
+    "boundary_distance_deg": 4.993286011159853,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 5,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "confidence": 0.776183,
+    "boundary_distance_deg": 5.093666673369398,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 3,
+    "dart_index": 2,
+    "truth": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 9,
+      "multiplier": 1
+    },
+    "confidence": 0.746358,
+    "boundary_distance_deg": 5.177094180426707,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 21,
+    "dart_index": 3,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 5.372073033825927,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+    "round_index": 2,
+    "dart_index": 1,
+    "truth": {
+      "segment": 12,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 12,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 12,
+      "multiplier": 1
+    },
+    "confidence": 0.798586,
+    "boundary_distance_deg": 5.524459353729583,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 6,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 24,
+    "dart_index": 2,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.3,
+    "boundary_distance_deg": 5.553313095162082,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "round_index": 6,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 5.578097322491658,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 6,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+    "round_index": 9,
+    "dart_index": 2,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 5.651527136045274,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+    "round_index": 4,
+    "dart_index": 3,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 5.738362425471337,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "round_index": 1,
+    "dart_index": 3,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 5.824622670661597,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+    "round_index": 1,
+    "dart_index": 3,
+    "truth": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 19,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 5.88283333463869,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "round_index": 16,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.667639,
+    "boundary_distance_deg": 5.894133274164517,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "round_index": 3,
+    "dart_index": 2,
+    "truth": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 1,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 5.895735307619702,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 16,
+    "dart_index": 1,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.678959,
+    "boundary_distance_deg": 6.314173995629403,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 12,
+    "dart_index": 1,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 6.419185303490849,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 8,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 6,
+    "dart_index": 1,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "confidence": 0.285073,
+    "boundary_distance_deg": 6.591355548639854,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 6,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 3,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "confidence": 0.677528,
+    "boundary_distance_deg": 6.614734747123521,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 9,
+    "dart_index": 3,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "confidence": 0.663518,
+    "boundary_distance_deg": 7.021292490030305,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "round_index": 2,
+    "dart_index": 2,
+    "truth": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 8,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 7.1687112912243265,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+    "round_index": 3,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.671821,
+    "boundary_distance_deg": 7.284656757406708,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 18,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 7.681320204021745,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+    "round_index": 6,
+    "dart_index": 1,
+    "truth": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 5,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 7.6931089600905125,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "round_index": 10,
+    "dart_index": 3,
+    "truth": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 0,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 8.198712011922112,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "round_index": 15,
+    "dart_index": 2,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.602411,
+    "boundary_distance_deg": 8.499252875198636,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 1,
+    "dart_index": 1,
+    "truth": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 7,
+      "multiplier": 1
+    },
+    "confidence": 0.671691,
+    "boundary_distance_deg": 8.596278413623963,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 10,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "round_index": 10,
+    "dart_index": 1,
+    "truth": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 3,
+      "multiplier": 1
+    },
+    "confidence": 0.8,
+    "boundary_distance_deg": 8.658885299671283,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+    "round_index": 12,
+    "dart_index": 1,
+    "truth": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 1
+    },
+    "confidence": 0.5,
+    "boundary_distance_deg": 8.784175795350052,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "round_index": 13,
+    "dart_index": 1,
+    "truth": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 20,
+      "multiplier": 1
+    },
+    "confidence": 0.3929,
+    "boundary_distance_deg": 8.823301450467625,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 2,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "round_index": 6,
+    "dart_index": 3,
+    "truth": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "detected": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "phase6": {
+      "segment": 11,
+      "multiplier": 2
+    },
+    "confidence": 0.294566,
+    "boundary_distance_deg": 8.849314352445617,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 3,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  },
+  {
+    "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "round_index": 27,
+    "dart_index": 2,
+    "truth": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "detected": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "phase6": {
+      "segment": 14,
+      "multiplier": 1
+    },
+    "confidence": 0.391596,
+    "boundary_distance_deg": 8.914888561494593,
+    "near_boundary": false,
+    "error_category_legacy": "correct",
+    "error_category_phase6": "correct",
+    "camera_wedge_spread": 4,
+    "decision_changed": false,
+    "flags": [
+      "wedge_outlier"
+    ]
+  }
+]

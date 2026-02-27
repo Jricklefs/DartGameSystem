@@ -506,6 +506,16 @@ public class BenchmarkController : ControllerBase
         return Ok(phantoms.OrderByDescending(p => ((dynamic)p).timestamp));
     }
 
+
+    /// <summary>
+    /// Set a DLL feature flag (for A/B testing).
+    /// </summary>
+    [HttpPost("set-flag")]
+    public ActionResult SetFlag([FromQuery] string name, [FromQuery] int value = 1)
+    {
+        var result = DartDetectNative.SetFlag(name, value);
+        return Ok(new { flag = name, value, result = result == 0 ? "ok" : "unknown_flag" });
+    }
 }
 
 public class ReplayResults
@@ -561,10 +571,12 @@ public class DebugDetectRequest
 {
     public List<DebugImagePayload> Images { get; set; } = new();
     public List<DebugImagePayload> BeforeImages { get; set; } = new();
+
 }
 
 public class DebugImagePayload
 {
     public string CameraId { get; set; } = string.Empty;
-    public string Image { get; set; } = string.Empty;
+    public string Image { get; set; 
+} = string.Empty;
 }

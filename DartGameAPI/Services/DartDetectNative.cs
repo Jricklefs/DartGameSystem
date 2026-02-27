@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -72,6 +72,14 @@ public static class DartDetectNative
     {
         var ptr = dd_version();
         return Marshal.PtrToStringUTF8(ptr) ?? "unknown";
+    }
+
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int dd_set_flag([MarshalAs(UnmanagedType.LPUTF8Str)] string flagName, int value);
+
+    public static int SetFlag(string flagName, int value)
+    {
+        return dd_set_flag(flagName, value);
     }
 
     /// <summary>

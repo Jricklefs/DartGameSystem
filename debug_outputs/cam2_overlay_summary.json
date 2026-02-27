@@ -1,0 +1,10 @@
+{
+  "total_selected": 30,
+  "images_generated": 30,
+  "groups": {
+    "incorrect_used": 10,
+    "incorrect_dropped": 10,
+    "correct_control": 10
+  },
+  "overlay_dir": "/home/jricklefs/clawd/debug_outputs/cam2_overlay_pack"
+}

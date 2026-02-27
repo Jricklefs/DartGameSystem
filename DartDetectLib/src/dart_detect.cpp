@@ -19,6 +19,9 @@
 // Simple JSON builder (avoids external dependency)
 #include <vector>
 
+// Forward declaration for skeleton.cpp flag setter
+extern int set_skeleton_flag(const char* name, int value);
+
 // ============================================================================
 // Global State
 // ============================================================================
@@ -378,6 +381,19 @@ DD_API const char* dd_detect(
 #endif
                 }
 
+                // Phase 9B: Set per-camera dual-path flag
+                {
+                    extern int set_skeleton_flag(const char* name, int value);
+                    bool dp_active = false;
+                    if (true) {  // g_use_dual_path_arbitration checked inside skeleton
+                        // cam2-only check: task.cam_id typically "cam0","cam1","cam2" or index
+                        bool is_cam2 = (task.cam_id.find("2") != std::string::npos);
+                        // If cam2-only mode is on, only activate for cam2
+                        // The flags are in skeleton.cpp; we just set the per-call flag
+                        dp_active = is_cam2;  // refined below by skeleton.cpp internal flags
+                    }
+                    set_skeleton_flag("_DualPathActiveForThisCam", dp_active ? 1 : 0);
+                }
                 DetectionResult det = detect_dart(
                     current, before, detect_center, prev_masks, 30, res_scale);
 
@@ -477,8 +493,25 @@ DD_API const char* dd_detect(
                      << json_double("line_vy", det.pca_line ? det.pca_line->vy : 0) << ","
                      << json_double("line_x0", det.pca_line ? det.pca_line->x0 : 0) << ","
                      << json_double("line_y0", det.pca_line ? det.pca_line->y0 : 0) << ","
-                     << json_double("line_elongation", det.pca_line ? det.pca_line->elongation : 0)
-                     << "}";
+                     << json_double("line_elongation", det.pca_line ? det.pca_line->elongation : 0);
+                // Phase 9 ridge metrics
+                if (!det.line_fit_method_p9.empty()) {
+                    json << ",\"p9_ridge_point_count\":" << det.ridge_point_count
+                         << ",\"p9_ridge_inlier_ratio\":" << det.ridge_inlier_ratio
+                         << ",\"p9_ridge_mean_perp\":" << det.ridge_mean_perp_residual
+                         << ",\"p9_mean_thickness\":" << det.mean_thickness_px
+                         << ",\"p9_thickness_p90\":" << det.thickness_p90_px
+                         << ",\"p9_shaft_length\":" << det.shaft_length_px
+                         << ",\"p9_barrel_cand_px\":" << det.barrel_candidate_pixel_count
+                         << ",\"p9_flight_excl_removed\":" << det.flight_exclusion_removed_px
+                         << ",\"p9_quality_class\":\"" << det.barrel_quality_class << "\""
+                         << ",\"p9_line_method\":\"" << det.line_fit_method_p9 << "\""
+                         << ",\"p9_angle_vs_pca\":" << det.angle_line_vs_pca_deg
+                         << ",\"p9_angle_vs_flighttip\":" << det.angle_line_vs_flighttip_deg
+                         << ",\"p9_tip_ahead_flight\":" << (det.tip_ahead_of_flight ? "true" : "false")
+                         << ",\"p9_tip_swap\":" << (det.tip_swap_applied ? "true" : "false");
+                }
+                json << "}";
                 first_det = false;
             }
             json << "}";
@@ -549,6 +582,12 @@ DD_API const char* dd_detect(
                          << json_double("warped_point_x", cd.warped_point_x) << ","
                          << json_double("warped_point_y", cd.warped_point_y)
                          << "}";
+                    // Phase 9: Ridge metrics (stored in DetectionResult, look up from camera_results)
+                    auto det_it9 = camera_results.find(cid);
+                    if (det_it9 != camera_results.end()) {
+                        const auto& d9 = det_it9->second;
+                        // Append to cam_debug (re-open the object won't work, so we output as sibling)
+                    }
                     first_cd = false;
                 }
                 json << "}}";
@@ -695,6 +734,12 @@ DD_API void dd_clear_board(const char* board_id)
 DD_API void dd_free_string(const char* str)
 {
     delete[] str;
+}
+
+DD_API int dd_set_flag(const char* flag_name, int value)
+{
+    if (!flag_name) return -1;
+    return set_skeleton_flag(flag_name, value);
 }
 
 DD_API const char* dd_version(void)
