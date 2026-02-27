@@ -149,11 +149,43 @@ static bool g_use_centroid_constraint = true;
 // === FEATURE FLAGS: Phase 9 Ridge/Centerline Barrel ===
 static bool g_use_phase9_ridge = false;  // UseRidgeCenterlineBarrel
 static bool g_use_phase9_flight_exclusion = true;  // UseFlightExclusionForBarrel (active when phase9 ON)
+// === FEATURE FLAGS: Phase 9B Dual-Path Arbitration ===
+static bool g_use_dual_path_arbitration = false;  // UseDualPathBarrelArbitration
+static bool g_dual_path_cam2_only = true;          // DualPathArbitrationCam2Only
+static bool g_dual_path_allow_ridge_on_clean = false; // DualPathAllowRidgeOnClean
+static thread_local bool g_dual_path_active_for_this_cam = false; // Set by dart_detect.cpp per camera
+
+// Phase 9B: Ridge candidate storage (per detect_dart call)
+struct RidgeCandidate {
+    bool valid = false;
+    Point2f tip;
+    PcaLine line;
+    double confidence = 0.0;
+    double dart_length = 0.0;
+    double view_quality = 0.0;
+    cv::Mat motion_mask;
+    std::string method;
+    // Metrics
+    int ridge_point_count = 0;
+    double ridge_inlier_ratio = 0.0;
+    double ridge_mean_perp_residual = 0.0;
+    double mean_thickness_px = 0.0;
+    double angle_line_vs_pca_deg = -1.0;
+    double angle_line_vs_flighttip_deg = -1.0;
+    bool tip_ahead_of_flight = false;
+    int barrel_candidate_pixel_count = 0;
+    std::string barrel_quality_class = "BARREL_ABSENT";
+};
+
 
 // dd_set_flag implementation (called from dart_detect.cpp)
 int set_skeleton_flag(const char* name, int value) {
     std::string s(name);
     if (s == "UseRidgeCenterlineBarrel") { g_use_phase9_ridge = (value != 0); return 0; }
+    if (s == "UseDualPathBarrelArbitration") { g_use_dual_path_arbitration = (value != 0); return 0; }
+    if (s == "DualPathArbitrationCam2Only") { g_dual_path_cam2_only = (value != 0); return 0; }
+    if (s == "DualPathAllowRidgeOnClean") { g_dual_path_allow_ridge_on_clean = (value != 0); return 0; }
+    if (s == "_DualPathActiveForThisCam") { g_dual_path_active_for_this_cam = (value != 0); return 0; }
     if (s == "UseFlightExclusionForBarrel") { g_use_phase9_flight_exclusion = (value != 0); return 0; }
     // Legacy flags
     if (s == "UseRidgeCenterline") { g_use_ridge_centerline = (value != 0); return 0; }
@@ -258,6 +290,101 @@ static Point2f refine_tip_subpixel(Point2f tip, const cv::Mat& gray, const cv::M
 // ============================================================================
 // Main detection function
 // ============================================================================
+
+
+// ============================================================================
+// Phase 9B: Dual-Path Arbitration — Score and Select
+// ============================================================================
+
+static double dp_clamp01(double x) { return std::max(0.0, std::min(1.0, x)); }
+static double dp_ang_score(double a) { return dp_clamp01(1.0 - (a / 25.0)); }
+static double dp_inlier_score(double r) { return dp_clamp01((r - 0.35) / 0.40); }
+static double dp_pix_score(double p) { return dp_clamp01(p / 200.0); }
+static double dp_ridge_score_pts(double n) { return dp_clamp01(n / 80.0); }
+static double dp_perp_score(double e) { return dp_clamp01(1.0 - (e / 3.0)); }
+
+struct ArbitrationResult {
+    std::string selected;     // "legacy" or "ridge"
+    std::string reason;
+    double legacy_score = 0.0;
+    double ridge_score = 0.0;
+};
+
+static ArbitrationResult arbitrate_dual_path(
+    const DetectionResult& legacy,
+    const RidgeCandidate& ridge,
+    bool has_flight)
+{
+    ArbitrationResult ar;
+    ar.selected = "legacy";
+    ar.reason = "legacy_clean_preferred";
+    
+    // Compute legacy score
+    {
+        double s_pix = dp_pix_score(legacy.barrel_pixel_count);
+        double s_inl = dp_inlier_score(legacy.ransac_inlier_ratio);
+        double s_pca = dp_ang_score(legacy.angle_line_vs_pca_deg >= 0 ? legacy.angle_line_vs_pca_deg : 25.0);
+        double s_flt = dp_ang_score(legacy.angle_line_vs_flighttip_deg >= 0 ? legacy.angle_line_vs_flighttip_deg : 25.0);
+        double s_ahead = legacy.tip_ahead_of_flight ? 1.0 : 0.0;
+        
+        if (has_flight) {
+            ar.legacy_score = 0.25*s_pix + 0.20*s_inl + 0.20*s_pca + 0.20*s_flt + 0.15*s_ahead;
+        } else {
+            // No flight: renormalize without flight terms (0.20 + 0.15 = 0.35 removed)
+            double w = 0.25 + 0.20 + 0.20;  // = 0.65
+            ar.legacy_score = (0.25*s_pix + 0.20*s_inl + 0.20*s_pca) / w;
+        }
+    }
+    
+    // Compute ridge score
+    if (!ridge.valid || ridge.ridge_point_count < 15) {
+        ar.ridge_score = 0.0;
+        ar.reason = "ridge_unavailable_keep_legacy";
+        return ar;
+    }
+    
+    {
+        double s_pts = dp_ridge_score_pts(ridge.ridge_point_count);
+        double s_inl = dp_inlier_score(ridge.ridge_inlier_ratio);
+        double s_perp = dp_perp_score(ridge.ridge_mean_perp_residual);
+        double s_pca = dp_ang_score(ridge.angle_line_vs_pca_deg >= 0 ? ridge.angle_line_vs_pca_deg : 25.0);
+        double s_ahead = ridge.tip_ahead_of_flight ? 1.0 : 0.0;
+        
+        if (has_flight) {
+            ar.ridge_score = 0.25*s_pts + 0.20*s_inl + 0.20*s_perp + 0.20*s_pca + 0.15*s_ahead;
+        } else {
+            double w = 0.25 + 0.20 + 0.20;
+            ar.ridge_score = (0.25*s_pts + 0.20*s_inl + 0.20*s_perp) / w;
+        }
+    }
+    
+    // Selection rules
+    // Ultra-conservative: legacy must show MULTIPLE weakness signals
+    int weak_signals = 0;
+    if (legacy.barrel_pixel_count < 40) weak_signals++;
+    if (legacy.angle_line_vs_pca_deg > 25.0) weak_signals++;
+    if (legacy.ransac_inlier_ratio > 0.01 && legacy.ransac_inlier_ratio < 0.30) weak_signals++;
+    if (!legacy.tip_ahead_of_flight) weak_signals++;
+    bool legacy_weak = (weak_signals >= 2);  // Need at least 2 weak signals
+    
+    if (!g_dual_path_allow_ridge_on_clean && !legacy_weak) {
+        ar.selected = "legacy";
+        ar.reason = "legacy_clean_preferred";
+        return ar;
+    }
+    
+    if (legacy_weak || g_dual_path_allow_ridge_on_clean) {
+        if (ar.ridge_score >= ar.legacy_score + 0.25 && ar.ridge_score >= 0.65) {
+            ar.selected = "ridge";
+            ar.reason = legacy_weak ? "legacy_weak_ridge_wins" : "ridge_forced_allow_on_clean";
+        } else {
+            ar.selected = "legacy";
+            ar.reason = "scores_close_keep_legacy";
+        }
+    }
+    
+    return ar;
+}
 
 DetectionResult detect_dart(
     const cv::Mat& current_frame,
@@ -374,7 +501,10 @@ DetectionResult detect_dart(
     // ================================================================
     // Phase 9: Ridge/Centerline Barrel Detection (when flag enabled)
     // ================================================================
-    if (g_use_phase9_ridge && mask_pixels > 50) {
+    bool dual_path_on = g_use_dual_path_arbitration && (!g_dual_path_cam2_only || g_dual_path_active_for_this_cam);
+    bool run_ridge_pipeline = g_use_phase9_ridge || dual_path_on;
+    RidgeCandidate ridge_candidate;
+    if (run_ridge_pipeline && mask_pixels > 50) {
         // Phase 9A: Flight exclusion
         cv::Mat barrel_candidate = motion_mask.clone();
         int flight_area_px = 0;
@@ -704,42 +834,80 @@ DetectionResult detect_dart(
                                     }
                                 }
                                 
-                                // Set tip and skip the rest of barrel detection
-                                result.tip = chosen_tip;
-                                result.method = "phase9_ridge_tip";
-                                result.pca_line = pca_line;
-                                result.confidence = 0.85;
-                                result.motion_mask = motion_mask;
-                                
-                                if (flight_centroid) {
-                                    double ddx = chosen_tip.x - flight_centroid->x;
-                                    double ddy = chosen_tip.y - flight_centroid->y;
-                                    result.dart_length = std::sqrt(ddx*ddx + ddy*ddy);
+                                // Phase 9B: If dual-path is ON, save ridge candidate instead of returning
+                                if (g_use_dual_path_arbitration) {
+                                    // Sub-pixel refinement for ridge tip
+                                    cv::Mat gray9r;
+                                    if (current_frame.channels() == 3)
+                                        cv::cvtColor(current_frame, gray9r, cv::COLOR_BGR2GRAY);
+                                    else gray9r = current_frame;
+                                    Point2f refined_tip = refine_tip_subpixel(chosen_tip, gray9r, motion_mask, 10, rvx, rvy);
+                                    
+                                    ridge_candidate.valid = true;
+                                    ridge_candidate.tip = refined_tip;
+                                    ridge_candidate.line = pca_line.value();
+                                    ridge_candidate.confidence = 0.85;
+                                    ridge_candidate.method = "phase9_ridge_tip";
+                                    ridge_candidate.motion_mask = motion_mask;
+                                    ridge_candidate.ridge_point_count = result.ridge_point_count;
+                                    ridge_candidate.ridge_inlier_ratio = inlier_ratio;
+                                    ridge_candidate.ridge_mean_perp_residual = mean_perp;
+                                    ridge_candidate.mean_thickness_px = result.mean_thickness_px;
+                                    ridge_candidate.angle_line_vs_pca_deg = result.angle_line_vs_pca_deg;
+                                    ridge_candidate.angle_line_vs_flighttip_deg = result.angle_line_vs_flighttip_deg;
+                                    ridge_candidate.tip_ahead_of_flight = result.tip_ahead_of_flight;
+                                    ridge_candidate.barrel_candidate_pixel_count = barrel_cand_count;
+                                    ridge_candidate.barrel_quality_class = result.barrel_quality_class;
+                                    
+                                    if (flight_centroid) {
+                                        double ddx = refined_tip.x - flight_centroid->x;
+                                        double ddy = refined_tip.y - flight_centroid->y;
+                                        ridge_candidate.dart_length = std::sqrt(ddx*ddx + ddy*ddy);
+                                    }
+                                    double rvq = 0.3;
+                                    if (flight_centroid && ridge_candidate.dart_length > 0)
+                                        rvq = std::min(1.0, ridge_candidate.dart_length / dart_length_min);
+                                    ridge_candidate.view_quality = rvq;
+                                    
+                                    // Don't return - fall through to legacy pipeline
+                                    // Reset pca_line/barrel_info so legacy runs fresh
+                                    pca_line = std::nullopt;
+                                    barrel_info = std::nullopt;
+                                    // Reset result fields that phase9 set so legacy starts clean
+                                    result.ridge_inlier_ratio = inlier_ratio;  // keep ridge metrics in result
+                                    result.ridge_mean_perp_residual = mean_perp;
+                                    result.ransac_inlier_ratio = 0.0;  // reset for legacy
+                                    result.barrel_pixel_count = 0;  // reset for legacy
+                                    result.barrel_aspect_ratio = 0; // reset for legacy
+                                    saved_barrel_mask = cv::Mat();  // CRITICAL: reset so legacy pipeline uses its own mask
+                                    result.barrel_pixel_count = 0;
+                                } else {
+                                    // Original Phase 9 behavior: set and return
+                                    result.tip = chosen_tip;
+                                    result.method = "phase9_ridge_tip";
+                                    result.pca_line = pca_line;
+                                    result.confidence = 0.85;
+                                    result.motion_mask = motion_mask;
+                                    
+                                    if (flight_centroid) {
+                                        double ddx = chosen_tip.x - flight_centroid->x;
+                                        double ddy = chosen_tip.y - flight_centroid->y;
+                                        result.dart_length = std::sqrt(ddx*ddx + ddy*ddy);
+                                    }
+                                    double vq = 0.3;
+                                    if (flight_centroid && result.dart_length > 0)
+                                        vq = std::min(1.0, result.dart_length / dart_length_min);
+                                    result.view_quality = vq;
+                                    
+                                    // Sub-pixel refinement
+                                    cv::Mat gray9;
+                                    if (current_frame.channels() == 3)
+                                        cv::cvtColor(current_frame, gray9, cv::COLOR_BGR2GRAY);
+                                    else gray9 = current_frame;
+                                    *result.tip = refine_tip_subpixel(*result.tip, gray9, motion_mask, 10, rvx, rvy);
+                                    
+                                    return result;  // Early return - Phase 9 handled everything
                                 }
-                                double vq = 0.3;
-                                if (flight_centroid && result.dart_length > 0)
-                                    vq = std::min(1.0, result.dart_length / dart_length_min);
-                                result.view_quality = vq;
-                                
-                                // Sub-pixel refinement
-                                cv::Mat gray9;
-                                if (current_frame.channels() == 3)
-                                    cv::cvtColor(current_frame, gray9, cv::COLOR_BGR2GRAY);
-                                else gray9 = current_frame;
-                                *result.tip = refine_tip_subpixel(*result.tip, gray9, motion_mask, 10, rvx, rvy);
-                                
-                                // DEBUG output
-                                {
-                                    static int dbg9 = 0;
-                                    std::string dp = "C:\\Users\\clawd\\DartDebug\\p9_cam" + std::to_string(dbg9);
-                                    if (!barrel_candidate.empty())
-                                        cv::imwrite(dp + "_barrel_cand.png", barrel_candidate);
-                                    if (!skel.empty())
-                                        cv::imwrite(dp + "_skel.png", skel);
-                                    dbg9 = (dbg9 + 1) % 3;
-                                }
-                                
-                                return result;  // Early return - Phase 9 handled everything
                             }
                         }
                     }
@@ -1966,6 +2134,46 @@ DetectionResult detect_dart(
         }
         
         dbg_idx = (dbg_idx + 1) % 3;
+    }
+
+
+    // ========================================================================
+    // Phase 9B: Dual-Path Arbitration — compare legacy result with ridge candidate
+    // ========================================================================
+    if (dual_path_on && ridge_candidate.valid && result.tip) {
+        bool has_flight_for_arb = (result.angle_line_vs_flighttip_deg >= 0);
+        ArbitrationResult arb = arbitrate_dual_path(result, ridge_candidate, has_flight_for_arb);
+        
+        // Log arbitration
+        fprintf(stderr, "DUAL_PATH_ARB: selected=%s reason=%s legacy_score=%.3f ridge_score=%.3f\n",
+                arb.selected.c_str(), arb.reason.c_str(), arb.legacy_score, arb.ridge_score);
+        
+        // Store arbitration metrics in result (for JSON export)
+        // We repurpose some fields and add new info via the method string
+        if (arb.selected == "ridge") {
+            // Replace legacy result with ridge result
+            result.tip = ridge_candidate.tip;
+            result.pca_line = ridge_candidate.line;
+            result.confidence = ridge_candidate.confidence;
+            result.dart_length = ridge_candidate.dart_length;
+            result.view_quality = ridge_candidate.view_quality;
+            result.method = "dual_path_ridge";
+            result.barrel_pixel_count = ridge_candidate.barrel_candidate_pixel_count;
+            result.ransac_inlier_ratio = ridge_candidate.ridge_inlier_ratio;
+            result.ridge_point_count = ridge_candidate.ridge_point_count;
+            result.ridge_inlier_ratio = ridge_candidate.ridge_inlier_ratio;
+            result.ridge_mean_perp_residual = ridge_candidate.ridge_mean_perp_residual;
+            result.mean_thickness_px = ridge_candidate.mean_thickness_px;
+            result.angle_line_vs_pca_deg = ridge_candidate.angle_line_vs_pca_deg;
+            result.angle_line_vs_flighttip_deg = ridge_candidate.angle_line_vs_flighttip_deg;
+            result.tip_ahead_of_flight = ridge_candidate.tip_ahead_of_flight;
+            result.barrel_quality_class = ridge_candidate.barrel_quality_class;
+        } else {
+            result.method = "dual_path_legacy";
+        }
+        // Store selection reason in line_fit_method_p9 for JSON export
+        result.line_fit_method_p9 = arb.reason + "|ls=" + std::to_string(arb.legacy_score).substr(0,5)
+                                   + "|rs=" + std::to_string(arb.ridge_score).substr(0,5);
     }
 
     return result;

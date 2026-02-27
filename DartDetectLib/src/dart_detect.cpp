@@ -381,6 +381,19 @@ DD_API const char* dd_detect(
 #endif
                 }
 
+                // Phase 9B: Set per-camera dual-path flag
+                {
+                    extern int set_skeleton_flag(const char* name, int value);
+                    bool dp_active = false;
+                    if (true) {  // g_use_dual_path_arbitration checked inside skeleton
+                        // cam2-only check: task.cam_id typically "cam0","cam1","cam2" or index
+                        bool is_cam2 = (task.cam_id.find("2") != std::string::npos);
+                        // If cam2-only mode is on, only activate for cam2
+                        // The flags are in skeleton.cpp; we just set the per-call flag
+                        dp_active = is_cam2;  // refined below by skeleton.cpp internal flags
+                    }
+                    set_skeleton_flag("_DualPathActiveForThisCam", dp_active ? 1 : 0);
+                }
                 DetectionResult det = detect_dart(
                     current, before, detect_center, prev_masks, 30, res_scale);
 
