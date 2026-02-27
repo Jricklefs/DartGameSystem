@@ -1,0 +1,31 @@
+{
+  "label": "phase11c_v2_baseline",
+  "total_darts": 1073,
+  "correct": 885,
+  "accuracy": 0.8248,
+  "incorrect": 188,
+  "miss_false_neg": 76,
+  "miss_false_pos": 8,
+  "ring_error": 38,
+  "adjacent_seg_error": 48,
+  "far_seg_error": 6,
+  "caf_applied_count": 0,
+  "caf_skipped_not_near_boundary": 0,
+  "caf_skipped_insufficient_cameras": 0,
+  "caf_fallback_bestpair_count": 0,
+  "caf_rejected_count": 0,
+  "caf_soft_accept_count": 0,
+  "methods": {
+    "BCWT": 759,
+    "Cam+1": 108,
+    "BestError": 33,
+    "UnanimousCam": 72,
+    "MissOverride_Residual": 64,
+    "MissOverride_RadiusSoftLowConf": 3,
+    "SingleCam_pca_blob_chain": 15,
+    "MissOverride_RadiusHard": 9,
+    "MissOverride_IxDist": 4,
+    "BestPair_Fallback_RadialClamp": 5,
+    "MissOverride_AllCams": 1
+  }
+}

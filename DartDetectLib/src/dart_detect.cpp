@@ -565,7 +565,31 @@ DD_API const char* dd_detect(
                      << ",\"x_preclamp_y\":" << td.x_preclamp_y
                      << ",\"x_bestpair_x\":" << td.x_bestpair_x
                      << ",\"x_bestpair_y\":" << td.x_bestpair_y;
+                // Phase 11C CAF debug
+                json << ",\"caf_applied\":" << (td.caf_applied ? "true" : "false");
+                if (!td.caf_method.empty()) {
+                    json << ",\"caf_method\":\"" << td.caf_method << "\"";
+                }
+                json << ",\"theta_bcwt_deg\":" << td.theta_bcwt_deg
+                     << ",\"theta_best_deg\":" << td.theta_best_deg
+                     << ",\"theta_fused_deg\":" << td.theta_fused_deg
+                     << ",\"theta_spread_deg\":" << td.theta_spread_deg
+                     << ",\"delta_fused_vs_bcwt_deg\":" << td.delta_fused_vs_bcwt_deg
+                     << ",\"wedge_bcwt\":" << td.wedge_bcwt
+                     << ",\"wedge_best\":" << td.wedge_best
+                     << ",\"wedge_caf\":" << td.wedge_caf
+                     << ",\"wedge_final\":" << td.wedge_final
+                     << ",\"residual_bcwt_caf\":" << td.residual_bcwt_caf
+                     << ",\"residual_caf_val\":" << td.residual_caf_val
+                     << ",\"improvement_ratio_caf\":" << td.improvement_ratio_caf
+                     << ",\"x_caf_x\":" << td.x_caf_x
+                     << ",\"x_caf_y\":" << td.x_caf_y
+                     << ",\"caf_effective_cam_count\":" << td.caf_effective_cam_count
+                     << ",\"caf_near_boundary\":" << (td.caf_near_boundary ? "true" : "false")
+                     << ",\"caf_wedge_distance\":" << td.caf_wedge_distance
+                     << ",\"caf_soft_accepted\":" << (td.caf_soft_accepted ? "true" : "false");
                 json << ",\"cam_debug\":{";
+
 
 
                 bool first_cd = true;

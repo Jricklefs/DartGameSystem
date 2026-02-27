@@ -212,6 +212,27 @@ struct IntersectionResult {
         double x_preclamp_y = 0.0;
         double x_bestpair_x = 0.0;
         double x_bestpair_y = 0.0;
+        // Phase 11C CAF debug
+        bool caf_applied = false;
+        std::string caf_method;
+        double theta_bcwt_deg = 0.0;
+        double theta_best_deg = 0.0;
+        double theta_fused_deg = 0.0;
+        double theta_spread_deg = 0.0;
+        double delta_fused_vs_bcwt_deg = 0.0;
+        int wedge_bcwt = 0;
+        int wedge_best = 0;
+        int wedge_caf = 0;
+        int wedge_final = 0;
+        double residual_bcwt_caf = 0.0;
+        double residual_caf_val = 0.0;
+        double improvement_ratio_caf = 0.0;
+        double x_caf_x = 0.0;
+        double x_caf_y = 0.0;
+        int caf_effective_cam_count = 0;
+        bool caf_near_boundary = false;
+        int caf_wedge_distance = 0;
+        bool caf_soft_accepted = false;
     };
     std::optional<TriangulationDebug> tri_debug;
 };

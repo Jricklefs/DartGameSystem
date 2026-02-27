@@ -39,6 +39,26 @@ static bool g_radial_clamp_respect_miss = true;
 static double RADIAL_DELTA_THRESHOLD = 0.030;
 static double NEAR_RING_EPS = 0.020;
 
+// === FEATURE FLAGS: Phase 11C BCWT Circular Angular Fusion (v2) ===
+static bool g_use_caf = false;
+static bool g_caf_only_near_wedge_boundaries = true;
+static bool g_caf_require_camera_agreement = true;
+static bool g_caf_use_bestpair_as_prior = true;
+static bool g_caf_fallback_bestpair_on_disagreement = true;
+static bool g_caf_require_residual_non_regression = true;
+static int g_caf_min_effective_camera_count = 2;
+static double g_caf_max_camera_theta_spread_deg = 6.0;
+static double g_caf_prior_weight = 0.35;
+static double g_caf_max_fused_theta_delta_vs_bcwt_deg = 8.0;
+static double g_caf_min_residual_improvement_ratio = 0.90;
+static double g_caf_tangential_eps = 0.002;
+static constexpr double CAF_EPS = 1e-6;
+// Relaxed residual gating params
+static double g_caf_residual_allow_soft_worsen = 1.05;
+static bool g_caf_soft_worsen_only_if_adjacent_wedge = true;
+static bool g_caf_soft_worsen_only_if_near_boundary = true;
+static bool g_caf_soft_worsen_require_support = true;
+
 // Ring boundary radii in normalized space (radius / 170.0)
 static const double RING_RADII[] = {
     6.35 / 170.0,   // bullseye outer
@@ -70,6 +90,19 @@ int set_triangulation_flag(const char* name, int value) {
     if (s == "RadialClamp_RespectMissOverride") { g_radial_clamp_respect_miss = (value != 0); return 0; }
     if (s == "RadialClamp_DeltaThreshold") { RADIAL_DELTA_THRESHOLD = value / 1000.0; return 0; }
     if (s == "RadialClamp_NearRingEps") { NEAR_RING_EPS = value / 1000.0; return 0; }
+    // Phase 11C CAF flags
+    if (s == "UseBCWTCircularAngularFusion") { g_use_caf = (value != 0); return 0; }
+    if (s == "CAF_OnlyNearWedgeBoundaries") { g_caf_only_near_wedge_boundaries = (value != 0); return 0; }
+    if (s == "CAF_RequireCameraAgreement") { g_caf_require_camera_agreement = (value != 0); return 0; }
+    if (s == "CAF_UseBestPairAsPrior") { g_caf_use_bestpair_as_prior = (value != 0); return 0; }
+    if (s == "CAF_FallbackToBestPairOnDisagreement") { g_caf_fallback_bestpair_on_disagreement = (value != 0); return 0; }
+    if (s == "CAF_RequireResidualNonRegression") { g_caf_require_residual_non_regression = (value != 0); return 0; }
+    if (s == "CAF_MinEffectiveCameraCount") { g_caf_min_effective_camera_count = value; return 0; }
+    if (s == "CAF_MaxCameraThetaSpreadDeg") { g_caf_max_camera_theta_spread_deg = value / 10.0; return 0; }
+    if (s == "CAF_PriorWeight") { g_caf_prior_weight = value / 100.0; return 0; }
+    if (s == "CAF_MaxFusedThetaDeltaDeg") { g_caf_max_fused_theta_delta_vs_bcwt_deg = value / 10.0; return 0; }
+    if (s == "CAF_MinResidualImprovementRatio") { g_caf_min_residual_improvement_ratio = value / 100.0; return 0; }
+    if (s == "CAF_TangentialEps") { g_caf_tangential_eps = value / 10000.0; return 0; }
     return -1;  // not our flag
 }
 
@@ -954,6 +987,246 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         }
     }
 
+    // === Phase 11C v2: Circular Angular Fusion (CAF) with Relaxed Residual Gating ===
+    bool caf_applied = false;
+    std::string caf_method;
+    double theta_bcwt_deg_caf = 0, theta_best_deg_caf = 0, theta_fused_deg_caf = 0;
+    double theta_spread_deg_caf = 0, delta_fused_vs_bcwt_caf = 0;
+    int wedge_bcwt_caf = 0, wedge_best_caf = 0, wedge_caf_val = 0;
+    double residual_bcwt_caf = 0, residual_caf_val = 0, improvement_ratio_caf = 0;
+    Point2f x_caf_pt(0,0);
+    int caf_effective_cam_count = 0;
+    bool caf_near_boundary = false;
+    int caf_wedge_distance = 0;
+    bool caf_soft_accepted = false;
+
+    // Helper: get wedge segment from a normalized-space point
+    auto wedge_from_point = [](const Point2f& p) -> int {
+        double d = std::sqrt(p.x * p.x + p.y * p.y);
+        double a_rad = std::atan2(p.y, -p.x);
+        double a_deg = a_rad * 180.0 / CV_PI;
+        if (a_deg < 0) a_deg += 360.0;
+        a_deg = std::fmod(a_deg, 360.0);
+        ScoreResult sr = score_from_polar(a_deg, d);
+        return sr.segment;
+    };
+
+    // Helper: get wedge INDEX (0-19) from a normalized-space point
+    auto wedge_index_from_point = [](const Point2f& p) -> int {
+        double a_rad = std::atan2(p.y, -p.x);
+        double a_deg = a_rad * 180.0 / CV_PI;
+        if (a_deg < 0) a_deg += 360.0;
+        a_deg = std::fmod(a_deg, 360.0);
+        double adj = std::fmod(a_deg - 90.0 + 9.0 + 360.0, 360.0);
+        return ((int)(adj / 18.0)) % 20;
+    };
+
+    // Helper: minimal circular wedge distance (on 20-segment ring)
+    auto wedge_dist = [](int w1, int w2) -> int {
+        int d = std::abs(w1 - w2);
+        return std::min(d, 20 - d);
+    };
+
+    // Helper: compute perpendicular residual at a given point
+    auto compute_residual_at = [&](const Point2f& pt) -> double {
+        std::vector<double> resids;
+        for (const auto& cid : cam_ids) {
+            const auto& cl = cam_lines[cid];
+            double nx = -cl.warped_dir_y;
+            double ny = cl.warped_dir_x;
+            double dx = pt.x - cl.line_end.x;
+            double dy = pt.y - cl.line_end.y;
+            double r = std::abs(nx * dx + ny * dy);
+            resids.push_back(r);
+        }
+        std::sort(resids.begin(), resids.end());
+        return resids[resids.size() / 2];  // median
+    };
+
+    if (g_use_bcwt && g_use_caf && bcwt_point) {
+        Point2f x_bcwt_caf = final_coords;
+        Point2f x_bp_caf = x_bestpair_10b;
+
+        double theta_bcwt_rad = std::atan2(x_bcwt_caf.y, x_bcwt_caf.x);
+        double theta_best_rad = std::atan2(x_bp_caf.y, x_bp_caf.x);
+        theta_bcwt_deg_caf = theta_bcwt_rad * 180.0 / CV_PI;
+        theta_best_deg_caf = theta_best_rad * 180.0 / CV_PI;
+
+        wedge_bcwt_caf = wedge_from_point(x_bcwt_caf);
+        wedge_best_caf = wedge_from_point(x_bp_caf);
+        int widx_bcwt = wedge_index_from_point(x_bcwt_caf);
+        int widx_best = wedge_index_from_point(x_bp_caf);
+
+        for (const auto& [cid, bw] : bcwt_weights) {
+            if (bw.included_by_bcwt) caf_effective_cam_count++;
+        }
+
+        bool caf_skip = false;
+
+        // Step 1: Segmentation-based near-boundary detection
+        if (!caf_skip && g_caf_only_near_wedge_boundaries) {
+            int w0 = wedge_from_point(x_bcwt_caf);
+            double r_bcwt = std::sqrt(x_bcwt_caf.x * x_bcwt_caf.x + x_bcwt_caf.y * x_bcwt_caf.y);
+            if (r_bcwt > CAF_EPS) {
+                double tx = -x_bcwt_caf.y / r_bcwt;
+                double ty = x_bcwt_caf.x / r_bcwt;
+                double eps = g_caf_tangential_eps;
+                Point2f x_plus(x_bcwt_caf.x + eps * tx, x_bcwt_caf.y + eps * ty);
+                Point2f x_minus(x_bcwt_caf.x - eps * tx, x_bcwt_caf.y - eps * ty);
+                int w_plus = wedge_from_point(x_plus);
+                int w_minus = wedge_from_point(x_minus);
+                caf_near_boundary = (w_plus != w0) || (w_minus != w0);
+                if (!caf_near_boundary) {
+                    caf_method = "BCWT_NoCAF_NotNearBoundary";
+                    caf_skip = true;
+                }
+            }
+        } else {
+            caf_near_boundary = true;  // if filter off, treat as near boundary
+        }
+
+        // Step 2: Require min camera count
+        if (!caf_skip && caf_effective_cam_count < g_caf_min_effective_camera_count) {
+            caf_method = "BCWT_NoCAF_InsufficientCameras";
+            caf_skip = true;
+        }
+
+        // Step 3: Camera agreement check
+        if (!caf_skip && g_caf_require_camera_agreement) {
+            std::vector<double> cam_thetas;
+            for (const auto& [cid, bw] : bcwt_weights) {
+                if (!bw.included_by_bcwt) continue;
+                const auto& cl = cam_lines[cid];
+                double th = std::atan2(cl.line_end.y, cl.line_end.x) * 180.0 / CV_PI;
+                cam_thetas.push_back(th);
+            }
+            if (cam_thetas.size() >= 2) {
+                std::vector<double> sorted_th = cam_thetas;
+                for (auto& th : sorted_th) th = std::fmod(th + 360.0, 360.0);
+                std::sort(sorted_th.begin(), sorted_th.end());
+                double max_gap = 0;
+                for (size_t i = 1; i < sorted_th.size(); ++i)
+                    max_gap = std::max(max_gap, sorted_th[i] - sorted_th[i-1]);
+                max_gap = std::max(max_gap, 360.0 - sorted_th.back() + sorted_th.front());
+                theta_spread_deg_caf = 360.0 - max_gap;
+                if (theta_spread_deg_caf > g_caf_max_camera_theta_spread_deg) {
+                    if (g_caf_fallback_bestpair_on_disagreement) {
+                        final_coords = x_bp_caf;
+                        caf_method = "BestPair_Fallback_CAF_Disagreement";
+                    } else {
+                        caf_method = "BCWT_NoCAF_Disagreement";
+                    }
+                    caf_skip = true;
+                }
+            }
+        }
+
+        // Step 4: Circular Angular Fusion
+        if (!caf_skip) {
+            double vx_sum = 0, vy_sum = 0;
+            for (const auto& [cid, bw] : bcwt_weights) {
+                if (!bw.included_by_bcwt) continue;
+                const auto& cl = cam_lines[cid];
+                double theta_i = std::atan2(cl.line_end.y, cl.line_end.x);
+                vx_sum += bw.w_final * std::cos(theta_i);
+                vy_sum += bw.w_final * std::sin(theta_i);
+            }
+            if (g_caf_use_bestpair_as_prior) {
+                vx_sum += g_caf_prior_weight * std::cos(theta_best_rad);
+                vy_sum += g_caf_prior_weight * std::sin(theta_best_rad);
+            }
+            double theta_fused_rad = std::atan2(vy_sum, vx_sum);
+            theta_fused_deg_caf = theta_fused_rad * 180.0 / CV_PI;
+            double d = std::abs(theta_fused_deg_caf - theta_bcwt_deg_caf);
+            if (d > 180.0) d = 360.0 - d;
+            delta_fused_vs_bcwt_caf = d;
+            if (delta_fused_vs_bcwt_caf > g_caf_max_fused_theta_delta_vs_bcwt_deg) {
+                caf_method = "BCWT_NoCAF_DeltaTooLarge";
+                caf_skip = true;
+            }
+        }
+
+        // Step 5: Angle-only correction (preserve Phase 10B radius)
+        if (!caf_skip) {
+            double r_final = std::sqrt(final_coords.x * final_coords.x + final_coords.y * final_coords.y);
+            double theta_fused_rad = theta_fused_deg_caf * CV_PI / 180.0;
+            x_caf_pt = Point2f(r_final * std::cos(theta_fused_rad), r_final * std::sin(theta_fused_rad));
+            wedge_caf_val = wedge_from_point(x_caf_pt);
+            int widx_caf = wedge_index_from_point(x_caf_pt);
+            caf_wedge_distance = wedge_dist(widx_caf, widx_bcwt);
+
+            // Step 6: RELAXED Residual Gating (v2 multi-tier)
+            if (g_caf_require_residual_non_regression) {
+                residual_bcwt_caf = compute_residual_at(final_coords);
+                residual_caf_val = compute_residual_at(x_caf_pt);
+                improvement_ratio_caf = residual_caf_val / std::max(CAF_EPS, residual_bcwt_caf);
+
+                bool accept = false;
+
+                // Tier 1: STRICT ACCEPT (residual improved or equal)
+                if (improvement_ratio_caf <= 1.0) {
+                    accept = true;
+                }
+
+                // Tier 2: SOFT ACCEPT (up to 5% residual worsening, with conditions)
+                if (!accept && improvement_ratio_caf <= g_caf_residual_allow_soft_worsen) {
+                    bool soft_ok = true;
+                    if (g_caf_soft_worsen_only_if_near_boundary && !caf_near_boundary)
+                        soft_ok = false;
+                    if (soft_ok && g_caf_soft_worsen_only_if_adjacent_wedge && caf_wedge_distance != 1)
+                        soft_ok = false;
+                    if (soft_ok && g_caf_soft_worsen_require_support) {
+                        // Support: CAF wedge matches best-pair OR camera wedge majority
+                        std::map<int, int> cam_wedge_counts;
+                        for (const auto& [cid, bw] : bcwt_weights) {
+                            if (!bw.included_by_bcwt) continue;
+                            int cw = wedge_from_point(cam_lines[cid].line_end);
+                            cam_wedge_counts[cw]++;
+                        }
+                        int majority_wedge = 0, majority_count = 0;
+                        for (const auto& [w, c] : cam_wedge_counts) {
+                            if (c > majority_count) { majority_count = c; majority_wedge = w; }
+                        }
+                        bool support_ok = (wedge_caf_val == wedge_best_caf) || (wedge_caf_val == majority_wedge);
+                        if (!support_ok) soft_ok = false;
+                    }
+                    if (soft_ok) {
+                        accept = true;
+                        caf_soft_accepted = true;
+                    }
+                }
+
+                // Tier 3: WEDGE-CROSS (stronger condition when crossing wedges)
+                if (!accept && wedge_caf_val != wedge_bcwt_caf) {
+                    if (improvement_ratio_caf <= g_caf_min_residual_improvement_ratio) {
+                        accept = true;
+                    }
+                    // Also accept if CAF agrees with best-pair wedge
+                    if (!accept && wedge_caf_val == wedge_best_caf) {
+                        accept = true;
+                    }
+                }
+
+                if (!accept) {
+                    if (g_caf_fallback_bestpair_on_disagreement && wedge_bcwt_caf != wedge_best_caf) {
+                        final_coords = x_bp_caf;
+                        caf_method = "BestPair_Fallback_CAF_Rejected";
+                    } else {
+                        caf_method = "BCWT_NoCAF_Rejected";
+                    }
+                    caf_skip = true;
+                }
+            }
+        }
+
+        // Step 7: Accept CAF
+        if (!caf_skip) {
+            final_coords = x_caf_pt;
+            caf_method = "BCWT_CAF_AngleFusion";
+            caf_applied = true;
+        }
+    }
+
     // Score the final coordinates
     double final_dist = std::sqrt(final_coords.x * final_coords.x + final_coords.y * final_coords.y);
     double final_angle_rad = std::atan2(final_coords.y, -final_coords.x);
@@ -1294,8 +1567,31 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     tri_dbg.x_preclamp_y = x_preclamp.y;
     tri_dbg.x_bestpair_x = x_bestpair_10b.x;
     tri_dbg.x_bestpair_y = x_bestpair_10b.y;
+    // Phase 11C CAF debug
+    tri_dbg.caf_applied = caf_applied;
+    tri_dbg.caf_method = caf_method;
+    tri_dbg.theta_bcwt_deg = theta_bcwt_deg_caf;
+    tri_dbg.theta_best_deg = theta_best_deg_caf;
+    tri_dbg.theta_fused_deg = theta_fused_deg_caf;
+    tri_dbg.theta_spread_deg = theta_spread_deg_caf;
+    tri_dbg.delta_fused_vs_bcwt_deg = delta_fused_vs_bcwt_caf;
+    tri_dbg.wedge_bcwt = wedge_bcwt_caf;
+    tri_dbg.wedge_best = wedge_best_caf;
+    tri_dbg.wedge_caf = wedge_caf_val;
+    tri_dbg.wedge_final = final_score.segment;
+    tri_dbg.residual_bcwt_caf = residual_bcwt_caf;
+    tri_dbg.residual_caf_val = residual_caf_val;
+    tri_dbg.improvement_ratio_caf = improvement_ratio_caf;
+    tri_dbg.x_caf_x = x_caf_pt.x;
+    tri_dbg.x_caf_y = x_caf_pt.y;
+    tri_dbg.caf_effective_cam_count = caf_effective_cam_count;
+    tri_dbg.caf_near_boundary = caf_near_boundary;
+    tri_dbg.caf_wedge_distance = caf_wedge_distance;
+    tri_dbg.caf_soft_accepted = caf_soft_accepted;
 
-    if (radial_clamp_applied) {
+    if (caf_applied) {
+        result.method = caf_method;
+    } else if (radial_clamp_applied) {
         result.method = radial_clamp_method;
     } else {
         result.method = (g_use_bcwt && bcwt_method_used == "BCWT") ? "BCWT" : method;

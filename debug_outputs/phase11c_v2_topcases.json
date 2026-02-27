@@ -1,0 +1,32 @@
+[
+  {
+    "round": "round_5_Player 1",
+    "dart": "dart_2",
+    "truth": "20x1",
+    "baseline_detected": "1x1",
+    "variant_detected": "20x1",
+    "baseline_correct": false,
+    "variant_correct": true,
+    "baseline_method": "BCWT",
+    "variant_method": "BCWT",
+    "caf_applied": false,
+    "caf_method": "BestPair_Fallback_CAF_Disagreement",
+    "improvement_ratio": 0,
+    "caf_soft_accepted": false
+  },
+  {
+    "round": "round_24_Player 1",
+    "dart": "dart_2",
+    "truth": "3x1",
+    "baseline_detected": "19x1",
+    "variant_detected": "3x1",
+    "baseline_correct": false,
+    "variant_correct": true,
+    "baseline_method": "BCWT",
+    "variant_method": "BCWT",
+    "caf_applied": false,
+    "caf_method": "BestPair_Fallback_CAF_Disagreement",
+    "improvement_ratio": 0,
+    "caf_soft_accepted": false
+  }
+]
