@@ -128,6 +128,22 @@ struct DetectionResult {
     double ransac_inlier_ratio = 0.0;
     int barrel_pixel_count = 0;
     double barrel_aspect_ratio = 0.0;
+
+    // Phase 9: Ridge/centerline barrel metrics
+    int ridge_point_count = 0;
+    double ridge_inlier_ratio = 0.0;
+    double ridge_mean_perp_residual = 0.0;
+    double mean_thickness_px = 0.0;
+    double thickness_p90_px = 0.0;
+    double shaft_length_px = 0.0;
+    int barrel_candidate_pixel_count = 0;
+    int flight_exclusion_removed_px = 0;
+    std::string barrel_quality_class = "BARREL_ABSENT";
+    bool tip_ahead_of_flight = false;
+    bool tip_swap_applied = false;
+    double angle_line_vs_pca_deg = -1.0;
+    double angle_line_vs_flighttip_deg = -1.0;
+    std::string line_fit_method_p9;
 };
 
 struct ScoreResult {

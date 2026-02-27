@@ -1,0 +1,482 @@
+{
+  "improved_count": 4,
+  "regressed_count": 6,
+  "net_change": -2,
+  "top_50_improved": [
+    {
+      "key": "round_5_Player 1_dart_2",
+      "truth": "S11x1",
+      "baseline_detected": "S0x0",
+      "variant_detected": "S11x1",
+      "variant_method": "Cam+1",
+      "variant_cam_details": {
+        "cam0": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "barrel_fitline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0,
+          "barrel_aspect": 4,
+          "tip_x": 616.356,
+          "tip_y": 212.977,
+          "line_vx": -0.0715973,
+          "line_vy": 0.997434,
+          "line_x0": 628,
+          "line_y0": 137,
+          "line_elongation": 31
+        },
+        "cam1": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 0.508445,
+          "ransac_inlier_ratio": 0.394118,
+          "barrel_aspect": 0,
+          "tip_x": 394.491,
+          "tip_y": 296.066,
+          "line_vx": 0.25438,
+          "line_vy": 0.967104,
+          "line_x0": 391.897,
+          "line_y0": 286.63,
+          "line_elongation": 64
+        },
+        "cam2": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "barrel_fitline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0,
+          "barrel_aspect": 5.14286,
+          "tip_x": 921.025,
+          "tip_y": 334,
+          "line_vx": -0.00421673,
+          "line_vy": 0.999991,
+          "line_x0": 921,
+          "line_y0": 322,
+          "line_elongation": 147
+        }
+      }
+    },
+    {
+      "key": "round_15_Player 1_dart_2",
+      "truth": "S9x1",
+      "baseline_detected": "S0x0",
+      "variant_detected": "S9x1",
+      "variant_method": "Cam+1",
+      "variant_cam_details": {
+        "cam0": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "edge_pair",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 4.53015,
+          "tip_x": 739.593,
+          "tip_y": 207.079,
+          "line_vx": -0.0995543,
+          "line_vy": 0.995032,
+          "line_x0": 741.92,
+          "line_y0": 184.49,
+          "line_elongation": 265
+        },
+        "cam1": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "edge_pair",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 3.55901,
+          "tip_x": 445.284,
+          "tip_y": 350.617,
+          "line_vx": 0.326272,
+          "line_vy": 0.945276,
+          "line_x0": 432.04,
+          "line_y0": 309.778,
+          "line_elongation": 262
+        },
+        "cam2": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 0.427248,
+          "ransac_inlier_ratio": 0.268698,
+          "barrel_aspect": 0,
+          "tip_x": 805.405,
+          "tip_y": 136.007,
+          "line_vx": -0.0368619,
+          "line_vy": 0.99932,
+          "line_x0": 805.659,
+          "line_y0": 125.5,
+          "line_elongation": 72
+        }
+      }
+    },
+    {
+      "key": "round_16_Player 1_dart_1",
+      "truth": "S14x1",
+      "baseline_detected": "S0x0",
+      "variant_detected": "S14x1",
+      "variant_method": "UnanimousCam",
+      "variant_cam_details": {
+        "cam0": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "edge_pair",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 2.58333,
+          "tip_x": 693,
+          "tip_y": 263,
+          "line_vx": -0.0556707,
+          "line_vy": 0.998449,
+          "line_x0": 694.53,
+          "line_y0": 244.154,
+          "line_elongation": 101
+        },
+        "cam1": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0.284211,
+          "barrel_aspect": 0,
+          "tip_x": 543.672,
+          "tip_y": 346.027,
+          "line_vx": 0.164239,
+          "line_vy": 0.986421,
+          "line_x0": 533.284,
+          "line_y0": 285.922,
+          "line_elongation": 367
+        },
+        "cam2": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 0.508809,
+          "ransac_inlier_ratio": 0.258022,
+          "barrel_aspect": 0,
+          "tip_x": 749.223,
+          "tip_y": 349.013,
+          "line_vx": -0.111744,
+          "line_vy": 0.993737,
+          "line_x0": 755.69,
+          "line_y0": 288.208,
+          "line_elongation": 381
+        }
+      }
+    },
+    {
+      "key": "round_20_Player 1_dart_1",
+      "truth": "S14x1",
+      "baseline_detected": "S0x0",
+      "variant_detected": "S14x1",
+      "variant_method": "SingleCam_pca_blob_chain",
+      "variant_cam_details": {}
+    }
+  ],
+  "top_50_regressed": [
+    {
+      "key": "round_8_Player 1_dart_1",
+      "truth": "S3x3",
+      "baseline_detected": "S3x3",
+      "variant_detected": "S0x0",
+      "baseline_method": "UnanimousCam",
+      "variant_method": "MissOverride_Residual",
+      "variant_cam_details": {
+        "cam0": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "edge_pair",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 8.86361,
+          "tip_x": 467.266,
+          "tip_y": 307.126,
+          "line_vx": 0.144532,
+          "line_vy": 0.9895,
+          "line_x0": 458.331,
+          "line_y0": 232.458,
+          "line_elongation": 806
+        },
+        "cam1": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 0.460684,
+          "ransac_inlier_ratio": 0.273716,
+          "barrel_aspect": 0,
+          "tip_x": 766.721,
+          "tip_y": 435.02,
+          "line_vx": -0.0554852,
+          "line_vy": 0.99846,
+          "line_x0": 769.575,
+          "line_y0": 375.553,
+          "line_elongation": 446
+        },
+        "cam2": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0.572917,
+          "barrel_aspect": 0,
+          "tip_x": 719.105,
+          "tip_y": 139.31,
+          "line_vx": -0.721785,
+          "line_vy": 0.692117,
+          "line_x0": 716.78,
+          "line_y0": 141.391,
+          "line_elongation": 55
+        }
+      }
+    },
+    {
+      "key": "round_8_Player 1_dart_3",
+      "truth": "S19x3",
+      "baseline_detected": "S19x3",
+      "variant_detected": "S19x1",
+      "baseline_method": "Cam+1",
+      "variant_method": "BestError",
+      "variant_cam_details": {
+        "cam0": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0.953846,
+          "barrel_aspect": 0,
+          "tip_x": 448.779,
+          "tip_y": 210.008,
+          "line_vx": 0.0736948,
+          "line_vy": 0.997281,
+          "line_x0": 447.929,
+          "line_y0": 199.727,
+          "line_elongation": 62
+        },
+        "cam1": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0.464,
+          "barrel_aspect": 0,
+          "tip_x": 727.477,
+          "tip_y": 323.939,
+          "line_vx": -0.0801567,
+          "line_vy": 0.996782,
+          "line_x0": 730.315,
+          "line_y0": 288.639,
+          "line_elongation": 113
+        },
+        "cam2": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "edge_pair",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 3.01669,
+          "tip_x": 776.865,
+          "tip_y": 206.023,
+          "line_vx": -0.0540712,
+          "line_vy": 0.998537,
+          "line_x0": 778.117,
+          "line_y0": 192.904,
+          "line_elongation": 200
+        }
+      }
+    },
+    {
+      "key": "round_9_Player 1_dart_1",
+      "truth": "S3x1",
+      "baseline_detected": "S3x1",
+      "variant_detected": "S0x0",
+      "baseline_method": "Cam+1",
+      "variant_method": "MissOverride_Residual",
+      "variant_cam_details": {
+        "cam0": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "barrel_ransac",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 21,
+          "tip_x": 607.107,
+          "tip_y": 335,
+          "line_vx": 0.0082135,
+          "line_vy": 0.999966,
+          "line_x0": 618.1,
+          "line_y0": 259.9,
+          "line_elongation": 74
+        },
+        "cam1": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "barrel_ransac",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 7,
+          "tip_x": 683,
+          "tip_y": 354,
+          "line_vx": -4.37114e-08,
+          "line_vy": 1,
+          "line_x0": 676,
+          "line_y0": 287.9,
+          "line_elongation": 44
+        },
+        "cam2": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0.859903,
+          "barrel_aspect": 0,
+          "tip_x": 888.465,
+          "tip_y": 166.595,
+          "line_vx": 0.973249,
+          "line_vy": 0.229752,
+          "line_x0": 836.716,
+          "line_y0": 154.074,
+          "line_elongation": 174
+        }
+      }
+    },
+    {
+      "key": "round_27_Player 1_dart_3",
+      "truth": "S19x1",
+      "baseline_detected": "S19x1",
+      "variant_detected": "S0x0",
+      "baseline_method": "UnanimousCam",
+      "variant_method": "MissOverride_Residual",
+      "variant_cam_details": {
+        "cam0": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "edge_pair",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 7.79517,
+          "tip_x": 447.137,
+          "tip_y": 304.808,
+          "line_vx": 0.178076,
+          "line_vy": 0.984017,
+          "line_x0": 433.376,
+          "line_y0": 221.632,
+          "line_elongation": 670
+        },
+        "cam1": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "ridge_centerline",
+          "mask_quality": 0.349647,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 3.06003,
+          "tip_x": 754.543,
+          "tip_y": 439.191,
+          "line_vx": -0.149611,
+          "line_vy": 0.988745,
+          "line_x0": 774.888,
+          "line_y0": 267.317,
+          "line_elongation": 27.7358
+        },
+        "cam2": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0.919355,
+          "barrel_aspect": 0,
+          "tip_x": 882.26,
+          "tip_y": 180.956,
+          "line_vx": 0.0700201,
+          "line_vy": 0.997546,
+          "line_x0": 880.619,
+          "line_y0": 153.464,
+          "line_elongation": 56
+        }
+      }
+    },
+    {
+      "key": "round_29_Player 1_dart_3",
+      "truth": "S3x1",
+      "baseline_detected": "S3x1",
+      "variant_detected": "S19x1",
+      "baseline_method": "Cam+1",
+      "variant_method": "BestError",
+      "variant_cam_details": {
+        "cam0": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0.411504,
+          "barrel_aspect": 0,
+          "tip_x": 390.705,
+          "tip_y": 156.022,
+          "line_vx": 0.14747,
+          "line_vy": 0.989067,
+          "line_x0": 388.759,
+          "line_y0": 142.151,
+          "line_elongation": 86
+        },
+        "cam1": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "barrel_fitline",
+          "mask_quality": 0.300961,
+          "ransac_inlier_ratio": 0,
+          "barrel_aspect": 4.50768,
+          "tip_x": 791.813,
+          "tip_y": 517.006,
+          "line_vx": 0.0622101,
+          "line_vy": 0.998063,
+          "line_x0": 784.222,
+          "line_y0": 375.006,
+          "line_elongation": 4040
+        },
+        "cam2": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "edge_pair",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 2.7439,
+          "tip_x": 794.712,
+          "tip_y": 180.098,
+          "line_vx": -0.114105,
+          "line_vy": 0.993469,
+          "line_x0": 795.108,
+          "line_y0": 185.406,
+          "line_elongation": 50
+        }
+      }
+    },
+    {
+      "key": "round_21_Player 1_dart_2",
+      "truth": "S12x1",
+      "baseline_detected": "S12x1",
+      "variant_detected": "S0x0",
+      "baseline_method": "Cam+1",
+      "variant_method": "MissOverride_Residual",
+      "variant_cam_details": {
+        "cam0": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "edge_pair",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 1,
+          "barrel_aspect": 3.20173,
+          "tip_x": 815.654,
+          "tip_y": 219.274,
+          "line_vx": -0.204119,
+          "line_vy": 0.978946,
+          "line_x0": 815.793,
+          "line_y0": 216.527,
+          "line_elongation": 68
+        },
+        "cam1": {
+          "tip_method": "pca_blob_chain",
+          "barrel_method": "barrel_fitline",
+          "mask_quality": 1,
+          "ransac_inlier_ratio": 0,
+          "barrel_aspect": 10.75,
+          "tip_x": 429.878,
+          "tip_y": 284,
+          "line_vx": 0.00719036,
+          "line_vy": 0.999974,
+          "line_x0": 433,
+          "line_y0": 281.486,
+          "line_elongation": 59
+        },
+        "cam2": {
+          "tip_method": "phase9_ridge_tip",
+          "barrel_method": "phase9_ridge_centerline",
+          "mask_quality": 0.282008,
+          "ransac_inlier_ratio": 0.495726,
+          "barrel_aspect": 0,
+          "tip_x": 727.318,
+          "tip_y": 322.234,
+          "line_vx": 0.829569,
+          "line_vy": 0.558404,
+          "line_x0": 717.024,
+          "line_y0": 314.787,
+          "line_elongation": 52
+        }
+      }
+    }
+  ]
+}

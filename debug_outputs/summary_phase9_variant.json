@@ -1,0 +1,27 @@
+{
+  "label": "variant_phase9_ridge",
+  "total_darts": 1163,
+  "correct": 826,
+  "accuracy_pct": 71,
+  "miss_false_neg": 112,
+  "ring_error": 54,
+  "adjacent_seg": 72,
+  "wrong_other": 9,
+  "camera_drop_rate": {
+    "cam0": 6.62,
+    "cam1": 16.22,
+    "cam2": 31.03
+  },
+  "camera_used_rate": {
+    "cam0": 88.07,
+    "cam1": 89.0,
+    "cam2": 88.72
+  },
+  "p9_metric_counts": {
+    "barrel_cand_px": 0,
+    "ridge_point_count": 0,
+    "ridge_inlier_ratio": 0,
+    "angle_vs_pca": 0,
+    "angle_vs_flighttip": 0
+  }
+}

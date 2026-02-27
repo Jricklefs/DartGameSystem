@@ -1,0 +1,49 @@
+{
+  "total_darts": 1073,
+  "legacy_accuracy_pct": 82.01,
+  "phase6_accuracy_pct": 81.17,
+  "delta_correct": -9,
+  "errors_by_category_legacy": {
+    "correct": 880,
+    "adjacent_seg": 50,
+    "other": 9,
+    "ring_error": 52,
+    "miss_false_neg": 79,
+    "far_seg": 3
+  },
+  "errors_by_category_phase6": {
+    "correct": 871,
+    "adjacent_seg": 59,
+    "other": 9,
+    "ring_error": 52,
+    "miss_false_neg": 79,
+    "far_seg": 3
+  },
+  "near_boundary_stats": {
+    "total_near_boundary": 60,
+    "near_boundary_correct_legacy": 29,
+    "near_boundary_correct_phase6": 20,
+    "not_near_boundary_correct_legacy": 851,
+    "not_near_boundary_correct_phase6": 851
+  },
+  "adjacent_seg_analysis": {
+    "total_adjacent_seg_legacy": 50,
+    "total_adjacent_seg_phase6": 59,
+    "fixed_by_phase6": 9,
+    "broken_by_phase6": 18
+  },
+  "boundary_distance_percentiles_on_errors": {
+    "p50": 3.1867,
+    "p90": 8.3871,
+    "p95": 9.0,
+    "max": 9.0
+  },
+  "wedge_outlier_drop_count": 92,
+  "reused_old_dart_flag_count": 0,
+  "suspect_queue_size": 290,
+  "decisions_changed": 27,
+  "decisions_improved": 9,
+  "decisions_worsened": 18,
+  "boundary_epsilon_deg": 0.5,
+  "runtime_ms": 55061.7
+}

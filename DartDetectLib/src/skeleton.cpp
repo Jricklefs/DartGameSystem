@@ -146,6 +146,23 @@ static bool g_use_pca_barrel_split = true;
 static bool g_use_skeleton_tip = true;
 static bool g_use_centroid_constraint = true;
 
+// === FEATURE FLAGS: Phase 9 Ridge/Centerline Barrel ===
+static bool g_use_phase9_ridge = false;  // UseRidgeCenterlineBarrel
+static bool g_use_phase9_flight_exclusion = true;  // UseFlightExclusionForBarrel (active when phase9 ON)
+
+// dd_set_flag implementation (called from dart_detect.cpp)
+int set_skeleton_flag(const char* name, int value) {
+    std::string s(name);
+    if (s == "UseRidgeCenterlineBarrel") { g_use_phase9_ridge = (value != 0); return 0; }
+    if (s == "UseFlightExclusionForBarrel") { g_use_phase9_flight_exclusion = (value != 0); return 0; }
+    // Legacy flags
+    if (s == "UseRidgeCenterline") { g_use_ridge_centerline = (value != 0); return 0; }
+    if (s == "UsePcaBarrelSplit") { g_use_pca_barrel_split = (value != 0); return 0; }
+    if (s == "UseSkeletonTip") { g_use_skeleton_tip = (value != 0); return 0; }
+    if (s == "UseCentroidConstraint") { g_use_centroid_constraint = (value != 0); return 0; }
+    return -1;
+}
+
 
 // ============================================================================
 // Helper: Find flight blob (largest contour)
@@ -353,6 +370,387 @@ DetectionResult detect_dart(
     std::optional<BarrelInfo> barrel_info;
     
     auto flight = find_flight_blob(motion_mask, 80);
+
+    // ================================================================
+    // Phase 9: Ridge/Centerline Barrel Detection (when flag enabled)
+    // ================================================================
+    if (g_use_phase9_ridge && mask_pixels > 50) {
+        // Phase 9A: Flight exclusion
+        cv::Mat barrel_candidate = motion_mask.clone();
+        int flight_area_px = 0;
+        int flight_exclusion_removed = 0;
+        bool flight_missing = false;
+        
+        if (flight && g_use_phase9_flight_exclusion) {
+            flight_centroid = flight->centroid;
+            // Create flight blob mask
+            cv::Mat flight_mask = cv::Mat::zeros(motion_mask.size(), CV_8U);
+            cv::drawContours(flight_mask, std::vector<std::vector<cv::Point>>{flight->contour}, 0, cv::Scalar(255), -1);
+            flight_area_px = cv::countNonZero(flight_mask);
+            
+            // Dilate flight blob
+            int dilation_radius = 12;  // tuneable
+            cv::Mat dilation_kern = cv::getStructuringElement(cv::MORPH_ELLIPSE,
+                cv::Size(2*dilation_radius+1, 2*dilation_radius+1));
+            cv::Mat flight_exclusion;
+            cv::dilate(flight_mask, flight_exclusion, dilation_kern);
+            
+            int before_count = cv::countNonZero(barrel_candidate);
+            cv::Mat not_flight;
+            cv::bitwise_not(flight_exclusion, not_flight);
+            cv::bitwise_and(barrel_candidate, not_flight, barrel_candidate);
+            int after_count = cv::countNonZero(barrel_candidate);
+            flight_exclusion_removed = before_count - after_count;
+        } else if (!flight) {
+            flight_missing = true;
+            // Use centroid of all mask pixels as flight surrogate
+            std::vector<cv::Point> all_pts;
+            cv::findNonZero(motion_mask, all_pts);
+            if (!all_pts.empty()) {
+                double sx=0, sy=0;
+                for (auto& p : all_pts) { sx += p.x; sy += p.y; }
+                flight_centroid = Point2f(sx / all_pts.size(), sy / all_pts.size());
+            }
+        } else {
+            flight_centroid = flight->centroid;
+        }
+        
+        result.flight_exclusion_removed_px = flight_exclusion_removed;
+        int barrel_cand_count = cv::countNonZero(barrel_candidate);
+        result.barrel_candidate_pixel_count = barrel_cand_count;
+        
+        // Phase 9B: Ridge/Centerline extraction
+        if (barrel_cand_count >= 30) {
+            // Distance transform
+            cv::Mat dist_map;
+            cv::distanceTransform(barrel_candidate, dist_map, cv::DIST_L2, 5);
+            
+            // Skeleton
+            cv::Mat skel;
+            zhangSuenThinning(barrel_candidate, skel);
+            
+            // Keep largest connected component of skeleton
+            cv::Mat skel_labeled;
+            int n_skel_labels = cv::connectedComponents(skel, skel_labeled, 8, CV_32S);
+            if (n_skel_labels > 2) {
+                // Find largest component
+                std::vector<int> label_counts(n_skel_labels, 0);
+                for (int r = 0; r < skel_labeled.rows; r++)
+                    for (int c = 0; c < skel_labeled.cols; c++) {
+                        int lbl = skel_labeled.at<int>(r, c);
+                        if (lbl > 0) label_counts[lbl]++;
+                    }
+                int best_label = 1;
+                for (int i = 2; i < n_skel_labels; i++)
+                    if (label_counts[i] > label_counts[best_label]) best_label = i;
+                // Zero out non-largest
+                for (int r = 0; r < skel.rows; r++)
+                    for (int c = 0; c < skel.cols; c++)
+                        if (skel_labeled.at<int>(r, c) != best_label)
+                            skel.at<uchar>(r, c) = 0;
+            }
+            
+            // Collect ridge points with weights
+            std::vector<cv::Point2f> ridge_pts;
+            std::vector<double> ridge_weights;
+            std::vector<double> thicknesses;
+            
+            for (int r = 0; r < skel.rows; r++) {
+                const uchar* skel_row = skel.ptr<uchar>(r);
+                const float* dist_row = dist_map.ptr<float>(r);
+                for (int c = 0; c < skel.cols; c++) {
+                    if (skel_row[c] > 0) {
+                        double thickness = 2.0 * dist_row[c];
+                        double weight = std::max(0.25, std::min(2.0, thickness / 6.0));
+                        ridge_pts.push_back(cv::Point2f((float)c, (float)r));
+                        ridge_weights.push_back(weight);
+                        thicknesses.push_back(thickness);
+                    }
+                }
+            }
+            
+            int rpc = (int)ridge_pts.size();
+            result.ridge_point_count = rpc;
+            result.shaft_length_px = (double)rpc;
+            
+            if (!thicknesses.empty()) {
+                double sum_t = 0;
+                for (double t : thicknesses) sum_t += t;
+                result.mean_thickness_px = sum_t / thicknesses.size();
+                std::vector<double> sorted_t = thicknesses;
+                std::sort(sorted_t.begin(), sorted_t.end());
+                result.thickness_p90_px = sorted_t[(int)(sorted_t.size() * 0.9)];
+            }
+            
+            // Phase 9C: Weighted line fit
+            if (rpc >= 15) {
+                // Weighted RANSAC
+                double sw = 0, swx = 0, swy = 0;
+                for (int i = 0; i < rpc; i++) {
+                    sw += ridge_weights[i];
+                    swx += ridge_weights[i] * ridge_pts[i].x;
+                    swy += ridge_weights[i] * ridge_pts[i].y;
+                }
+                double mean_x = swx / sw, mean_y = swy / sw;
+                
+                // RANSAC with weighted scoring
+                int best_inliers = 0;
+                double best_w_score = 0;
+                double best_vx9 = 0, best_vy9 = 0, best_cx9 = mean_x, best_cy9 = mean_y;
+                double inlier_threshold = 2.5 * rs;
+                
+                std::mt19937 rng9(123);
+                std::uniform_int_distribution<int> rdist(0, rpc - 1);
+                int n_iters = std::min(200, rpc * 5);
+                
+                for (int iter = 0; iter < n_iters; iter++) {
+                    int i1 = rdist(rng9), i2 = rdist(rng9);
+                    if (i1 == i2) continue;
+                    double dx = ridge_pts[i2].x - ridge_pts[i1].x;
+                    double dy = ridge_pts[i2].y - ridge_pts[i1].y;
+                    double len = std::sqrt(dx*dx + dy*dy);
+                    if (len < 10.0) continue;
+                    double nx = -dy/len, ny = dx/len;
+                    
+                    int inliers = 0;
+                    double w_score = 0;
+                    for (int k = 0; k < rpc; k++) {
+                        double d = std::abs(nx * (ridge_pts[k].x - ridge_pts[i1].x) +
+                                           ny * (ridge_pts[k].y - ridge_pts[i1].y));
+                        if (d <= inlier_threshold) {
+                            inliers++;
+                            w_score += ridge_weights[k];
+                        }
+                    }
+                    
+                    if (w_score > best_w_score) {
+                        best_w_score = w_score;
+                        best_inliers = inliers;
+                        best_vx9 = dx/len;
+                        best_vy9 = dy/len;
+                    }
+                }
+                
+                // Refit on inliers with weighted least squares
+                if (best_inliers >= 10) {
+                    double fnx = -best_vy9, fny = best_vx9;
+                    std::vector<cv::Point2f> inlier_pts;
+                    std::vector<double> inlier_w;
+                    double perp_sum = 0;
+                    int perp_count = 0;
+                    
+                    for (int k = 0; k < rpc; k++) {
+                        double d = std::abs(fnx * (ridge_pts[k].x - mean_x) +
+                                           fny * (ridge_pts[k].y - mean_y));
+                        if (d <= inlier_threshold) {
+                            inlier_pts.push_back(ridge_pts[k]);
+                            inlier_w.push_back(ridge_weights[k]);
+                            perp_sum += d;
+                            perp_count++;
+                        }
+                    }
+                    
+                    if ((int)inlier_pts.size() >= 10) {
+                        // Weighted PCA for final line
+                        double rw = 0, rwx = 0, rwy = 0;
+                        for (int i = 0; i < (int)inlier_pts.size(); i++) {
+                            rw += inlier_w[i];
+                            rwx += inlier_w[i] * inlier_pts[i].x;
+                            rwy += inlier_w[i] * inlier_pts[i].y;
+                        }
+                        double rmx = rwx/rw, rmy = rwy/rw;
+                        double cxx=0, cxy=0, cyy=0;
+                        for (int i = 0; i < (int)inlier_pts.size(); i++) {
+                            double ddx = inlier_pts[i].x - rmx;
+                            double ddy = inlier_pts[i].y - rmy;
+                            cxx += inlier_w[i]*ddx*ddx;
+                            cxy += inlier_w[i]*ddx*ddy;
+                            cyy += inlier_w[i]*ddy*ddy;
+                        }
+                        double trace = cxx + cyy;
+                        double det = cxx*cyy - cxy*cxy;
+                        double disc = trace*trace/4.0 - det;
+                        if (disc > 0) {
+                            double lambda1 = trace/2.0 + std::sqrt(disc);
+                            double rvx = cxy;
+                            double rvy = lambda1 - cxx;
+                            double rlen = std::sqrt(rvx*rvx + rvy*rvy);
+                            if (rlen < 1e-6) { rvx = best_vx9; rvy = best_vy9; }
+                            else { rvx /= rlen; rvy /= rlen; }
+                            if (rvy < 0) { rvx = -rvx; rvy = -rvy; }
+                            
+                            double inlier_ratio = (double)best_inliers / rpc;
+                            double mean_perp = perp_count > 0 ? perp_sum / perp_count : 999.0;
+                            
+                            result.ridge_inlier_ratio = inlier_ratio;
+                            result.ridge_mean_perp_residual = mean_perp;
+                            
+                            // Quality classification
+                            if (rpc >= 40 && inlier_ratio >= 0.55 && mean_perp <= 2.5)
+                                result.barrel_quality_class = "BARREL_GOOD";
+                            else if (rpc >= 15 && (inlier_ratio >= 0.35 || rpc >= 40))
+                                result.barrel_quality_class = "BARREL_WEAK";
+                            else
+                                result.barrel_quality_class = "BARREL_ABSENT";
+                            
+                            // Set the PCA line
+                            pca_line = PcaLine{rvx, rvy, rmx, rmy,
+                                (double)inlier_pts.size(), "phase9_ridge_centerline"};
+                            result.line_fit_method_p9 = "phase9_ridge_centerline";
+                            result.ransac_inlier_ratio = inlier_ratio;
+                            result.barrel_pixel_count = barrel_cand_count;
+                            
+                            // Create barrel_info for tip detection
+                            barrel_info = BarrelInfo{
+                                Point2f(rmx, rmy),
+                                Point2f(rmx - rvx * 20, rmy - rvy * 20),
+                                barrel_cand_count
+                            };
+                            saved_barrel_mask = barrel_candidate.clone();
+                            result.barrel_aspect_ratio = 0; // not computed for ridge
+                            
+                            // Phase 9D: Tip selection - find endpoints of skeleton along fitted line
+                            // Walk along line in both directions to find furthest barrel_candidate intersection
+                            int h9 = barrel_candidate.rows, w9 = barrel_candidate.cols;
+                            Point2f tip_fwd, tip_bwd;
+                            bool has_fwd = false, has_bwd = false;
+                            
+                            for (int s = 0; s < 500; s++) {
+                                int px = (int)std::round(rmx + rvx * s);
+                                int py = (int)std::round(rmy + rvy * s);
+                                if (px < 0 || px >= w9 || py < 0 || py >= h9) break;
+                                if (barrel_candidate.at<uchar>(py, px) > 0) {
+                                    tip_fwd = Point2f(px, py);
+                                    has_fwd = true;
+                                }
+                            }
+                            for (int s = 0; s < 500; s++) {
+                                int px = (int)std::round(rmx - rvx * s);
+                                int py = (int)std::round(rmy - rvy * s);
+                                if (px < 0 || px >= w9 || py < 0 || py >= h9) break;
+                                if (barrel_candidate.at<uchar>(py, px) > 0) {
+                                    tip_bwd = Point2f(px, py);
+                                    has_bwd = true;
+                                }
+                            }
+                            
+                            // Pick endpoint closest to board (highest Y typically, or check flight direction)
+                            Point2f chosen_tip;
+                            bool has_chosen = false;
+                            if (has_fwd && has_bwd) {
+                                // Default: highest Y
+                                chosen_tip = (tip_fwd.y >= tip_bwd.y) ? tip_fwd : tip_bwd;
+                                has_chosen = true;
+                                
+                                // Verify tip_ahead_of_flight
+                                if (flight_centroid) {
+                                    auto check_ahead = [&](Point2f t) -> bool {
+                                        double vft_x = t.x - flight_centroid->x;
+                                        double vft_y = t.y - flight_centroid->y;
+                                        return (rvx * vft_x + rvy * vft_y) > 0;
+                                    };
+                                    bool fwd_ahead = check_ahead(tip_fwd);
+                                    bool bwd_ahead = check_ahead(tip_bwd);
+                                    
+                                    if (fwd_ahead && !bwd_ahead) {
+                                        if (chosen_tip.x != tip_fwd.x || chosen_tip.y != tip_fwd.y) {
+                                            chosen_tip = tip_fwd;
+                                            result.tip_swap_applied = true;
+                                        }
+                                    } else if (bwd_ahead && !fwd_ahead) {
+                                        if (chosen_tip.x != tip_bwd.x || chosen_tip.y != tip_bwd.y) {
+                                            chosen_tip = tip_bwd;
+                                            result.tip_swap_applied = true;
+                                        }
+                                    }
+                                    result.tip_ahead_of_flight = check_ahead(chosen_tip);
+                                }
+                            } else if (has_fwd) {
+                                chosen_tip = tip_fwd; has_chosen = true;
+                            } else if (has_bwd) {
+                                chosen_tip = tip_bwd; has_chosen = true;
+                            }
+                            
+                            if (has_chosen) {
+                                // Angle metrics
+                                if (flight_centroid) {
+                                    double ft_dx = chosen_tip.x - flight_centroid->x;
+                                    double ft_dy = chosen_tip.y - flight_centroid->y;
+                                    double ft_len = std::sqrt(ft_dx*ft_dx + ft_dy*ft_dy);
+                                    if (ft_len > 5) {
+                                        double ft_vx = ft_dx/ft_len, ft_vy = ft_dy/ft_len;
+                                        double dot = rvx*ft_vx + rvy*ft_vy;
+                                        dot = std::max(-1.0, std::min(1.0, dot));
+                                        result.angle_line_vs_flighttip_deg = std::acos(std::abs(dot)) * 180.0 / CV_PI;
+                                    }
+                                }
+                                
+                                // PCA angle on barrel_candidate pixels
+                                {
+                                    std::vector<cv::Point> bc_pts;
+                                    cv::findNonZero(barrel_candidate, bc_pts);
+                                    if ((int)bc_pts.size() > 10) {
+                                        cv::Mat pdata((int)bc_pts.size(), 2, CV_64F);
+                                        for (int i = 0; i < (int)bc_pts.size(); i++) {
+                                            pdata.at<double>(i,0) = bc_pts[i].x;
+                                            pdata.at<double>(i,1) = bc_pts[i].y;
+                                        }
+                                        cv::PCA pca_check(pdata, cv::Mat(), cv::PCA::DATA_AS_ROW);
+                                        double pvx = pca_check.eigenvectors.at<double>(0,0);
+                                        double pvy = pca_check.eigenvectors.at<double>(0,1);
+                                        double dot = rvx*pvx + rvy*pvy;
+                                        dot = std::max(-1.0, std::min(1.0, dot));
+                                        result.angle_line_vs_pca_deg = std::acos(std::abs(dot)) * 180.0 / CV_PI;
+                                    }
+                                }
+                                
+                                // Set tip and skip the rest of barrel detection
+                                result.tip = chosen_tip;
+                                result.method = "phase9_ridge_tip";
+                                result.pca_line = pca_line;
+                                result.confidence = 0.85;
+                                result.motion_mask = motion_mask;
+                                
+                                if (flight_centroid) {
+                                    double ddx = chosen_tip.x - flight_centroid->x;
+                                    double ddy = chosen_tip.y - flight_centroid->y;
+                                    result.dart_length = std::sqrt(ddx*ddx + ddy*ddy);
+                                }
+                                double vq = 0.3;
+                                if (flight_centroid && result.dart_length > 0)
+                                    vq = std::min(1.0, result.dart_length / dart_length_min);
+                                result.view_quality = vq;
+                                
+                                // Sub-pixel refinement
+                                cv::Mat gray9;
+                                if (current_frame.channels() == 3)
+                                    cv::cvtColor(current_frame, gray9, cv::COLOR_BGR2GRAY);
+                                else gray9 = current_frame;
+                                *result.tip = refine_tip_subpixel(*result.tip, gray9, motion_mask, 10, rvx, rvy);
+                                
+                                // DEBUG output
+                                {
+                                    static int dbg9 = 0;
+                                    std::string dp = "C:\\Users\\clawd\\DartDebug\\p9_cam" + std::to_string(dbg9);
+                                    if (!barrel_candidate.empty())
+                                        cv::imwrite(dp + "_barrel_cand.png", barrel_candidate);
+                                    if (!skel.empty())
+                                        cv::imwrite(dp + "_skel.png", skel);
+                                    dbg9 = (dbg9 + 1) % 3;
+                                }
+                                
+                                return result;  // Early return - Phase 9 handled everything
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            result.barrel_quality_class = "BARREL_ABSENT";
+        }
+        // Phase 9 didn't produce a result, fall through to old pipeline
+    }
+    // END Phase 9 block
     if (flight) {
         flight_centroid = flight->centroid;
     } else {

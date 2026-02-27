@@ -1,0 +1,264 @@
+{
+  "totals": {
+    "total_darts": 1073,
+    "correct": 880,
+    "accuracy_pct": 82.01,
+    "error_counts_by_category": {
+      "correct": 880,
+      "adjacent_seg": 50,
+      "far_seg": 4,
+      "ring_error": 52,
+      "miss_false_neg": 79,
+      "miss_false_pos": 8
+    }
+  },
+  "distributions": {
+    "overall": {
+      "barrel_pixel_count": {
+        "p50": 171.0,
+        "p90": 944.2,
+        "p95": 1099.1,
+        "max": 4515
+      },
+      "barrel_aspect_ratio": {
+        "p50": 4.9644,
+        "p90": 8.6423,
+        "p95": 10.0861,
+        "max": 35.5
+      },
+      "barrel_strength_score": {
+        "p50": 0.6145,
+        "p90": 0.8,
+        "p95": 0.8,
+        "max": 0.8
+      }
+    },
+    "per_camera": {
+      "cam0": {
+        "barrel_pixel_count": {
+          "p50": 196.0,
+          "p90": 780.6,
+          "p95": 870.4,
+          "max": 3628
+        },
+        "barrel_aspect_ratio": {
+          "p50": 5.0932,
+          "p90": 8.5755,
+          "p95": 9.8057,
+          "max": 34
+        },
+        "barrel_strength_score": {
+          "p50": 0.6456,
+          "p90": 0.8,
+          "p95": 0.8,
+          "max": 0.8
+        }
+      },
+      "cam1": {
+        "barrel_pixel_count": {
+          "p50": 253.0,
+          "p90": 1073.6,
+          "p95": 1189.4,
+          "max": 2593
+        },
+        "barrel_aspect_ratio": {
+          "p50": 5.377,
+          "p90": 8.9985,
+          "p95": 10.1936,
+          "max": 29.5
+        },
+        "barrel_strength_score": {
+          "p50": 0.6533,
+          "p90": 0.8,
+          "p95": 0.8,
+          "max": 0.8
+        }
+      },
+      "cam2": {
+        "barrel_pixel_count": {
+          "p50": 77.0,
+          "p90": 905.0,
+          "p95": 1073.6,
+          "max": 4515
+        },
+        "barrel_aspect_ratio": {
+          "p50": 4.5333,
+          "p90": 8.0884,
+          "p95": 10.549,
+          "max": 35.5
+        },
+        "barrel_strength_score": {
+          "p50": 0.5317,
+          "p90": 0.8,
+          "p95": 0.8,
+          "max": 0.8
+        }
+      }
+    },
+    "rates": {
+      "overall": {
+        "weak_barrel_rate": 0.2728,
+        "camera_dropped_rate": 0.1979
+      },
+      "per_camera": {
+        "cam0": {
+          "weak_barrel_rate": 0.1985,
+          "dropped_rate": 0.0736
+        },
+        "cam1": {
+          "weak_barrel_rate": 0.26,
+          "dropped_rate": 0.1696
+        },
+        "cam2": {
+          "weak_barrel_rate": 0.3597,
+          "dropped_rate": 0.3504
+        }
+      }
+    },
+    "line_fit_method_histogram": {
+      "per_camera": {
+        "cam0": {
+          "edge_pair": 765,
+          "skeleton_hough_fallback": 42,
+          "barrel_fitline": 131,
+          "barrel_ransac": 71,
+          "none": 26,
+          "barrel_width_fit": 24,
+          "ridge_centerline": 7,
+          "centroid_constrained": 7
+        },
+        "cam1": {
+          "edge_pair": 636,
+          "ridge_centerline": 22,
+          "barrel_ransac": 83,
+          "barrel_width_fit": 20,
+          "skeleton_hough_fallback": 31,
+          "barrel_fitline": 236,
+          "centroid_constrained": 30,
+          "none": 15
+        },
+        "cam2": {
+          "edge_pair": 531,
+          "barrel_fitline": 307,
+          "barrel_width_fit": 21,
+          "skeleton_hough_fallback": 59,
+          "barrel_ransac": 81,
+          "ridge_centerline": 24,
+          "none": 17,
+          "centroid_constrained": 33
+        }
+      }
+    }
+  },
+  "error_correlation": {
+    "miss_false_neg": {
+      "count": 79,
+      "pct_2_weak_cams": 0.0759,
+      "pct_dropped_cam": 0.0253,
+      "pct_median_strength_lt_030": 0.0759,
+      "barrel_strength_dist": {
+        "p50": 0.5383,
+        "p90": 0.8,
+        "p95": 0.8,
+        "max": 0.8
+      },
+      "line_fit_method_histogram": {
+        "edge_pair": 99,
+        "barrel_fitline": 50,
+        "barrel_ransac": 22,
+        "barrel_width_fit": 4,
+        "skeleton_hough_fallback": 19,
+        "none": 17,
+        "ridge_centerline": 1,
+        "centroid_constrained": 25
+      }
+    },
+    "ring_error": {
+      "count": 52,
+      "pct_2_weak_cams": 0.3654,
+      "pct_dropped_cam": 0.6923,
+      "pct_median_strength_lt_030": 0.3654,
+      "barrel_strength_dist": {
+        "p50": 0.4806,
+        "p90": 0.8,
+        "p95": 0.8,
+        "max": 0.8
+      },
+      "line_fit_method_histogram": {
+        "edge_pair": 74,
+        "ridge_centerline": 4,
+        "barrel_ransac": 12,
+        "skeleton_hough_fallback": 12,
+        "barrel_fitline": 27,
+        "centroid_constrained": 2,
+        "barrel_width_fit": 10,
+        "none": 15
+      }
+    },
+    "adjacent_seg": {
+      "count": 50,
+      "pct_2_weak_cams": 0.18,
+      "pct_dropped_cam": 0.6,
+      "pct_median_strength_lt_030": 0.18,
+      "barrel_strength_dist": {
+        "p50": 0.6371,
+        "p90": 0.8,
+        "p95": 0.8,
+        "max": 0.8
+      },
+      "line_fit_method_histogram": {
+        "edge_pair": 92,
+        "skeleton_hough_fallback": 7,
+        "barrel_fitline": 23,
+        "barrel_ransac": 15,
+        "ridge_centerline": 3,
+        "barrel_width_fit": 2,
+        "none": 6,
+        "centroid_constrained": 2
+      }
+    }
+  },
+  "signatures": {
+    "S1_2weak_1drop": {
+      "correct": 92,
+      "adjacent_seg": 5,
+      "miss_false_pos": 2,
+      "miss_false_neg": 1,
+      "ring_error": 7
+    },
+    "S2_2weak_0drop": {
+      "correct": 97,
+      "miss_false_neg": 5,
+      "ring_error": 12,
+      "miss_false_pos": 3,
+      "adjacent_seg": 4,
+      "far_seg": 2
+    },
+    "S3_1weak_1drop": {
+      "correct": 281,
+      "adjacent_seg": 14,
+      "ring_error": 18,
+      "miss_false_pos": 2,
+      "miss_false_neg": 1
+    },
+    "S4_0weak_1drop": {
+      "correct": 192,
+      "ring_error": 11,
+      "adjacent_seg": 11
+    },
+    "S5_0weak_0drop": {
+      "correct": 218,
+      "adjacent_seg": 16,
+      "far_seg": 2,
+      "miss_false_neg": 72,
+      "ring_error": 4,
+      "miss_false_pos": 1
+    }
+  },
+  "unavailable_metrics": {
+    "shaft_length_px": "requires raw barrel mask not in replay data",
+    "fragmentation_count": "same",
+    "largest_component_fraction": "same",
+    "mean_thickness_px": "same"
+  }
+}

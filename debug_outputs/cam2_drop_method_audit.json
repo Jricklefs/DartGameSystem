@@ -1,0 +1,131 @@
+{
+  "total_darts": 1073,
+  "cam2_dropped_count": 376,
+  "cam2_dropped_pct": 35.0,
+  "drop_reason": "residual_outlier (only reason in current code)",
+  "drop_by_error_category": {
+    "correct": 331,
+    "adjacent_seg": 19,
+    "ring_error": 21,
+    "miss_false_pos": 3,
+    "miss_false_neg": 2
+  },
+  "barrel_method_histogram": {
+    "edge_pair": 531,
+    "barrel_fitline": 307,
+    "barrel_width_fit": 21,
+    "skeleton_hough_fallback": 59,
+    "barrel_ransac": 81,
+    "ridge_centerline": 24,
+    "none/missing": 17,
+    "centroid_constrained": 33
+  },
+  "method_performance": {
+    "edge_pair": {
+      "correct": 451,
+      "incorrect": 80,
+      "dropped": 92,
+      "categories": {
+        "correct": 451,
+        "adjacent_seg": 31,
+        "far_seg": 1,
+        "miss_false_neg": 26,
+        "ring_error": 20,
+        "miss_false_pos": 2
+      }
+    },
+    "barrel_fitline": {
+      "correct": 259,
+      "incorrect": 48,
+      "dropped": 202,
+      "categories": {
+        "correct": 259,
+        "adjacent_seg": 10,
+        "ring_error": 14,
+        "miss_false_neg": 21,
+        "miss_false_pos": 3
+      }
+    },
+    "barrel_width_fit": {
+      "correct": 16,
+      "incorrect": 5,
+      "dropped": 8,
+      "categories": {
+        "correct": 16,
+        "ring_error": 3,
+        "adjacent_seg": 1,
+        "miss_false_neg": 1
+      }
+    },
+    "skeleton_hough_fallback": {
+      "correct": 43,
+      "incorrect": 16,
+      "dropped": 34,
+      "categories": {
+        "adjacent_seg": 2,
+        "correct": 43,
+        "ring_error": 5,
+        "miss_false_neg": 7,
+        "miss_false_pos": 2
+      }
+    },
+    "barrel_ransac": {
+      "correct": 70,
+      "incorrect": 11,
+      "dropped": 14,
+      "categories": {
+        "ring_error": 4,
+        "miss_false_neg": 5,
+        "correct": 70,
+        "adjacent_seg": 2
+      }
+    },
+    "ridge_centerline": {
+      "correct": 22,
+      "incorrect": 2,
+      "dropped": 14,
+      "categories": {
+        "correct": 22,
+        "miss_false_neg": 1,
+        "ring_error": 1
+      }
+    },
+    "none/missing": {
+      "correct": 3,
+      "incorrect": 14,
+      "dropped": 0,
+      "categories": {
+        "miss_false_neg": 5,
+        "correct": 3,
+        "ring_error": 5,
+        "adjacent_seg": 2,
+        "far_seg": 2
+      }
+    },
+    "centroid_constrained": {
+      "correct": 16,
+      "incorrect": 17,
+      "dropped": 12,
+      "categories": {
+        "correct": 16,
+        "miss_false_neg": 13,
+        "miss_false_pos": 1,
+        "far_seg": 1,
+        "adjacent_seg": 2
+      }
+    }
+  },
+  "bad_path_analysis": {
+    "incorrect_cam2_used": 148,
+    "by_barrel_method": {
+      "edge_pair": 67,
+      "barrel_ransac": 10,
+      "none": 14,
+      "barrel_width_fit": 5,
+      "ridge_centerline": 1,
+      "centroid_constrained": 15,
+      "barrel_fitline": 26,
+      "skeleton_hough_fallback": 10
+    }
+  }
+}

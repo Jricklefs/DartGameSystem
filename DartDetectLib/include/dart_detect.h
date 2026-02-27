@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DartDetectLib - Native C++ dart detection library
  * 
  * Ported from Python DartDetect (skeleton_detection.py + routes.py)
@@ -87,6 +87,14 @@ DD_API void dd_free_string(const char* str);
  * Get library version string.
  */
 DD_API const char* dd_version(void);
+
+/**
+ * Set a feature flag by name.
+ * @param flag_name  Name of the flag (e.g. "UseRidgeCenterlineBarrel")
+ * @param value      1 = ON, 0 = OFF
+ * @return 0 on success, -1 if unknown flag
+ */
+DD_API int dd_set_flag(const char* flag_name, int value);
 
 
 /**
