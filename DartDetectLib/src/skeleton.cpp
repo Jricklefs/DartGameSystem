@@ -152,7 +152,8 @@ static bool g_use_phase9_flight_exclusion = true;  // UseFlightExclusionForBarre
 // === FEATURE FLAGS: Phase 9B Dual-Path Arbitration ===
 static bool g_use_dual_path_arbitration = false;  // UseDualPathBarrelArbitration
 static bool g_dual_path_cam2_only = true;          // DualPathArbitrationCam2Only
-static bool g_dual_path_allow_ridge_on_clean = false; // DualPathAllowRidgeOnClean
+static bool g_dual_path_allow_ridge_on_clean = false;
+bool g_use_iqdl = false;  // Phase 17: UseIQDL (non-static for extern access) // DualPathAllowRidgeOnClean
 static thread_local bool g_dual_path_active_for_this_cam = false; // Set by dart_detect.cpp per camera
 
 // Phase 9B: Ridge candidate storage (per detect_dart call)
@@ -181,6 +182,7 @@ struct RidgeCandidate {
 // dd_set_flag implementation (called from dart_detect.cpp)
 int set_skeleton_flag(const char* name, int value) {
     std::string s(name);
+    if (s == "UseIQDL") { g_use_iqdl = (value != 0); return 0; }
     if (s == "UseRidgeCenterlineBarrel") { g_use_phase9_ridge = (value != 0); return 0; }
     if (s == "UseDualPathBarrelArbitration") { g_use_dual_path_arbitration = (value != 0); return 0; }
     if (s == "DualPathArbitrationCam2Only") { g_dual_path_cam2_only = (value != 0); return 0; }
@@ -491,6 +493,7 @@ DetectionResult detect_dart(
     }
     result.mask_quality = std::max(0.1, result.mask_quality);
     
+
     // Step 4: Barrel-centric line detection
     std::optional<PcaLine> pca_line;
     std::optional<Point2f> flight_centroid;

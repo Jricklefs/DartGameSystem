@@ -16,6 +16,7 @@ add_library(DartDetectLib SHARED
     src/scoring.cpp
     src/triangulation.cpp
     src/mask.cpp
+    src/iqdl.cpp
 )
 
 target_include_directories(DartDetectLib PUBLIC

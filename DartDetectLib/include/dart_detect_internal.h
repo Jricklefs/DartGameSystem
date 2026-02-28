@@ -394,4 +394,53 @@ std::optional<IntersectionResult> triangulate_pca(
     const std::map<std::string, CameraCalibration>& calibrations
 );
 
+
+// ============================================================================
+// Module: iqdl.h - Phase 17: IQDL Enhanced Tip Detection
+// ============================================================================
+
+struct IqdlResult {
+    bool valid = false;
+    bool fallback = true;
+    
+    Point2f tip_px;            // integer tip
+    Point2f tip_px_subpixel;   // subpixel tip
+    double W_i = 0.0;         // confidence weight
+    double Q = 0.0;           // quality score
+    
+    // Shaft axis
+    double shaft_vx = 0, shaft_vy = 0;
+    double shaft_x0 = 0, shaft_y0 = 0;
+    int inlier_count = 0;
+    double axis_length = 0;
+    
+    // Quality metrics
+    double sharpness = 0;
+    double edge_energy = 0;
+    int dart_area = 0;
+    int blob_count = 0;
+    
+    // For triangulation
+    std::optional<PcaLine> pca_line;
+};
+
+IqdlResult run_iqdl(
+    const cv::Mat& current_frame,
+    const cv::Mat& previous_frame,
+    const cv::Mat& motion_mask,
+    Point2f board_center,
+    double resolution_scale = 1.0
+);
+
+
+IqdlResult iqdl_refine_tip(
+    const cv::Mat& current_frame,
+    const cv::Mat& previous_frame,
+    const cv::Mat& motion_mask,
+    Point2f board_center,
+    Point2f legacy_tip,
+    const std::optional<PcaLine>& legacy_line,
+    double resolution_scale = 1.0
+);
+
 #endif /* DART_DETECT_INTERNAL_H */

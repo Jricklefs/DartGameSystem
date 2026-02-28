@@ -397,6 +397,36 @@ DD_API const char* dd_detect(
                 DetectionResult det = detect_dart(
                     current, before, detect_center, prev_masks, 30, res_scale);
 
+                // Phase 17: IQDL subpixel refinement (before ROI transform)
+                extern bool g_use_iqdl;
+                if (det.tip && g_use_iqdl) {
+                    try {
+                        cv::Mat iqdl_mask = det.motion_mask;
+                        if (iqdl_mask.empty() || 
+                            iqdl_mask.rows != current.rows || 
+                            iqdl_mask.cols != current.cols) {
+                            iqdl_mask = cv::Mat::ones(current.rows, current.cols, CV_8U) * 255;
+                        }
+                        
+                        IqdlResult iqdl = iqdl_refine_tip(
+                            current, before, iqdl_mask, detect_center,
+                            *det.tip, det.pca_line, res_scale);
+                        
+                        if (iqdl.valid && !iqdl.fallback) {
+                            if (iqdl.tip_px_subpixel.x >= 0 && 
+                                iqdl.tip_px_subpixel.x < current.cols &&
+                                iqdl.tip_px_subpixel.y >= 0 && 
+                                iqdl.tip_px_subpixel.y < current.rows) {
+                                det.tip = iqdl.tip_px_subpixel;
+                                det.method = det.method + "+iqdl";
+                                det.confidence = std::min(1.0, det.confidence * 1.05);
+                            }
+                        }
+                    } catch (...) {
+                        // IQDL failed silently, keep legacy
+                    }
+                }
+
 #ifdef ENABLE_ROI_CROP
                 // Transform tip back to full-image space
                 if (det.tip && task.cal.outer_double_ellipse) {
@@ -420,6 +450,8 @@ DD_API const char* dd_detect(
                 }
 #endif
 
+
+                
                 if (det.tip) {
                     return CameraResult{task.cam_id, det, task.cal};
                 }
