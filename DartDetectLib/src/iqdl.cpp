@@ -304,7 +304,8 @@ IqdlResult run_iqdl(
     const cv::Mat& previous_frame,
     const cv::Mat& motion_mask,
     Point2f board_center,
-    double resolution_scale)
+    double resolution_scale,
+    const cv::Mat& bbms_diff)
 {
     IqdlResult res;
     res.valid = false;
@@ -328,7 +329,11 @@ IqdlResult run_iqdl(
     // Step 3: Dart-Only Differential Cleanup
     // ---------------------------------------------------------------
     cv::Mat diff;
-    cv::absdiff(gray_curr, gray_prev, diff);
+    if (!bbms_diff.empty()) {
+        diff = bbms_diff.clone();
+    } else {
+        cv::absdiff(gray_curr, gray_prev, diff);
+    }
     
     // Gaussian blur
     int ksize = (int)(IQDL_GAUSS_BLUR_SIGMA * 6) | 1;
@@ -494,10 +499,11 @@ IqdlResult iqdl_refine_tip(
     Point2f board_center,
     Point2f legacy_tip,
     const std::optional<PcaLine>& legacy_line,
-    double resolution_scale)
+    double resolution_scale,
+    const cv::Mat& bbms_diff)
 {
     IqdlResult res = run_iqdl(current_frame, previous_frame, motion_mask, 
-                               board_center, resolution_scale);
+                               board_center, resolution_scale, bbms_diff);
     
     if (!res.valid || res.fallback) {
         // IQDL couldn't find a good shaft - return invalid, keep legacy

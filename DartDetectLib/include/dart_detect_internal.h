@@ -429,7 +429,8 @@ IqdlResult run_iqdl(
     const cv::Mat& previous_frame,
     const cv::Mat& motion_mask,
     Point2f board_center,
-    double resolution_scale = 1.0
+    double resolution_scale = 1.0,
+    const cv::Mat& bbms_diff = cv::Mat()
 );
 
 
@@ -440,7 +441,42 @@ IqdlResult iqdl_refine_tip(
     Point2f board_center,
     Point2f legacy_tip,
     const std::optional<PcaLine>& legacy_line,
-    double resolution_scale = 1.0
+    double resolution_scale = 1.0,
+    const cv::Mat& bbms_diff = cv::Mat()
 );
+
+
+
+// ============================================================================
+// Module: bbms.h - Phase 21: Board Background Model Subtraction
+// ============================================================================
+
+struct BbmsResult {
+    bool bbms_used = false;
+    bool bbms_bg_ready = false;
+    bool fallback_to_legacy_diff = true;
+    int bg_buffer_count = 0;
+    double illumination_ratio_mean = 1.0;
+    double illumination_ratio_min = 1.0;
+    double illumination_ratio_max = 1.0;
+    int blob_count = 0;
+    int dart_area = 0;
+    double edge_energy = 0.0;
+    cv::Mat D_bbms;      // dart-only differential (grayscale)
+    cv::Mat mask_bbms;   // binary debug mask
+};
+
+int set_bbms_flag(const char* name, int value);
+bool bbms_is_enabled();
+
+BbmsResult run_bbms(
+    const std::string& cam_id,
+    const cv::Mat& current_frame,
+    const cv::Mat& background_frame,
+    const cv::Mat& motion_mask);
+
+void bbms_update_background(const std::string& cam_id, const cv::Mat& empty_board_frame);
+void bbms_clear_model(const std::string& cam_id);
+void bbms_clear_all_models();
 
 #endif /* DART_DETECT_INTERNAL_H */

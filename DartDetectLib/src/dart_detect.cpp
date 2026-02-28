@@ -397,6 +397,26 @@ DD_API const char* dd_detect(
                 DetectionResult det = detect_dart(
                     current, before, detect_center, prev_masks, 30, res_scale);
 
+                // Phase 21: BBMS preprocessing
+                cv::Mat bbms_diff_for_iqdl;
+                BbmsResult bbms_res;
+                if (det.tip && bbms_is_enabled()) {
+                    try {
+                        cv::Mat bbms_mask = det.motion_mask;
+                        if (bbms_mask.empty() ||
+                            bbms_mask.rows != current.rows ||
+                            bbms_mask.cols != current.cols) {
+                            bbms_mask = cv::Mat::ones(current.rows, current.cols, CV_8U) * 255;
+                        }
+                        bbms_res = run_bbms(task.cam_id, current, before, bbms_mask);
+                        if (bbms_res.bbms_used && !bbms_res.D_bbms.empty()) {
+                            bbms_diff_for_iqdl = bbms_res.D_bbms;
+                        }
+                    } catch (...) {
+                        // BBMS failed, fall back to legacy
+                    }
+                }
+
                 // Phase 17: IQDL subpixel refinement (before ROI transform)
                 extern bool g_use_iqdl;
                 if (det.tip && g_use_iqdl) {
@@ -410,7 +430,7 @@ DD_API const char* dd_detect(
                         
                         IqdlResult iqdl = iqdl_refine_tip(
                             current, before, iqdl_mask, detect_center,
-                            *det.tip, det.pca_line, res_scale);
+                            *det.tip, det.pca_line, res_scale, bbms_diff_for_iqdl);
                         
                         if (iqdl.valid && !iqdl.fallback) {
                             if (iqdl.tip_px_subpixel.x >= 0 && 
@@ -761,6 +781,7 @@ DD_API void dd_clear_board(const char* board_id)
     std::lock_guard<std::mutex> lock(g_mutex);
     std::string bid(board_id ? board_id : "default");
     g_board_caches.erase(bid);
+    bbms_clear_all_models();
 }
 
 DD_API void dd_free_string(const char* str)
@@ -776,7 +797,9 @@ DD_API int dd_set_flag(const char* flag_name, int value)
     if (!flag_name) return -1;
     int r = set_skeleton_flag(flag_name, value);
     if (r == 0) return 0;
-    return set_triangulation_flag(flag_name, value);
+    r = set_triangulation_flag(flag_name, value);
+    if (r == 0) return 0;
+    return set_bbms_flag(flag_name, value);
 }
 
 DD_API const char* dd_version(void)
