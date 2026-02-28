@@ -153,7 +153,7 @@ static bool g_use_phase9_flight_exclusion = true;  // UseFlightExclusionForBarre
 static bool g_use_dual_path_arbitration = false;  // UseDualPathBarrelArbitration
 static bool g_dual_path_cam2_only = true;          // DualPathArbitrationCam2Only
 static bool g_dual_path_allow_ridge_on_clean = false;
-bool g_use_iqdl = false;  // Phase 17: UseIQDL (non-static for extern access) // DualPathAllowRidgeOnClean
+bool g_use_iqdl = true;  // Phase 17: UseIQDL (non-static for extern access) // DualPathAllowRidgeOnClean
 static thread_local bool g_dual_path_active_for_this_cam = false; // Set by dart_detect.cpp per camera
 
 // Phase 9B: Ridge candidate storage (per detect_dart call)
