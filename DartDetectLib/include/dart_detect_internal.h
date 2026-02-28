@@ -443,4 +443,45 @@ IqdlResult iqdl_refine_tip(
     double resolution_scale = 1.0
 );
 
+
+// ============================================================================
+// Module: mfr.h - Phase 19: Miss False-Negative Recovery
+// ============================================================================
+
+struct MfrCameraEvidence {
+    std::string cam_id;
+    double Q = 0.0;
+    int axis_inliers = 0;
+    double axis_length_px = 0.0;
+    bool fallback_used = true;
+    double reprojection_error = -1.0;
+    double theta_deg = 0.0;
+    bool is_strong = false;
+};
+
+struct MfrResult {
+    bool baseline_is_miss = false;
+    int strong_cameras_count = 0;
+    std::string strong_camera_ids;
+    double theta_spread_deg_strong = 0.0;
+    double x_mfr_x = 0.0, x_mfr_y = 0.0;
+    double x_mfr_clamped_x = 0.0, x_mfr_clamped_y = 0.0;
+    double residual_mfr = 0.0;
+    double residual_ratio = 0.0;
+    double ring_boundary_distance = -1.0;
+    bool miss_override_applied = false;
+    std::string miss_override_reason;
+    int final_segment = 0;
+    int final_multiplier = 0;
+    int final_score = 0;
+    std::optional<IntersectionResult> override_result;
+};
+
+MfrResult run_mfr(
+    const std::map<std::string, DetectionResult>& camera_results,
+    const std::map<std::string, CameraCalibration>& calibrations,
+    const std::map<std::string, IqdlResult>& iqdl_results,
+    const IntersectionResult* baseline_result
+);
+
 #endif /* DART_DETECT_INTERNAL_H */

@@ -1,0 +1,48 @@
+{
+  "phase": "Phase 19 - MFR (Miss False-Negative Recovery)",
+  "timestamp": "2026-02-28T12:15:40.899856",
+  "branch": "phase19-miss-fn-recovery",
+  "flags": {
+    "UseIQDL": 1,
+    "UseBarrelConfidenceWeightedTriangulation": 1,
+    "UseBCWTRadialStabilityClamp": 1
+  },
+  "baseline": {
+    "UseMFR": 0,
+    "totalDarts": 1163,
+    "correct": 897,
+    "accuracyPct": 77.1,
+    "error_categories": {
+      "adjacent_seg": 42,
+      "far_seg": 14,
+      "ring_error": 30,
+      "miss_false_neg": 90
+    },
+    "elapsedMs": 63556
+  },
+  "variant": {
+    "UseMFR": 1,
+    "totalDarts": 1163,
+    "correct": 897,
+    "accuracyPct": 77.1,
+    "error_categories": {
+      "adjacent_seg": 42,
+      "far_seg": 14,
+      "ring_error": 30,
+      "miss_false_neg": 90
+    },
+    "elapsedMs": 62934
+  },
+  "delta": {
+    "accuracy_delta": 0.0,
+    "correct_delta": 0,
+    "miss_baseline_count": 90,
+    "miss_override_applied_count": 0,
+    "delta_miss_false_neg": 0,
+    "delta_ring_error": 0,
+    "delta_adjacent_seg": 0,
+    "delta_far_seg": 0,
+    "accuracy_delta_vs_dev4_phase17": 0.0
+  },
+  "analysis": "MFR had zero impact. 90 miss_false_neg errors exist but conservative thresholds prevent overrides. IQDL evidence may be insufficient for miss cases. Tuning needed."
+}

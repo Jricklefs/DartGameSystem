@@ -21,6 +21,8 @@
 
 // Forward declaration for skeleton.cpp flag setter
 extern int set_skeleton_flag(const char* name, int value);
+// Forward declaration for mfr.cpp flag setter
+extern int set_mfr_flag(const char* name, int value);
 
 // ============================================================================
 // Global State
@@ -309,6 +311,7 @@ DD_API const char* dd_detect(
         std::string cam_id;
         DetectionResult det;
         CameraCalibration cal;
+        IqdlResult iqdl;  // Phase 19: stored for MFR
     };
     std::vector<std::future<std::optional<CameraResult>>> futures;
     for (const auto& task : tasks) {
@@ -398,6 +401,7 @@ DD_API const char* dd_detect(
                     current, before, detect_center, prev_masks, 30, res_scale);
 
                 // Phase 17: IQDL subpixel refinement (before ROI transform)
+                IqdlResult iqdl_stored;  // Phase 19: persist for MFR
                 extern bool g_use_iqdl;
                 if (det.tip && g_use_iqdl) {
                     try {
@@ -411,6 +415,7 @@ DD_API const char* dd_detect(
                         IqdlResult iqdl = iqdl_refine_tip(
                             current, before, iqdl_mask, detect_center,
                             *det.tip, det.pca_line, res_scale);
+                        iqdl_stored = iqdl;  // Phase 19: store for MFR
                         
                         if (iqdl.valid && !iqdl.fallback) {
                             if (iqdl.tip_px_subpixel.x >= 0 && 
@@ -453,7 +458,7 @@ DD_API const char* dd_detect(
 
                 
                 if (det.tip) {
-                    return CameraResult{task.cam_id, det, task.cal};
+                    return CameraResult{task.cam_id, det, task.cal, iqdl_stored};
                 }
                 return std::nullopt;
             }));
@@ -461,11 +466,13 @@ DD_API const char* dd_detect(
 
     std::map<std::string, DetectionResult> camera_results;
     std::map<std::string, CameraCalibration> active_cals;
+    std::map<std::string, IqdlResult> iqdl_results;  // Phase 19: for MFR
     for (auto& f : futures) {
         auto result = f.get();
         if (result) {
             camera_results[result->cam_id] = result->det;
             active_cals[result->cam_id] = result->cal;
+            iqdl_results[result->cam_id] = result->iqdl;  // Phase 19
         }
     }
     
@@ -481,6 +488,23 @@ DD_API const char* dd_detect(
     
     if (camera_results.size() >= 2) {
         auto tri = triangulate_with_line_intersection(camera_results, active_cals);
+        
+        // Phase 19: MFR - attempt recovery if baseline is a MISS
+        MfrResult mfr_result;
+        bool mfr_attempted = false;
+        if (tri && tri->segment == 0) {
+            mfr_result = run_mfr(camera_results, active_cals, iqdl_results, &*tri);
+            mfr_attempted = true;
+            if (mfr_result.miss_override_applied && mfr_result.override_result) {
+                tri = mfr_result.override_result;
+            }
+        } else if (!tri) {
+            mfr_result = run_mfr(camera_results, active_cals, iqdl_results, nullptr);
+            mfr_attempted = true;
+            if (mfr_result.miss_override_applied && mfr_result.override_result) {
+                tri = mfr_result.override_result;
+            }
+        }
         
         if (tri) {
             json << json_int("segment", tri->segment) << ","
@@ -623,6 +647,28 @@ DD_API const char* dd_detect(
                     first_cd = false;
                 }
                 json << "}}";
+            }
+
+            // Phase 19: MFR export
+            if (mfr_attempted) {
+                json << ",\"mfr\":{"
+                     << "\"baseline_is_miss\":" << (mfr_result.baseline_is_miss ? "true" : "false")
+                     << ",\"strong_cameras_count\":" << mfr_result.strong_cameras_count
+                     << ",\"strong_camera_ids\":\"" << mfr_result.strong_camera_ids << "\""
+                     << ",\"theta_spread_deg_strong\":" << mfr_result.theta_spread_deg_strong
+                     << ",\"x_mfr_x\":" << mfr_result.x_mfr_x
+                     << ",\"x_mfr_y\":" << mfr_result.x_mfr_y
+                     << ",\"x_mfr_clamped_x\":" << mfr_result.x_mfr_clamped_x
+                     << ",\"x_mfr_clamped_y\":" << mfr_result.x_mfr_clamped_y
+                     << ",\"residual_mfr\":" << mfr_result.residual_mfr
+                     << ",\"residual_ratio\":" << mfr_result.residual_ratio
+                     << ",\"ring_boundary_distance\":" << mfr_result.ring_boundary_distance
+                     << ",\"miss_override_applied\":" << (mfr_result.miss_override_applied ? "true" : "false")
+                     << ",\"miss_override_reason\":\"" << mfr_result.miss_override_reason << "\""
+                     << ",\"final_segment\":" << mfr_result.final_segment
+                     << ",\"final_multiplier\":" << mfr_result.final_multiplier
+                     << ",\"final_score\":" << mfr_result.final_score
+                     << "}";
             }
 
             // === PCA DUAL PIPELINE ===
@@ -776,7 +822,9 @@ DD_API int dd_set_flag(const char* flag_name, int value)
     if (!flag_name) return -1;
     int r = set_skeleton_flag(flag_name, value);
     if (r == 0) return 0;
-    return set_triangulation_flag(flag_name, value);
+    r = set_triangulation_flag(flag_name, value);
+    if (r == 0) return 0;
+    return set_mfr_flag(flag_name, value);
 }
 
 DD_API const char* dd_version(void)

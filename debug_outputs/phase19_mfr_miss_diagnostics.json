@@ -1,0 +1,911 @@
+{
+  "phase": "Phase 19 MFR",
+  "timestamp": "2026-02-28T12:15:40.902214",
+  "summary": {
+    "baseline_miss_false_neg": 90,
+    "variant_miss_false_neg": 90,
+    "mfr_overrides_applied": 0
+  },
+  "miss_false_neg_errors": [
+    {
+      "gameId": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round": "round_4_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 14,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round": "round_5_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round": "round_5_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 20,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round": "round_8_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 7,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round": "round_1_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 11,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round": "round_21_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round": "round_30_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 1,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round": "round_9_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 6,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round": "round_3_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round": "round_4_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 11,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round": "round_7_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 7,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round": "round_11_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 4,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round": "round_2_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 5,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "6da749d1-b908-425f-9c47-b77a99682969",
+      "round": "round_3_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round": "round_8_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 11,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+      "round": "round_9_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 7,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+      "round": "round_11_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 19,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+      "round": "round_12_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 11,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+      "round": "round_4_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+      "round": "round_5_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 8,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_11_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 7,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_11_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 19,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_15_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_15_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_18_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 19,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_19_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 19,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_20_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 15,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_2_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 8,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_2_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 14,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_4_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 11,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_5_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 11,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_5_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 14,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round": "round_9_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 11,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round": "round_11_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 15,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round": "round_17_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 7,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round": "round_21_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 10,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round": "round_23_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 14,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round": "round_2_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 19,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round": "round_3_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 20,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round": "round_4_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round": "round_9_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+      "round": "round_2_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 3,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round": "round_12_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 1,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round": "round_4_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 18,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round": "round_5_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round": "round_7_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round": "round_8_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 11,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round": "round_8_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round": "round_18_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 14,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round": "round_1_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 1,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round": "round_10_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round": "round_12_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 20,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round": "round_7_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round": "round_10_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round": "round_19_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 25,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round": "round_21_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 20,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round": "round_25_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 11,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round": "round_5_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round": "round_6_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round": "round_10_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 20,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round": "round_10_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 1,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round": "round_15_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round": "round_15_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round": "round_16_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round": "round_5_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 8,
+      "expectedMultiplier": 2,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round": "round_7_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 20,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round": "round_17_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 20,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_10_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 20,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_10_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 1,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_15_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_15_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 9,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_16_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 14,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_16_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 14,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_17_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 14,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_18_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_19_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_20_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 14,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_20_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 0,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_21_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 12,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_23_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 1,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_24_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 20,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_25_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 5,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_26_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 3,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_27_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 3,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_28_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 12,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_4_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 14,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_4_Player 1",
+      "dart": "dart_3",
+      "expectedSegment": 11,
+      "expectedMultiplier": 3,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_5_Player 1",
+      "dart": "dart_1",
+      "expectedSegment": 16,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_5_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 11,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    },
+    {
+      "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round": "round_9_Player 1",
+      "dart": "dart_2",
+      "expectedSegment": 14,
+      "expectedMultiplier": 1,
+      "detectedSegment": 0,
+      "detectedMultiplier": 0,
+      "category": "miss_false_neg"
+    }
+  ]
+}

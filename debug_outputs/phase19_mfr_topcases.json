@@ -1,0 +1,708 @@
+{
+  "phase": "Phase 19 MFR",
+  "count": 78,
+  "cases": [
+    {
+      "round": "round_6_Player 1",
+      "dart": "dart_1",
+      "truth": "25x1",
+      "detected": "0x1",
+      "method": "BCWT",
+      "confidence": 0.5,
+      "camera_count": 3
+    },
+    {
+      "round": "round_4_Player 1",
+      "dart": "dart_2",
+      "truth": "14x2",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.529249,
+      "camera_count": 3
+    },
+    {
+      "round": "round_5_Player 1",
+      "dart": "dart_3",
+      "truth": "20x3",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.590125,
+      "camera_count": 3
+    },
+    {
+      "round": "round_8_Player 1",
+      "dart": "dart_1",
+      "truth": "7x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.555864,
+      "camera_count": 3
+    },
+    {
+      "round": "round_1_Player 1",
+      "dart": "dart_2",
+      "truth": "11x2",
+      "detected": "0x0",
+      "method": "SingleCam_pca_blob_chain+iqdl",
+      "confidence": 0.42,
+      "camera_count": 0
+    },
+    {
+      "round": "round_30_Player 1",
+      "dart": "dart_3",
+      "truth": "1x1",
+      "detected": "0x0",
+      "method": "SingleCam_pca_blob_chain",
+      "confidence": 0.4,
+      "camera_count": 0
+    },
+    {
+      "round": "round_9_Player 1",
+      "dart": "dart_3",
+      "truth": "6x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.640889,
+      "camera_count": 3
+    },
+    {
+      "round": "round_3_Player 1",
+      "dart": "dart_1",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.198523,
+      "camera_count": 3
+    },
+    {
+      "round": "round_4_Player 1",
+      "dart": "dart_3",
+      "truth": "11x3",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.62511,
+      "camera_count": 3
+    },
+    {
+      "round": "round_7_Player 1",
+      "dart": "dart_2",
+      "truth": "7x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.669127,
+      "camera_count": 3
+    },
+    {
+      "round": "round_11_Player 1",
+      "dart": "dart_1",
+      "truth": "4x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.228966,
+      "camera_count": 3
+    },
+    {
+      "round": "round_2_Player 1",
+      "dart": "dart_3",
+      "truth": "5x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.419512,
+      "camera_count": 3
+    },
+    {
+      "round": "round_3_Player 1",
+      "dart": "dart_3",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.275652,
+      "camera_count": 3
+    },
+    {
+      "round": "round_8_Player 1",
+      "dart": "dart_3",
+      "truth": "11x2",
+      "detected": "0x0",
+      "method": "SingleCam_pca_blob_chain",
+      "confidence": 0.4,
+      "camera_count": 0
+    },
+    {
+      "round": "round_9_Player 1",
+      "dart": "dart_3",
+      "truth": "7x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.678767,
+      "camera_count": 3
+    },
+    {
+      "round": "round_11_Player 1",
+      "dart": "dart_1",
+      "truth": "19x2",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.670848,
+      "camera_count": 3
+    },
+    {
+      "round": "round_12_Player 1",
+      "dart": "dart_2",
+      "truth": "11x2",
+      "detected": "0x0",
+      "method": "SingleCam_pca_blob_chain",
+      "confidence": 0.4,
+      "camera_count": 0
+    },
+    {
+      "round": "round_5_Player 1",
+      "dart": "dart_1",
+      "truth": "8x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.413671,
+      "camera_count": 3
+    },
+    {
+      "round": "round_11_Player 1",
+      "dart": "dart_1",
+      "truth": "7x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.625355,
+      "camera_count": 3
+    },
+    {
+      "round": "round_11_Player 1",
+      "dart": "dart_3",
+      "truth": "19x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.388403,
+      "camera_count": 3
+    },
+    {
+      "round": "round_15_Player 1",
+      "dart": "dart_1",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.274492,
+      "camera_count": 3
+    },
+    {
+      "round": "round_15_Player 1",
+      "dart": "dart_3",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.264935,
+      "camera_count": 3
+    },
+    {
+      "round": "round_18_Player 1",
+      "dart": "dart_3",
+      "truth": "19x3",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.774513,
+      "camera_count": 3
+    },
+    {
+      "round": "round_19_Player 1",
+      "dart": "dart_1",
+      "truth": "19x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.616595,
+      "camera_count": 3
+    },
+    {
+      "round": "round_20_Player 1",
+      "dart": "dart_3",
+      "truth": "15x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.56826,
+      "camera_count": 3
+    },
+    {
+      "round": "round_2_Player 1",
+      "dart": "dart_1",
+      "truth": "8x3",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.481264,
+      "camera_count": 3
+    },
+    {
+      "round": "round_2_Player 1",
+      "dart": "dart_2",
+      "truth": "14x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.572925,
+      "camera_count": 3
+    },
+    {
+      "round": "round_4_Player 1",
+      "dart": "dart_2",
+      "truth": "11x2",
+      "detected": "0x0",
+      "method": "MissOverride_IxDist",
+      "confidence": 0.7,
+      "camera_count": 2
+    },
+    {
+      "round": "round_5_Player 1",
+      "dart": "dart_2",
+      "truth": "11x2",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.144504,
+      "camera_count": 3
+    },
+    {
+      "round": "round_5_Player 1",
+      "dart": "dart_3",
+      "truth": "14x2",
+      "detected": "0x0",
+      "method": "MissOverride_RadiusHard",
+      "confidence": 0,
+      "camera_count": 3
+    },
+    {
+      "round": "round_9_Player 1",
+      "dart": "dart_1",
+      "truth": "11x3",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.409902,
+      "camera_count": 3
+    },
+    {
+      "round": "round_11_Player 1",
+      "dart": "dart_1",
+      "truth": "15x2",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.140249,
+      "camera_count": 3
+    },
+    {
+      "round": "round_17_Player 1",
+      "dart": "dart_2",
+      "truth": "7x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.640232,
+      "camera_count": 3
+    },
+    {
+      "round": "round_21_Player 1",
+      "dart": "dart_3",
+      "truth": "10x2",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.647373,
+      "camera_count": 3
+    },
+    {
+      "round": "round_23_Player 1",
+      "dart": "dart_1",
+      "truth": "14x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.585459,
+      "camera_count": 3
+    },
+    {
+      "round": "round_2_Player 1",
+      "dart": "dart_1",
+      "truth": "19x2",
+      "detected": "0x0",
+      "method": "MissOverride_IxDist",
+      "confidence": 0.7,
+      "camera_count": 3
+    },
+    {
+      "round": "round_3_Player 1",
+      "dart": "dart_1",
+      "truth": "20x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.615945,
+      "camera_count": 3
+    },
+    {
+      "round": "round_4_Player 1",
+      "dart": "dart_3",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.310199,
+      "camera_count": 3
+    },
+    {
+      "round": "round_2_Player 1",
+      "dart": "dart_1",
+      "truth": "3x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.494167,
+      "camera_count": 3
+    },
+    {
+      "round": "round_12_Player 1",
+      "dart": "dart_2",
+      "truth": "1x3",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.632834,
+      "camera_count": 3
+    },
+    {
+      "round": "round_4_Player 1",
+      "dart": "dart_3",
+      "truth": "18x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.612991,
+      "camera_count": 3
+    },
+    {
+      "round": "round_7_Player 1",
+      "dart": "dart_2",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.501456,
+      "camera_count": 3
+    },
+    {
+      "round": "round_8_Player 1",
+      "dart": "dart_1",
+      "truth": "11x3",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.259665,
+      "camera_count": 3
+    },
+    {
+      "round": "round_8_Player 1",
+      "dart": "dart_2",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.623366,
+      "camera_count": 3
+    },
+    {
+      "round": "round_18_Player 1",
+      "dart": "dart_2",
+      "truth": "14x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.290836,
+      "camera_count": 3
+    },
+    {
+      "round": "round_1_Player 1",
+      "dart": "dart_2",
+      "truth": "1x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.378259,
+      "camera_count": 3
+    },
+    {
+      "round": "round_10_Player 1",
+      "dart": "dart_1",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_AllCams",
+      "confidence": 0.7,
+      "camera_count": 2
+    },
+    {
+      "round": "round_12_Player 1",
+      "dart": "dart_3",
+      "truth": "20x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.602918,
+      "camera_count": 3
+    },
+    {
+      "round": "round_19_Player 1",
+      "dart": "dart_1",
+      "truth": "25x2",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.676786,
+      "camera_count": 3
+    },
+    {
+      "round": "round_21_Player 1",
+      "dart": "dart_2",
+      "truth": "20x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.66115,
+      "camera_count": 3
+    },
+    {
+      "round": "round_25_Player 1",
+      "dart": "dart_3",
+      "truth": "11x2",
+      "detected": "0x0",
+      "method": "SingleCam_pca_blob_chain",
+      "confidence": 0.4,
+      "camera_count": 0
+    },
+    {
+      "round": "round_6_Player 1",
+      "dart": "dart_2",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.332753,
+      "camera_count": 3
+    },
+    {
+      "round": "round_10_Player 1",
+      "dart": "dart_1",
+      "truth": "20x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.513489,
+      "camera_count": 3
+    },
+    {
+      "round": "round_10_Player 1",
+      "dart": "dart_3",
+      "truth": "1x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.591556,
+      "camera_count": 3
+    },
+    {
+      "round": "round_5_Player 1",
+      "dart": "dart_2",
+      "truth": "8x2",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.448233,
+      "camera_count": 3
+    },
+    {
+      "round": "round_7_Player 1",
+      "dart": "dart_3",
+      "truth": "20x3",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.578392,
+      "camera_count": 3
+    },
+    {
+      "round": "round_17_Player 1",
+      "dart": "dart_1",
+      "truth": "20x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.571519,
+      "camera_count": 3
+    },
+    {
+      "round": "round_10_Player 1",
+      "dart": "dart_1",
+      "truth": "20x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.437942,
+      "camera_count": 3
+    },
+    {
+      "round": "round_10_Player 1",
+      "dart": "dart_3",
+      "truth": "1x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.517437,
+      "camera_count": 3
+    },
+    {
+      "round": "round_15_Player 1",
+      "dart": "dart_1",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_IxDist",
+      "confidence": 0.7,
+      "camera_count": 3
+    },
+    {
+      "round": "round_15_Player 1",
+      "dart": "dart_2",
+      "truth": "9x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.638898,
+      "camera_count": 3
+    },
+    {
+      "round": "round_16_Player 1",
+      "dart": "dart_1",
+      "truth": "14x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.486766,
+      "camera_count": 3
+    },
+    {
+      "round": "round_16_Player 1",
+      "dart": "dart_3",
+      "truth": "14x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.508462,
+      "camera_count": 3
+    },
+    {
+      "round": "round_17_Player 1",
+      "dart": "dart_1",
+      "truth": "14x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.471556,
+      "camera_count": 3
+    },
+    {
+      "round": "round_19_Player 1",
+      "dart": "dart_3",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.371121,
+      "camera_count": 3
+    },
+    {
+      "round": "round_20_Player 1",
+      "dart": "dart_1",
+      "truth": "14x1",
+      "detected": "0x0",
+      "method": "MissOverride_IxDist",
+      "confidence": 0.7,
+      "camera_count": 3
+    },
+    {
+      "round": "round_21_Player 1",
+      "dart": "dart_1",
+      "truth": "12x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.280937,
+      "camera_count": 3
+    },
+    {
+      "round": "round_23_Player 1",
+      "dart": "dart_1",
+      "truth": "1x3",
+      "detected": "0x0",
+      "method": "MissOverride_RadiusHard",
+      "confidence": 0,
+      "camera_count": 3
+    },
+    {
+      "round": "round_24_Player 1",
+      "dart": "dart_1",
+      "truth": "20x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.357706,
+      "camera_count": 3
+    },
+    {
+      "round": "round_25_Player 1",
+      "dart": "dart_1",
+      "truth": "5x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.669348,
+      "camera_count": 3
+    },
+    {
+      "round": "round_26_Player 1",
+      "dart": "dart_1",
+      "truth": "3x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.501475,
+      "camera_count": 3
+    },
+    {
+      "round": "round_27_Player 1",
+      "dart": "dart_1",
+      "truth": "3x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.538005,
+      "camera_count": 3
+    },
+    {
+      "round": "round_28_Player 1",
+      "dart": "dart_1",
+      "truth": "12x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.595747,
+      "camera_count": 3
+    },
+    {
+      "round": "round_4_Player 1",
+      "dart": "dart_2",
+      "truth": "14x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.581225,
+      "camera_count": 3
+    },
+    {
+      "round": "round_4_Player 1",
+      "dart": "dart_3",
+      "truth": "11x3",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.491929,
+      "camera_count": 3
+    },
+    {
+      "round": "round_5_Player 1",
+      "dart": "dart_1",
+      "truth": "16x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.305697,
+      "camera_count": 3
+    },
+    {
+      "round": "round_5_Player 1",
+      "dart": "dart_2",
+      "truth": "11x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.115258,
+      "camera_count": 3
+    },
+    {
+      "round": "round_9_Player 1",
+      "dart": "dart_2",
+      "truth": "14x1",
+      "detected": "0x0",
+      "method": "MissOverride_Residual",
+      "confidence": 0.517949,
+      "camera_count": 3
+    }
+  ]
+}
