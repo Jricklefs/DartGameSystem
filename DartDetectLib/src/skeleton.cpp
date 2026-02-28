@@ -194,6 +194,8 @@ int set_skeleton_flag(const char* name, int value) {
     if (s == "UsePcaBarrelSplit") { g_use_pca_barrel_split = (value != 0); return 0; }
     if (s == "UseSkeletonTip") { g_use_skeleton_tip = (value != 0); return 0; }
     if (s == "UseCentroidConstraint") { g_use_centroid_constraint = (value != 0); return 0; }
+    // Phase 22: DEA flags
+    { extern int set_dea_flag(const char*, int); int r = set_dea_flag(name, value); if (r == 0) return 0; }
     return -1;
 }
 

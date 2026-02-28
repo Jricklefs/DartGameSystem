@@ -443,4 +443,24 @@ IqdlResult iqdl_refine_tip(
     double resolution_scale = 1.0
 );
 
+
+// ============================================================================
+// Module: dea - Phase 22: Directional Edge Amplification
+// ============================================================================
+
+struct DeaResult {
+    bool dea_used = false;
+    bool axis_pre_valid = false;
+    double mean_alignment = 0.0;
+    double linearity_mean = 0.0;
+    double energy_before = 0.0;
+    double energy_after = 0.0;
+    cv::Mat D_dea;
+};
+
+int set_dea_flag(const char* name, int value);
+bool dea_is_enabled();
+
+DeaResult run_dea(const cv::Mat& D_legacy, const cv::Mat& motion_mask);
+
 #endif /* DART_DETECT_INTERNAL_H */
