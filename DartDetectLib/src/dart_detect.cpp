@@ -543,6 +543,8 @@ DD_API const char* dd_detect(
                          << ",\"p9_tip_ahead_flight\":" << (det.tip_ahead_of_flight ? "true" : "false")
                          << ",\"p9_tip_swap\":" << (det.tip_swap_applied ? "true" : "false");
                 }
+                // Phase 20: DSA metrics
+                json << ",\"dsa_applied\":false";
                 json << "}";
                 first_det = false;
             }
@@ -759,6 +761,7 @@ DD_API void dd_init_board(const char* board_id)
 DD_API void dd_clear_board(const char* board_id)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
+    dsa_clear_history();
     std::string bid(board_id ? board_id : "default");
     g_board_caches.erase(bid);
 }
@@ -776,7 +779,9 @@ DD_API int dd_set_flag(const char* flag_name, int value)
     if (!flag_name) return -1;
     int r = set_skeleton_flag(flag_name, value);
     if (r == 0) return 0;
-    return set_triangulation_flag(flag_name, value);
+    r = set_triangulation_flag(flag_name, value);
+    if (r == 0) return 0;
+    return set_dsa_flag(flag_name, value);
 }
 
 DD_API const char* dd_version(void)

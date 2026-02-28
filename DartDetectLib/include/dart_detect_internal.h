@@ -443,4 +443,37 @@ IqdlResult iqdl_refine_tip(
     double resolution_scale = 1.0
 );
 
+
+
+// ============================================================================
+// Module: dsa.h - Phase 20: Detection Signal Amplification
+// ============================================================================
+
+struct DsaResult {
+    bool applied = false;
+    int barrel_pixel_count_before = 0;
+    int barrel_pixel_count_after = 0;
+    double inlier_ratio_before = 0.0;
+    double inlier_ratio_after = 0.0;
+    double axis_direction_delta_deg = 0.0;
+    double tip_shift_px = 0.0;
+    double Q_before = 0.0;
+    double Q_after = 0.0;
+    double axis_stability_score = 0.0;
+    double elongation_score = 0.0;
+    double tip_gradient_strength = 0.0;
+};
+
+int set_dsa_flag(const char* name, int value);
+bool dsa_is_enabled();
+void dsa_clear_history();
+DsaResult dsa_get_last_result();
+
+DsaResult run_dsa(
+    const std::string& cam_id,
+    const cv::Mat& current_frame,
+    const cv::Mat& previous_frame,
+    DetectionResult& det,
+    Point2f board_center);
+
 #endif /* DART_DETECT_INTERNAL_H */
