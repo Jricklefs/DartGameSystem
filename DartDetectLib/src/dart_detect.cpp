@@ -291,6 +291,7 @@ DD_API const char* dd_detect(
         std::string cam_id;
         int index;
         CameraCalibration cal;
+        IqdlResult iqdl;
     };
     std::vector<CameraTask> tasks;
     for (int i = 0; i < num_cameras && i < 3; ++i) {
@@ -309,6 +310,7 @@ DD_API const char* dd_detect(
         std::string cam_id;
         DetectionResult det;
         CameraCalibration cal;
+        IqdlResult iqdl;
     };
     std::vector<std::future<std::optional<CameraResult>>> futures;
     for (const auto& task : tasks) {
@@ -398,6 +400,7 @@ DD_API const char* dd_detect(
                     current, before, detect_center, prev_masks, 30, res_scale);
 
                 // Phase 17: IQDL subpixel refinement (before ROI transform)
+                IqdlResult iqdl_stored;  // Phase 19B: persist for SAP
                 extern bool g_use_iqdl;
                 if (det.tip && g_use_iqdl) {
                     try {
@@ -422,6 +425,7 @@ DD_API const char* dd_detect(
                                 det.confidence = std::min(1.0, det.confidence * 1.05);
                             }
                         }
+                        iqdl_stored = iqdl;
                     } catch (...) {
                         // IQDL failed silently, keep legacy
                     }
@@ -453,7 +457,7 @@ DD_API const char* dd_detect(
 
                 
                 if (det.tip) {
-                    return CameraResult{task.cam_id, det, task.cal};
+                    return CameraResult{task.cam_id, det, task.cal, iqdl_stored};
                 }
                 return std::nullopt;
             }));
@@ -461,11 +465,13 @@ DD_API const char* dd_detect(
 
     std::map<std::string, DetectionResult> camera_results;
     std::map<std::string, CameraCalibration> active_cals;
+    std::map<std::string, IqdlResult> iqdl_results;  // Phase 19B: for SAP
     for (auto& f : futures) {
         auto result = f.get();
         if (result) {
             camera_results[result->cam_id] = result->det;
             active_cals[result->cam_id] = result->cal;
+            iqdl_results[result->cam_id] = result->iqdl;  // Phase 19B
         }
     }
     
@@ -481,6 +487,23 @@ DD_API const char* dd_detect(
     
     if (camera_results.size() >= 2) {
         auto tri = triangulate_with_line_intersection(camera_results, active_cals);
+        
+        // Phase 19B: SAP - intercept MISS before finalizing
+        SapResult sap_result;
+        bool sap_attempted = false;
+        if (tri && tri->segment == 0) {
+            sap_result = run_sap(camera_results, active_cals, iqdl_results, &*tri);
+            sap_attempted = true;
+            if (sap_result.soft_accept_applied && sap_result.override_result) {
+                tri = sap_result.override_result;
+            }
+        } else if (!tri) {
+            sap_result = run_sap(camera_results, active_cals, iqdl_results, nullptr);
+            sap_attempted = true;
+            if (sap_result.soft_accept_applied && sap_result.override_result) {
+                tri = sap_result.override_result;
+            }
+        }
         
         if (tri) {
             json << json_int("segment", tri->segment) << ","
@@ -623,6 +646,25 @@ DD_API const char* dd_detect(
                     first_cd = false;
                 }
                 json << "}}";
+            }
+
+
+            // Phase 19B: SAP export
+            if (sap_attempted) {
+                json << ",\"sap\":{"
+                     << "\"baseline_would_miss\":" << (sap_result.baseline_would_miss ? "true" : "false")
+                     << ",\"relaxed_cam_count\":" << sap_result.relaxed_cam_count
+                     << ",\"relaxed_cam_ids\":\"" << sap_result.relaxed_cam_ids << "\""
+                     << ",\"theta_spread_relaxed\":" << sap_result.theta_spread_relaxed
+                     << ",\"residual_soft\":" << sap_result.residual_soft
+                     << ",\"board_containment_pass\":" << (sap_result.board_containment_pass ? "true" : "false")
+                     << ",\"angular_gate_pass\":" << (sap_result.angular_gate_pass ? "true" : "false")
+                     << ",\"residual_gate_pass\":" << (sap_result.residual_gate_pass ? "true" : "false")
+                     << ",\"soft_accept_applied\":" << (sap_result.soft_accept_applied ? "true" : "false")
+                     << ",\"final_segment\":" << sap_result.final_segment
+                     << ",\"final_multiplier\":" << sap_result.final_multiplier
+                     << ",\"final_score\":" << sap_result.final_score
+                     << "}";
             }
 
             // === PCA DUAL PIPELINE ===
@@ -770,13 +812,16 @@ DD_API void dd_free_string(const char* str)
 
 // Forward declaration for triangulation.cpp flag setter
 extern int set_triangulation_flag(const char* name, int value);
+extern int set_sap_flag(const char* name, int value);
 
 DD_API int dd_set_flag(const char* flag_name, int value)
 {
     if (!flag_name) return -1;
     int r = set_skeleton_flag(flag_name, value);
     if (r == 0) return 0;
-    return set_triangulation_flag(flag_name, value);
+    r = set_triangulation_flag(flag_name, value);
+    if (r == 0) return 0;
+    return set_sap_flag(flag_name, value);
 }
 
 DD_API const char* dd_version(void)

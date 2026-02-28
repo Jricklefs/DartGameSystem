@@ -443,4 +443,33 @@ IqdlResult iqdl_refine_tip(
     double resolution_scale = 1.0
 );
 
+
+// ============================================================================
+// Module: sap.h - Phase 19B: Soft Accept Prevention
+// ============================================================================
+
+struct SapResult {
+    bool baseline_would_miss = false;
+    int relaxed_cam_count = 0;
+    std::string relaxed_cam_ids;
+    double theta_spread_relaxed = 0.0;
+    double residual_soft = 0.0;
+    bool board_containment_pass = false;
+    bool angular_gate_pass = false;
+    bool residual_gate_pass = false;
+    bool soft_accept_applied = false;
+    int final_segment = 0;
+    int final_multiplier = 0;
+    int final_score = 0;
+    std::optional<IntersectionResult> override_result;
+};
+
+SapResult run_sap(
+    const std::map<std::string, DetectionResult>& camera_results,
+    const std::map<std::string, CameraCalibration>& calibrations,
+    const std::map<std::string, IqdlResult>& iqdl_results,
+    const IntersectionResult* baseline_result
+);
+
+
 #endif /* DART_DETECT_INTERNAL_H */
