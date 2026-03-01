@@ -1228,6 +1228,26 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         }
     }
 
+    // === Phase 24: AUP (Angular Uncertainty Propagation) ===
+    AupResult aup_result;
+    if (aup_is_enabled()) {
+        // Collect per-camera theta values from warped tip positions
+        std::vector<double> per_cam_thetas;
+        for (const auto& cid : cam_ids) {
+            const auto& cl = cam_lines[cid];
+            double t_rad = std::atan2(cl.tip_normalized.y, -cl.tip_normalized.x);
+            double t_deg = t_rad * 180.0 / CV_PI;
+            if (t_deg < 0) t_deg += 360.0;
+            t_deg = std::fmod(t_deg, 360.0);
+            per_cam_thetas.push_back(t_deg);
+        }
+        aup_result = run_aup(final_angle_deg, base_wedge_idx, per_cam_thetas);
+        if (aup_result.aup_applied && aup_result.wedge_final != base_wedge_idx) {
+            final_score.segment = SEGMENT_ORDER[aup_result.wedge_final];
+            final_score.score = final_score.segment * final_score.multiplier;
+        }
+    }
+
     // === Phase 7: Build debug struct ===
     IntersectionResult::TriangulationDebug tri_dbg;
     tri_dbg.angle_spread_deg = angle_spread;
@@ -1294,6 +1314,10 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     tri_dbg.x_preclamp_y = x_preclamp.y;
     tri_dbg.x_bestpair_x = x_bestpair_10b.x;
     tri_dbg.x_bestpair_y = x_bestpair_10b.y;
+    // Phase 24: AUP
+    if (aup_is_enabled()) {
+        tri_dbg.aup = aup_result;
+    }
 
     if (radial_clamp_applied) {
         result.method = radial_clamp_method;

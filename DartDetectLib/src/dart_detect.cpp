@@ -597,6 +597,24 @@ DD_API const char* dd_detect(
                      << ",\"x_preclamp_y\":" << td.x_preclamp_y
                      << ",\"x_bestpair_x\":" << td.x_bestpair_x
                      << ",\"x_bestpair_y\":" << td.x_bestpair_y;
+                // Phase 24: AUP debug
+                if (td.aup) {
+                    const auto& a = *td.aup;
+                    json << ",\"aup\":{"
+                         << "\"theta_final\":" << a.theta_final
+                         << ",\"sigma_theta_deg\":" << a.sigma_theta_deg
+                         << ",\"theta_spread_deg\":" << a.theta_spread_deg
+                         << ",\"boundary_distance_deg\":" << a.boundary_distance_deg
+                         << ",\"wedge_primary\":" << a.wedge_primary
+                         << ",\"wedge_final\":" << a.wedge_final
+                         << ",\"P_primary\":" << a.P_primary
+                         << ",\"P_left\":" << a.P_left
+                         << ",\"P_right\":" << a.P_right
+                         << ",\"prob_ratio\":" << a.prob_ratio
+                         << ",\"aup_applied\":" << (a.aup_applied ? "true" : "false")
+                         << ",\"method\":\"" << a.method << "\""
+                         << "}";
+                }
                 json << ",\"cam_debug\":{";
 
 
@@ -770,11 +788,14 @@ DD_API void dd_free_string(const char* str)
 
 // Forward declaration for triangulation.cpp flag setter
 extern int set_triangulation_flag(const char* name, int value);
+extern int set_aup_flag(const char* name, int value);
 
 DD_API int dd_set_flag(const char* flag_name, int value)
 {
     if (!flag_name) return -1;
     int r = set_skeleton_flag(flag_name, value);
+    if (r == 0) return 0;
+    r = set_aup_flag(flag_name, value);
     if (r == 0) return 0;
     return set_triangulation_flag(flag_name, value);
 }

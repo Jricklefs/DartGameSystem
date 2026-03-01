@@ -1,0 +1,11 @@
+{
+  "phase": "Phase 23 SGHF",
+  "summary": {
+    "total_games": 25,
+    "improved": 8,
+    "regressed": 7,
+    "neutral": 10,
+    "avg_delta_improved": 2.94,
+    "avg_delta_regressed": -5.36
+  }
+}

@@ -155,6 +155,29 @@ struct ScoreResult {
     double confidence = 0.0;
 };
 
+// ============================================================================
+// Phase 24: AUP (Angular Uncertainty Propagation)
+// ============================================================================
+struct AupResult {
+    double theta_final = 0;
+    double sigma_theta_deg = 0;
+    double theta_spread_deg = 0;
+    double boundary_distance_deg = 0;
+    int wedge_primary = -1;
+    int wedge_final = -1;
+    double P_primary = 0, P_left = 0, P_right = 0;
+    double prob_ratio = 0;
+    bool aup_applied = false;
+    std::string method;
+};
+
+int set_aup_flag(const char* name, int value);
+bool aup_is_enabled();
+AupResult run_aup(
+    double theta_final_deg,
+    int wedge_primary_idx,
+    const std::vector<double>& per_camera_theta_deg);
+
 struct IntersectionResult {
     int segment = 0;
     int multiplier = 0;
@@ -212,6 +235,8 @@ struct IntersectionResult {
         double x_preclamp_y = 0.0;
         double x_bestpair_x = 0.0;
         double x_bestpair_y = 0.0;
+        // Phase 24: AUP debug
+        std::optional<AupResult> aup;
     };
     std::optional<TriangulationDebug> tri_debug;
 };
@@ -442,5 +467,7 @@ IqdlResult iqdl_refine_tip(
     const std::optional<PcaLine>& legacy_line,
     double resolution_scale = 1.0
 );
+
+
 
 #endif /* DART_DETECT_INTERNAL_H */
