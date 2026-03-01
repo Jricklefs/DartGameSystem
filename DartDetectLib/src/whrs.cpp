@@ -1,9 +1,12 @@
 /**
- * whrs.cpp - Phase 26: Weighted Hypothesis Ranking Selector
+ * whrs.cpp - Phase 26/27: Weighted Hypothesis Ranking Selector
  *
  * Replaces the rule-based selector in HHS with a weighted scoring system.
  * Each candidate gets a composite score; highest score wins with confidence margin guard.
  * Requires UseHHS=1 (for candidate generation) and UseWHRS=1.
+ *
+ * Phase 27 (DCWO): Weights configurable at runtime via feature flags.
+ * When UseDCWO=1, optimized weights are used; when OFF, Phase 26 defaults.
  */
 #include "dart_detect_internal.h"
 #include <algorithm>
@@ -21,7 +24,10 @@ static bool g_whrs_enable_confidence_margin = true;
 static bool g_whrs_allow_single_override = true;
 static bool g_whrs_fallback_to_tri_if_low_conf = true;
 
-// Weights
+// Phase 27: DCWO flag
+static bool g_use_dcwo = false;
+
+// Phase 26 default weights
 static double g_wR = 0.30;
 static double g_wI = 0.15;
 static double g_wA = 0.20;
@@ -30,13 +36,31 @@ static double g_wB = 0.10;
 static double g_wD = 0.10;
 static double g_wC = 0.05;
 
+// Phase 27: DCWO optimized weights (will be updated after optimization)
+static double g_dcwo_wR = 0.30;
+static double g_dcwo_wI = 0.15;
+static double g_dcwo_wA = 0.20;
+static double g_dcwo_wQ = 0.10;
+static double g_dcwo_wB = 0.10;
+static double g_dcwo_wD = 0.10;
+static double g_dcwo_wC = 0.05;
+
 int set_whrs_flag(const char* name, int value) {
     std::string s(name);
     if (s == "UseWHRS") { g_use_whrs = (value != 0); return 0; }
+    if (s == "UseDCWO") { g_use_dcwo = (value != 0); return 0; }
     if (s == "WHRS_EnableScoreRanking") { g_whrs_enable_score_ranking = (value != 0); return 0; }
     if (s == "WHRS_EnableConfidenceMargin") { g_whrs_enable_confidence_margin = (value != 0); return 0; }
     if (s == "WHRS_AllowSingleOverride") { g_whrs_allow_single_override = (value != 0); return 0; }
     if (s == "WHRS_FallbackToTriIfLowConfidence") { g_whrs_fallback_to_tri_if_low_conf = (value != 0); return 0; }
+    // Phase 27: DCWO weight flags (value is int, /100 -> float, e.g. 30 = 0.30)
+    if (s == "WHRS_wR") { g_wR = value / 100.0; return 0; }
+    if (s == "WHRS_wI") { g_wI = value / 100.0; return 0; }
+    if (s == "WHRS_wA") { g_wA = value / 100.0; return 0; }
+    if (s == "WHRS_wQ") { g_wQ = value / 100.0; return 0; }
+    if (s == "WHRS_wB") { g_wB = value / 100.0; return 0; }
+    if (s == "WHRS_wD") { g_wD = value / 100.0; return 0; }
+    if (s == "WHRS_wC") { g_wC = value / 100.0; return 0; }
     return -1;
 }
 
