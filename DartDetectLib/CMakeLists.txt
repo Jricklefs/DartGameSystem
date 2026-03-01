@@ -17,6 +17,7 @@ add_library(DartDetectLib SHARED
     src/triangulation.cpp
     src/mask.cpp
     src/iqdl.cpp
+    src/hhs.cpp
 )
 
 target_include_directories(DartDetectLib PUBLIC

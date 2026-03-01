@@ -144,6 +144,9 @@ struct DetectionResult {
     double angle_line_vs_pca_deg = -1.0;
     double angle_line_vs_flighttip_deg = -1.0;
     std::string line_fit_method_p9;
+    // Phase 25: IQDL quality cache for HHS
+    double hhs_iqdl_Q = 0.0;
+    int hhs_iqdl_inlier_count = 0;
 };
 
 struct ScoreResult {
@@ -212,6 +215,16 @@ struct IntersectionResult {
         double x_preclamp_y = 0.0;
         double x_bestpair_x = 0.0;
         double x_bestpair_y = 0.0;
+        // Phase 25: HHS debug fields
+        bool hhs_applied = false;
+        std::string hhs_selected_type;
+        std::string hhs_selection_reason;
+        int hhs_candidate_count = 0;
+        int hhs_baseline_wedge = -1;
+        int hhs_selected_wedge = -1;
+        double hhs_selected_residual = 0.0;
+        int hhs_selected_axis_support = 0;
+        double hhs_selected_qi = 0.0;
     };
     std::optional<TriangulationDebug> tri_debug;
 };
@@ -442,5 +455,17 @@ IqdlResult iqdl_refine_tip(
     const std::optional<PcaLine>& legacy_line,
     double resolution_scale = 1.0
 );
+
+
+// ============================================================================
+// Module: hhs.h - Phase 25: Hybrid Hypothesis Selection
+// ============================================================================
+
+int set_hhs_flag(const char* name, int value);
+bool is_hhs_enabled();
+std::optional<IntersectionResult> hhs_select(
+    const IntersectionResult& tri_result,
+    const std::map<std::string, DetectionResult>& camera_results,
+    const std::map<std::string, CameraCalibration>& calibrations);
 
 #endif /* DART_DETECT_INTERNAL_H */

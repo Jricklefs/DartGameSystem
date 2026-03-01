@@ -412,6 +412,10 @@ DD_API const char* dd_detect(
                             current, before, iqdl_mask, detect_center,
                             *det.tip, det.pca_line, res_scale);
                         
+                        // Phase 25: Cache IQDL quality for HHS
+                        det.hhs_iqdl_Q = iqdl.Q;
+                        det.hhs_iqdl_inlier_count = iqdl.inlier_count;
+                        
                         if (iqdl.valid && !iqdl.fallback) {
                             if (iqdl.tip_px_subpixel.x >= 0 && 
                                 iqdl.tip_px_subpixel.x < current.cols &&
@@ -481,6 +485,14 @@ DD_API const char* dd_detect(
     
     if (camera_results.size() >= 2) {
         auto tri = triangulate_with_line_intersection(camera_results, active_cals);
+        
+        // Phase 25: HHS post-processing
+        if (tri && is_hhs_enabled()) {
+            auto hhs_override = hhs_select(*tri, camera_results, active_cals);
+            if (hhs_override) {
+                tri = hhs_override;
+            }
+        }
         
         if (tri) {
             json << json_int("segment", tri->segment) << ","
@@ -597,6 +609,18 @@ DD_API const char* dd_detect(
                      << ",\"x_preclamp_y\":" << td.x_preclamp_y
                      << ",\"x_bestpair_x\":" << td.x_bestpair_x
                      << ",\"x_bestpair_y\":" << td.x_bestpair_y;
+                // Phase 25: HHS debug
+                json << ",\"hhs_applied\":" << (td.hhs_applied ? "true" : "false");
+                if (td.hhs_applied) {
+                    json << ",\"hhs_selected_type\":\"" << td.hhs_selected_type << "\""
+                         << ",\"hhs_selection_reason\":\"" << td.hhs_selection_reason << "\""
+                         << ",\"hhs_candidate_count\":" << td.hhs_candidate_count
+                         << ",\"hhs_baseline_wedge\":" << td.hhs_baseline_wedge
+                         << ",\"hhs_selected_wedge\":" << td.hhs_selected_wedge
+                         << ",\"hhs_selected_residual\":" << td.hhs_selected_residual
+                         << ",\"hhs_selected_axis_support\":" << td.hhs_selected_axis_support
+                         << ",\"hhs_selected_qi\":" << td.hhs_selected_qi;
+                }
                 json << ",\"cam_debug\":{";
 
 
@@ -776,7 +800,9 @@ DD_API int dd_set_flag(const char* flag_name, int value)
     if (!flag_name) return -1;
     int r = set_skeleton_flag(flag_name, value);
     if (r == 0) return 0;
-    return set_triangulation_flag(flag_name, value);
+    r = set_triangulation_flag(flag_name, value);
+    if (r == 0) return 0;
+    return set_hhs_flag(flag_name, value);
 }
 
 DD_API const char* dd_version(void)
