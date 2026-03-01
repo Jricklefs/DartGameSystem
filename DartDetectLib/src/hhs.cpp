@@ -16,22 +16,7 @@
 // ============================================================================
 // Phase 26: Export candidates for WHRS
 // ============================================================================
-struct HhsCandidateExport {
-    std::string type;
-    Point2f coords;
-    double radius;
-    double theta_deg;
-    ScoreResult score;
-    double weighted_median_residual;
-    int inlier_camera_count;
-    int axis_support_count;
-    double sum_qi;
-    double max_qi;
-    int cameras_used;
-    double radial_delta_from_tri;
-    double ring_boundary_distance;
-    std::map<std::string, double> reproj_error_per_cam;
-};
+// HhsCandidateExport moved to dart_detect_internal.h
 std::vector<HhsCandidateExport> g_hhs_candidates;
 int g_hhs_baseline_wedge = -1;
 

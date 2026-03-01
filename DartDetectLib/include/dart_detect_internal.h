@@ -479,4 +479,38 @@ std::optional<IntersectionResult> whrs_select(
     const std::map<std::string, DetectionResult>& camera_results,
     const std::map<std::string, CameraCalibration>& calibrations);
 
+
+// Phase 26: HHS candidate export (shared between hhs.cpp, whrs.cpp, cbfc.cpp)
+struct HhsCandidateExport {
+    std::string type;
+    Point2f coords;
+    double radius;
+    double theta_deg;
+    ScoreResult score;
+    double weighted_median_residual;
+    int inlier_camera_count;
+    int axis_support_count;
+    double sum_qi;
+    double max_qi;
+    int cameras_used;
+    double radial_delta_from_tri;
+    double ring_boundary_distance;
+    std::map<std::string, double> reproj_error_per_cam;
+};
+
+extern std::vector<HhsCandidateExport> g_hhs_candidates;
+extern int g_hhs_baseline_wedge;
+
+
+// ============================================================================
+// Phase 28: CBFC (Camera Bias Field Correction)
+// ============================================================================
+int set_cbfc_flag(const char* name, int value);
+bool is_cbfc_enabled();
+int get_cbfc_mode();
+void cbfc_load_bias_map();
+void cbfc_log_single_cam_projection(const std::string& camera_id, double radius_norm, double theta_deg, double coord_x, double coord_y);
+void cbfc_correct_candidates(std::vector<HhsCandidateExport>& candidates);
+void cbfc_flush_learn_log();
+
 #endif /* DART_DETECT_INTERNAL_H */

@@ -127,26 +127,7 @@ static WhrsScore compute_whrs_score(
 // vector that HHS populates and WHRS reads.
 // ============================================================================
 
-// Declared in hhs.cpp - the candidate list from last hhs_select call
-struct HhsCandidateExport {
-    std::string type;
-    Point2f coords;
-    double radius;
-    double theta_deg;
-    ScoreResult score;
-    double weighted_median_residual;
-    int inlier_camera_count;
-    int axis_support_count;
-    double sum_qi;
-    double max_qi;
-    int cameras_used;
-    double radial_delta_from_tri;
-    double ring_boundary_distance;
-    std::map<std::string, double> reproj_error_per_cam;
-};
-
-extern std::vector<HhsCandidateExport> g_hhs_candidates;
-extern int g_hhs_baseline_wedge;
+// HhsCandidateExport moved to dart_detect_internal.h
 
 // Get wedge index (duplicated from hhs.cpp for locality)
 static int whrs_get_wedge_index(const Point2f& p) {
