@@ -443,4 +443,27 @@ IqdlResult iqdl_refine_tip(
     double resolution_scale = 1.0
 );
 
+
+// ============================================================================
+// Phase 23: SGHF (Specular/Glare Handling + HDR Fusion)
+// ============================================================================
+struct SghfResult {
+    bool sghf_used = false;
+    cv::Mat processed_diff;
+    double specular_pixel_ratio = 0.0;
+    double mean_intensity_before = 0.0;
+    double mean_intensity_after = 0.0;
+    double edge_energy_before = 0.0;
+    double edge_energy_after = 0.0;
+    int blob_count = 0;
+    int dart_area = 0;
+};
+
+int set_sghf_flag(const char* name, int value);
+bool sghf_is_enabled();
+SghfResult sghf_process(
+    const cv::Mat& current_frame,
+    const cv::Mat& previous_frame,
+    const cv::Mat& motion_mask);
+
 #endif /* DART_DETECT_INTERNAL_H */

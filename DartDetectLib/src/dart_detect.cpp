@@ -408,8 +408,29 @@ DD_API const char* dd_detect(
                             iqdl_mask = cv::Mat::ones(current.rows, current.cols, CV_8U) * 255;
                         }
                         
+                        // Phase 23: SGHF — preprocess diff before IQDL
+                        cv::Mat iqdl_current = current;
+                        cv::Mat iqdl_before = before;
+                        if (sghf_is_enabled()) {
+                            SghfResult sghf = sghf_process(current, before, iqdl_mask);
+                            if (sghf.sghf_used && !sghf.processed_diff.empty()) {
+                                // Feed SGHF diff as current, black as before
+                                // so IQDL's absdiff produces the SGHF diff
+                                iqdl_current = cv::Mat::zeros(current.rows, current.cols, CV_8UC1);
+                                // Convert processed_diff to 3-channel if needed
+                                if (current.channels() == 3) {
+                                    cv::Mat diff3;
+                                    cv::cvtColor(sghf.processed_diff, diff3, cv::COLOR_GRAY2BGR);
+                                    iqdl_current = diff3;
+                                } else {
+                                    iqdl_current = sghf.processed_diff;
+                                }
+                                iqdl_before = cv::Mat::zeros(iqdl_current.size(), iqdl_current.type());
+                            }
+                        }
+                        
                         IqdlResult iqdl = iqdl_refine_tip(
-                            current, before, iqdl_mask, detect_center,
+                            iqdl_current, iqdl_before, iqdl_mask, detect_center,
                             *det.tip, det.pca_line, res_scale);
                         
                         if (iqdl.valid && !iqdl.fallback) {
