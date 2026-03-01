@@ -18,6 +18,7 @@ add_library(DartDetectLib SHARED
     src/mask.cpp
     src/iqdl.cpp
     src/hhs.cpp
+    src/whrs.cpp
 )
 
 target_include_directories(DartDetectLib PUBLIC

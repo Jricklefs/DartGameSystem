@@ -14,6 +14,29 @@
 #include <opencv2/calib3d.hpp>
 
 // ============================================================================
+// Phase 26: Export candidates for WHRS
+// ============================================================================
+struct HhsCandidateExport {
+    std::string type;
+    Point2f coords;
+    double radius;
+    double theta_deg;
+    ScoreResult score;
+    double weighted_median_residual;
+    int inlier_camera_count;
+    int axis_support_count;
+    double sum_qi;
+    double max_qi;
+    int cameras_used;
+    double radial_delta_from_tri;
+    double ring_boundary_distance;
+    std::map<std::string, double> reproj_error_per_cam;
+};
+std::vector<HhsCandidateExport> g_hhs_candidates;
+int g_hhs_baseline_wedge = -1;
+
+
+// ============================================================================
 // Feature Flags (default OFF)
 // ============================================================================
 static bool g_use_hhs = false;
@@ -331,7 +354,29 @@ std::optional<IntersectionResult> hhs_select(
         if (h.theta_deg < 0) h.theta_deg += 360.0;
     }
 
-    // --- Rule-Based Selector ---
+    // --- Phase 26: Export candidates for WHRS ---
+    g_hhs_candidates.clear();
+    g_hhs_baseline_wedge = baseline_wedge;
+    for (const auto& h : candidates) {
+        HhsCandidateExport ex;
+        ex.type = h.type;
+        ex.coords = h.coords;
+        ex.radius = h.radius;
+        ex.theta_deg = h.theta_deg;
+        ex.score = h.score;
+        ex.weighted_median_residual = h.weighted_median_residual;
+        ex.inlier_camera_count = h.inlier_camera_count;
+        ex.axis_support_count = h.axis_support_count;
+        ex.sum_qi = h.sum_qi;
+        ex.max_qi = h.max_qi;
+        ex.cameras_used = h.cameras_used;
+        ex.radial_delta_from_tri = h.radial_delta_from_tri;
+        ex.ring_boundary_distance = h.ring_boundary_distance;
+        ex.reproj_error_per_cam = h.reproj_error_per_cam;
+        g_hhs_candidates.push_back(ex);
+    }
+
+        // --- Rule-Based Selector ---
     if (!g_hhs_enable_rule_selector) return std::nullopt;
 
     const HhsCandidate* selected = nullptr;

@@ -1,0 +1,41 @@
+{
+  "whrs_applied_count": 132,
+  "whrs_applied_pct": 11.35,
+  "variant_method_distribution": {
+    "UnanimousCam": 315,
+    "Cam+1": 479,
+    "BestError": 106,
+    "WHRS_pair_cam1_cam2": 42,
+    "WHRS_pair_cam0_cam2": 53,
+    "WHRS_pair_cam0_cam1": 36,
+    "MissOverride_RadiusSoftLowConf": 3,
+    "SingleCam_pca_blob_chain+iqdl": 4,
+    "MissOverride_RadiusHard": 7,
+    "SingleCam_pca_blob_chain": 11,
+    "MissOverride_Residual": 13,
+    "WHRS_single_cam2": 1,
+    "MissOverride_IxDist": 3
+  },
+  "baseline_method_distribution": {
+    "UnanimousCam": 332,
+    "Cam+1": 490,
+    "BestError": 102,
+    "HHS_pair_cam0_cam2": 29,
+    "HHS_pair_cam1_cam2": 23,
+    "HHS_pair_cam0_cam1": 34,
+    "HHS_single_cam0": 9,
+    "HHS_single_cam1": 4,
+    "SingleCam_pca_blob_chain+iqdl": 4,
+    "SingleCam_pca_blob_chain": 11,
+    "MissOverride_Residual": 30,
+    "MissOverride_IxDist": 4,
+    "HHS_single_cam2": 1
+  },
+  "selection_summary": {
+    "baseline_hhs_overrides": 100,
+    "variant_whrs_overrides": 132,
+    "baseline_accuracy": 78.4,
+    "variant_accuracy": 80.7,
+    "delta_pct": 2.3
+  }
+}

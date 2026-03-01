@@ -489,7 +489,13 @@ DD_API const char* dd_detect(
         // Phase 25: HHS post-processing
         if (tri && is_hhs_enabled()) {
             auto hhs_override = hhs_select(*tri, camera_results, active_cals);
-            if (hhs_override) {
+            // Phase 26: If WHRS enabled, use weighted scoring instead of HHS rule-based selection
+            if (is_whrs_enabled()) {
+                auto whrs_override = whrs_select(*tri, camera_results, active_cals);
+                if (whrs_override) {
+                    tri = whrs_override;
+                }
+            } else if (hhs_override) {
                 tri = hhs_override;
             }
         }
@@ -802,7 +808,9 @@ DD_API int dd_set_flag(const char* flag_name, int value)
     if (r == 0) return 0;
     r = set_triangulation_flag(flag_name, value);
     if (r == 0) return 0;
-    return set_hhs_flag(flag_name, value);
+    r = set_hhs_flag(flag_name, value);
+    if (r == 0) return 0;
+    return set_whrs_flag(flag_name, value);
 }
 
 DD_API const char* dd_version(void)

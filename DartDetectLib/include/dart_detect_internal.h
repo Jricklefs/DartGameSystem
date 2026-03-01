@@ -468,4 +468,15 @@ std::optional<IntersectionResult> hhs_select(
     const std::map<std::string, DetectionResult>& camera_results,
     const std::map<std::string, CameraCalibration>& calibrations);
 
+// ============================================================================
+// Module: whrs.h - Phase 26: Weighted Hypothesis Ranking Selector
+// ============================================================================
+
+int set_whrs_flag(const char* name, int value);
+bool is_whrs_enabled();
+std::optional<IntersectionResult> whrs_select(
+    const IntersectionResult& tri_result,
+    const std::map<std::string, DetectionResult>& camera_results,
+    const std::map<std::string, CameraCalibration>& calibrations);
+
 #endif /* DART_DETECT_INTERNAL_H */
