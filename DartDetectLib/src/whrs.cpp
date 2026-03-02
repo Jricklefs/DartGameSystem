@@ -18,14 +18,14 @@
 // ============================================================================
 // Feature Flags (default OFF)
 // ============================================================================
-static bool g_use_whrs = false;
+static bool g_use_whrs = true;   // Phase 43Y: default ON
 static bool g_whrs_enable_score_ranking = true;
 static bool g_whrs_enable_confidence_margin = true;
 static bool g_whrs_allow_single_override = true;
 static bool g_whrs_fallback_to_tri_if_low_conf = true;
 
 // Phase 27: DCWO flag
-static bool g_use_dcwo = false;
+static bool g_use_dcwo = true;   // Phase 43Y: default ON
 
 // Phase 26 default weights
 static double g_wR = 0.30;

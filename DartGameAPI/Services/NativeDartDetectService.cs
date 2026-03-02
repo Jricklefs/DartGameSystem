@@ -14,16 +14,19 @@ public class NativeDartDetectService : IDartDetectService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<NativeDartDetectService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly RuntimeIntegrityService _rilService;
     private bool _initialized;
 
     public NativeDartDetectService(
         IServiceProvider serviceProvider,
         ILogger<NativeDartDetectService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        RuntimeIntegrityService rilService)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
         _configuration = configuration;
+        _rilService = rilService;
 
         var version = DartDetectNative.GetVersion();
         _logger.LogInformation("DartDetectLib native loaded: {Version}", version);
