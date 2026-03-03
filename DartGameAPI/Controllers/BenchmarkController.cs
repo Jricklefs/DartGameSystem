@@ -769,6 +769,265 @@ public class BenchmarkController : ControllerBase
         return Ok(analysis);
     }
 
+
+    // ===== PHASE 47: RADIAL GEOMETRY & CLAMP AUDIT =====
+
+    [HttpPost("replay/radial-audit")]
+    public async Task<ActionResult> RunRadialAudit([FromQuery] string? gameId = null)
+    {
+        const double DOUBLE_OUTER_MM = 170.0;
+        const double TRIPLE_INNER_MM = 99.0;
+        const double TRIPLE_OUTER_MM = 107.0;
+        const double DOUBLE_INNER_MM = 162.0;
+        const double TRIPLE_INNER_NORM = TRIPLE_INNER_MM / DOUBLE_OUTER_MM;
+        const double TRIPLE_OUTER_NORM = TRIPLE_OUTER_MM / DOUBLE_OUTER_MM;
+        const double DOUBLE_INNER_NORM = DOUBLE_INNER_MM / DOUBLE_OUTER_MM;
+
+        int MultFromR(double r) {
+            if (r <= 6.35 / DOUBLE_OUTER_MM) return 2; // bullseye
+            if (r <= 16.0 / DOUBLE_OUTER_MM) return 1; // bull
+            if (r < TRIPLE_INNER_NORM) return 1;
+            if (r <= TRIPLE_OUTER_NORM) return 3;
+            if (r < DOUBLE_INNER_NORM) return 1;
+            if (r <= 1.0) return 2;
+            return 0; // off board
+        }
+
+        (string name, double distMm) NearestBoundary(double r) {
+            var boundaries = new (string n, double nr)[] {
+                ("triple_inner", TRIPLE_INNER_NORM), ("triple_outer", TRIPLE_OUTER_NORM),
+                ("double_inner", DOUBLE_INNER_NORM), ("double_outer", 1.0)
+            };
+            string best = "none"; double min = double.MaxValue;
+            foreach (var (n, nr) in boundaries) {
+                double d = Math.Abs(r - nr);
+                if (d < min) { min = d; best = n; }
+            }
+            return (best, min * DOUBLE_OUTER_MM);
+        }
+
+        double GetExtDouble(Dictionary<string, System.Text.Json.JsonElement>? ext, string key) {
+            if (ext != null && ext.TryGetValue(key, out var el) && el.ValueKind == JsonValueKind.Number)
+                return el.GetDouble();
+            return 0;
+        }
+        bool GetExtBool(Dictionary<string, System.Text.Json.JsonElement>? ext, string key) {
+            if (ext != null && ext.TryGetValue(key, out var el))
+                return el.ValueKind == JsonValueKind.True;
+            return false;
+        }
+        string GetExtString(Dictionary<string, System.Text.Json.JsonElement>? ext, string key) {
+            if (ext != null && ext.TryGetValue(key, out var el) && el.ValueKind == JsonValueKind.String)
+                return el.GetString() ?? "";
+            return "";
+        }
+
+        var basePath = _settings.BasePath;
+        if (!Directory.Exists(basePath))
+            return BadRequest(new { error = "Benchmark path not found" });
+
+        var allDartFolders = new List<(string boardId, string gId, string roundFolder, string dartFolder, string fullPath)>();
+        foreach (var boardDir in Directory.GetDirectories(basePath))
+        {
+            var boardId = Path.GetFileName(boardDir);
+            foreach (var gameDirPath in Directory.GetDirectories(boardDir))
+            {
+                var gId = Path.GetFileName(gameDirPath);
+                if (gameId != null && !string.Equals(gId, gameId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                foreach (var roundDir in Directory.GetDirectories(gameDirPath))
+                    foreach (var dartDir in Directory.GetDirectories(roundDir))
+                        if (System.IO.File.Exists(Path.Combine(dartDir, "metadata.json")))
+                            allDartFolders.Add((boardId, gId, Path.GetFileName(roundDir), Path.GetFileName(dartDir), dartDir));
+            }
+        }
+
+        if (allDartFolders.Count == 0)
+            return Ok(new { total_darts = 0, message = "No benchmark data found" });
+
+        DartGameAPI.Services.DartDetectNative.InitBoard("audit_bench");
+
+        // Per-method stats
+        var methodStats = new Dictionary<string, MethodAuditStats>();
+        var ringErrorDetails = new List<object>();
+        int totalDarts = 0;
+
+        foreach (var (bId, gId, roundFolder, dartFolder, fullPath) in allDartFolders)
+        {
+            try
+            {
+                var metaJson = await System.IO.File.ReadAllTextAsync(Path.Combine(fullPath, "metadata.json"));
+                using var doc = JsonDocument.Parse(metaJson);
+                var meta = doc.RootElement;
+
+                int truthSeg, truthMul;
+                if (meta.TryGetProperty("correction", out var corr) && corr.ValueKind != JsonValueKind.Null)
+                {
+                    var corrected = corr.GetProperty("corrected");
+                    truthSeg = corrected.GetProperty("segment").GetInt32();
+                    truthMul = corrected.GetProperty("multiplier").GetInt32();
+                }
+                else if (meta.TryGetProperty("final_result", out var fr) && fr.ValueKind != JsonValueKind.Null)
+                {
+                    truthSeg = fr.GetProperty("segment").GetInt32();
+                    truthMul = fr.GetProperty("multiplier").GetInt32();
+                }
+                else continue;
+
+                var afterImages = new List<(string camId, byte[] bytes)>();
+                var beforeImagesList = new List<byte[]>();
+                foreach (var file in Directory.GetFiles(fullPath, "*_raw.jpg"))
+                {
+                    var camId = Path.GetFileNameWithoutExtension(file).Replace("_raw", "");
+                    afterImages.Add((camId, await System.IO.File.ReadAllBytesAsync(file)));
+                }
+                foreach (var file in Directory.GetFiles(fullPath, "*_previous.jpg"))
+                    beforeImagesList.Add(await System.IO.File.ReadAllBytesAsync(file));
+
+                if (afterImages.Count == 0) continue;
+
+                DartGameAPI.Services.DartDetectNative.ClearBoard("audit_bench");
+                DartGameAPI.Services.DartDetectNative.InitBoard("audit_bench");
+
+                var camIds = afterImages.Select(a => a.camId).ToList();
+                var nativeResult = DartGameAPI.Services.DartDetectNative.Detect(
+                    1, "audit_bench", camIds, afterImages.Select(a => a.bytes).ToArray(), beforeImagesList.ToArray());
+
+                if (nativeResult == null) continue;
+                totalDarts++;
+
+                int detSeg = nativeResult.Segment;
+                int detMul = nativeResult.Multiplier;
+                string method = nativeResult.Method ?? "unknown";
+                double fx = nativeResult.CoordsX;
+                double fy = nativeResult.CoordsY;
+                double r_post = Math.Sqrt(fx * fx + fy * fy);
+
+                // Extract clamp data from tri_debug extension data
+                var ext = nativeResult.TriDebug?.ExtensionData;
+                double x_preclamp_x = GetExtDouble(ext, "x_preclamp_x");
+                double x_preclamp_y = GetExtDouble(ext, "x_preclamp_y");
+                double r_pre = Math.Sqrt(x_preclamp_x * x_preclamp_x + x_preclamp_y * x_preclamp_y);
+                bool clampApplied = GetExtBool(ext, "radial_clamp_applied");
+                string clampReason = GetExtString(ext, "radial_clamp_reason");
+                double r_bcwt = GetExtDouble(ext, "r_bcwt");
+                double r_bestpair = GetExtDouble(ext, "r_bestpair");
+                double radialDelta = GetExtDouble(ext, "radial_delta");
+
+                // If no preclamp data (e.g. SingleCam), use post coords
+                if (r_pre == 0 && r_post == 0)
+                    r_pre = 0; // genuinely zero (SingleCam collapse)
+                else if (r_pre == 0)
+                    r_pre = r_post; // no clamp path
+
+                // Normalize method bucket
+                string bucket = method;
+                if (method.StartsWith("MissOverride")) bucket = "MissOverride";
+                else if (method.StartsWith("SingleCam")) bucket = "SingleCam";
+                else if (method.StartsWith("WHRS")) bucket = "WHRS";
+                else if (method.Contains("RadialClamp")) bucket = "RadialClamp";
+
+                if (!methodStats.ContainsKey(bucket))
+                    methodStats[bucket] = new MethodAuditStats { Method = bucket };
+                var ms = methodStats[bucket];
+                ms.Count++;
+                ms.SumRPre += r_pre;
+                ms.SumClampDelta += Math.Abs(r_post - r_pre);
+                if (r_post == 0 && fx == 0 && fy == 0) ms.ZeroRCount++;
+                if (r_post > 1.0) ms.OverDoubleCount++;
+                bool isCorrect = (detSeg == truthSeg && detMul == truthMul);
+                if (!isCorrect && detSeg == truthSeg && detMul != truthMul && !(detSeg == 0 && truthSeg == 0))
+                    ms.RingErrorCount++;
+
+                // Ring error detail
+                bool isRingError = (detSeg == truthSeg && detMul != truthMul && !(detSeg == 0 && truthSeg == 0) && detMul != 0);
+                if (isRingError)
+                {
+                    var (nearName, nearDist) = NearestBoundary(r_post);
+                    var (nearNamePre, nearDistPre) = NearestBoundary(r_pre);
+                    ringErrorDetails.Add(new
+                    {
+                        dart_id = $"{gId}/{roundFolder}/{dartFolder}",
+                        method,
+                        method_bucket = bucket,
+                        r_pre_clamp = Math.Round(r_pre, 6),
+                        r_pre_clamp_mm = Math.Round(r_pre * DOUBLE_OUTER_MM, 2),
+                        r_post_clamp = Math.Round(r_post, 6),
+                        r_post_clamp_mm = Math.Round(r_post * DOUBLE_OUTER_MM, 2),
+                        clamp_applied = clampApplied,
+                        clamp_reason = clampReason,
+                        clamp_delta_mm = Math.Round(Math.Abs(r_post - r_pre) * DOUBLE_OUTER_MM, 2),
+                        r_bcwt = Math.Round(r_bcwt, 6),
+                        r_bcwt_mm = Math.Round(r_bcwt * DOUBLE_OUTER_MM, 2),
+                        r_bestpair = Math.Round(r_bestpair, 6),
+                        r_bestpair_mm = Math.Round(r_bestpair * DOUBLE_OUTER_MM, 2),
+                        radial_delta_mm = Math.Round(radialDelta * DOUBLE_OUTER_MM, 2),
+                        multiplier_by_r_pre = MultFromR(r_pre),
+                        multiplier_by_r_post = MultFromR(r_post),
+                        final_multiplier = detMul,
+                        gt_multiplier = truthMul,
+                        pred_segment = detSeg,
+                        gt_segment = truthSeg,
+                        nearest_boundary_post = nearName,
+                        distance_to_boundary_post_mm = Math.Round(nearDist, 2),
+                        nearest_boundary_pre = nearNamePre,
+                        distance_to_boundary_pre_mm = Math.Round(nearDistPre, 2),
+                        board_constants = new {
+                            triple_inner_mm = TRIPLE_INNER_MM,
+                            triple_outer_mm = TRIPLE_OUTER_MM,
+                            double_inner_mm = DOUBLE_INNER_MM,
+                            double_outer_mm = DOUBLE_OUTER_MM
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Radial audit error for {Path}: {Error}", fullPath, ex.Message);
+            }
+        }
+
+        DartGameAPI.Services.DartDetectNative.ClearBoard("audit_bench");
+
+        // Build by_method summary
+        var byMethod = new Dictionary<string, object>();
+        foreach (var (bucket, ms) in methodStats)
+        {
+            byMethod[bucket] = new
+            {
+                count = ms.Count,
+                avg_r_pre_clamp = ms.Count > 0 ? Math.Round(ms.SumRPre / ms.Count, 6) : 0,
+                avg_r_pre_clamp_mm = ms.Count > 0 ? Math.Round(ms.SumRPre / ms.Count * DOUBLE_OUTER_MM, 2) : 0,
+                avg_clamp_delta_mm = ms.Count > 0 ? Math.Round(ms.SumClampDelta / ms.Count * DOUBLE_OUTER_MM, 2) : 0,
+                ring_error_count = ms.RingErrorCount,
+                ring_error_rate_pct = ms.Count > 0 ? Math.Round(100.0 * ms.RingErrorCount / ms.Count, 1) : 0,
+                zero_r_count = ms.ZeroRCount,
+                over_double_count = ms.OverDoubleCount
+            };
+        }
+
+        var audit = new
+        {
+            total_darts = totalDarts,
+            ring_error_count = ringErrorDetails.Count,
+            board_constants = new {
+                triple_inner_mm = TRIPLE_INNER_MM,
+                triple_outer_mm = TRIPLE_OUTER_MM,
+                double_inner_mm = DOUBLE_INNER_MM,
+                double_outer_mm = DOUBLE_OUTER_MM
+            },
+            by_method = byMethod,
+            ring_error_details = ringErrorDetails
+        };
+
+        var outputPath = Path.Combine(basePath, "radial_audit.json");
+        var jsonStr = JsonSerializer.Serialize(audit, new JsonSerializerOptions { WriteIndented = true });
+        await System.IO.File.WriteAllTextAsync(outputPath, jsonStr);
+        _logger.LogInformation("RADIAL-AUDIT: Wrote {Path}", outputPath);
+
+        return Ok(audit);
+    }
+
 }
 
 public class ReplayResults
@@ -838,4 +1097,15 @@ public class DebugImagePayload
     public string CameraId { get; set; } = string.Empty;
     public string Image { get; set; 
 } = string.Empty;
+}
+
+public class MethodAuditStats
+{
+    public string Method { get; set; } = "";
+    public int Count { get; set; }
+    public double SumRPre { get; set; }
+    public double SumClampDelta { get; set; }
+    public int RingErrorCount { get; set; }
+    public int ZeroRCount { get; set; }
+    public int OverDoubleCount { get; set; }
 }
