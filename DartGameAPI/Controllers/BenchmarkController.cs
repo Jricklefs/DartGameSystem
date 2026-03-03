@@ -521,6 +521,220 @@ public class BenchmarkController : ControllerBase
         var result = DartDetectNative.SetFlag(name, value);
         return Ok(new { flag = name, value, result = result == 0 ? "ok" : "unknown_flag" });
     }
+
+    // ===== PHASE 46A: RADIAL ANALYSIS =====
+
+    /// <summary>
+    /// Run benchmark replay and produce radial_analysis.json.
+    /// Logs fused radius and distance to ring boundaries for every dart.
+    /// Writes file to benchmark base path and returns results.
+    /// </summary>
+    [HttpPost("replay/radial-analysis")]
+    public async Task<ActionResult> RunRadialAnalysis([FromQuery] string? gameId = null)
+    {
+        // Ring boundaries in normalized board space (r / DOUBLE_OUTER_RADIUS)
+        const double DOUBLE_OUTER_MM = 170.0;
+        const double TRIPLE_INNER_NORM = 99.0 / DOUBLE_OUTER_MM;
+        const double TRIPLE_OUTER_NORM = 107.0 / DOUBLE_OUTER_MM;
+        const double DOUBLE_INNER_NORM = 162.0 / DOUBLE_OUTER_MM;
+        const double DOUBLE_OUTER_NORM = 1.0;
+        const double BULLSEYE_NORM = 6.35 / DOUBLE_OUTER_MM;
+        const double OUTER_BULL_NORM = 16.0 / DOUBLE_OUTER_MM;
+
+        // Helper: classify radial region by geometry
+        string ClassifyRadialRegion(double r)
+        {
+            if (r <= BULLSEYE_NORM) return "DBull";
+            if (r <= OUTER_BULL_NORM) return "SBull";
+            if (r < TRIPLE_INNER_NORM) return "S_inner";
+            if (r <= TRIPLE_OUTER_NORM) return "T";
+            if (r < DOUBLE_INNER_NORM) return "S_outer";
+            if (r <= DOUBLE_OUTER_NORM) return "D";
+            return "OFF";
+        }
+
+        // Helper: multiplier from region
+        int MultiplierFromRegion(string region) => region switch
+        {
+            "DBull" => 2, "SBull" => 1, "S_inner" => 1, "T" => 3, "S_outer" => 1, "D" => 2, _ => 0
+        };
+
+        // Helper: nearest ring boundary
+        (string name, double distMm) NearestBoundary(double r)
+        {
+            var boundaries = new (string name, double normR)[]
+            {
+                ("bullseye_outer", BULLSEYE_NORM),
+                ("bull_outer", OUTER_BULL_NORM),
+                ("triple_inner", TRIPLE_INNER_NORM),
+                ("triple_outer", TRIPLE_OUTER_NORM),
+                ("double_inner", DOUBLE_INNER_NORM),
+                ("double_outer", DOUBLE_OUTER_NORM),
+            };
+            string nearest = "none";
+            double minDist = double.MaxValue;
+            foreach (var (name, normR) in boundaries)
+            {
+                double d = Math.Abs(r - normR);
+                if (d < minDist) { minDist = d; nearest = name; }
+            }
+            return (nearest, minDist * DOUBLE_OUTER_MM);
+        }
+
+        // Run replay with details
+        var basePath = _settings.BasePath;
+        if (!Directory.Exists(basePath))
+            return BadRequest(new { error = "Benchmark path not found" });
+
+        var allDartFolders = new List<(string boardId, string gId, string roundFolder, string dartFolder, string fullPath)>();
+        foreach (var boardDir in Directory.GetDirectories(basePath))
+        {
+            var boardId = Path.GetFileName(boardDir);
+            foreach (var gameDirPath in Directory.GetDirectories(boardDir))
+            {
+                var gId = Path.GetFileName(gameDirPath);
+                if (gameId != null && !string.Equals(gId, gameId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                foreach (var roundDir in Directory.GetDirectories(gameDirPath))
+                    foreach (var dartDir in Directory.GetDirectories(roundDir))
+                        if (System.IO.File.Exists(Path.Combine(dartDir, "metadata.json")))
+                            allDartFolders.Add((boardId, gId, Path.GetFileName(roundDir), Path.GetFileName(dartDir), dartDir));
+            }
+        }
+
+        if (allDartFolders.Count == 0)
+            return Ok(new { total_darts = 0, message = "No benchmark data found" });
+
+        DartGameAPI.Services.DartDetectNative.InitBoard("radial_bench");
+
+        var entries = new List<object>();
+        int ringErrorCount = 0;
+        int totalDarts = 0;
+
+        foreach (var (bId, gId, roundFolder, dartFolder, fullPath) in allDartFolders)
+        {
+            try
+            {
+                var metaJson = await System.IO.File.ReadAllTextAsync(Path.Combine(fullPath, "metadata.json"));
+                using var doc = JsonDocument.Parse(metaJson);
+                var meta = doc.RootElement;
+
+                int truthSeg, truthMul;
+                if (meta.TryGetProperty("correction", out var corr) && corr.ValueKind != JsonValueKind.Null)
+                {
+                    var corrected = corr.GetProperty("corrected");
+                    truthSeg = corrected.GetProperty("segment").GetInt32();
+                    truthMul = corrected.GetProperty("multiplier").GetInt32();
+                }
+                else if (meta.TryGetProperty("final_result", out var fr) && fr.ValueKind != JsonValueKind.Null)
+                {
+                    truthSeg = fr.GetProperty("segment").GetInt32();
+                    truthMul = fr.GetProperty("multiplier").GetInt32();
+                }
+                else continue;
+
+                var afterImages = new List<(string camId, byte[] bytes)>();
+                var beforeImagesList = new List<byte[]>();
+                foreach (var file in Directory.GetFiles(fullPath, "*_raw.jpg"))
+                {
+                    var camId = Path.GetFileNameWithoutExtension(file).Replace("_raw", "");
+                    afterImages.Add((camId, await System.IO.File.ReadAllBytesAsync(file)));
+                }
+                foreach (var file in Directory.GetFiles(fullPath, "*_previous.jpg"))
+                    beforeImagesList.Add(await System.IO.File.ReadAllBytesAsync(file));
+
+                if (afterImages.Count == 0) continue;
+
+                DartGameAPI.Services.DartDetectNative.ClearBoard("radial_bench");
+                DartGameAPI.Services.DartDetectNative.InitBoard("radial_bench");
+
+                var camIds = afterImages.Select(a => a.camId).ToList();
+                var curBytes = afterImages.Select(a => a.bytes).ToArray();
+
+                var nativeResult = DartGameAPI.Services.DartDetectNative.Detect(
+                    1, "radial_bench", camIds, curBytes, beforeImagesList.ToArray());
+
+                if (nativeResult == null) continue;
+                totalDarts++;
+
+                int detSeg = nativeResult.Segment;
+                int detMul = nativeResult.Multiplier;
+                double fx = nativeResult.CoordsX;
+                double fy = nativeResult.CoordsY;
+                double r = Math.Sqrt(fx * fx + fy * fy);
+
+                var region = ClassifyRadialRegion(r);
+                int geoMult = MultiplierFromRegion(region);
+                var (nearestName, nearestDistMm) = NearestBoundary(r);
+
+                bool isRingError = (detSeg == truthSeg && detMul != truthMul);
+                bool isNearBoundary = nearestDistMm <= 2.0;
+
+                string dartId = $"{gId}/{roundFolder}/{dartFolder}";
+
+                // Log for ALL darts
+                _logger.LogInformation(
+                    "RADIAL-EVAL: {DartId} pred={PredMul}x{PredSeg} gt={GtMul}x{GtSeg} r={R:F6} region={Region} geoMult={GeoMult} nearest={Nearest} dist={Dist:F2}mm",
+                    dartId, detMul, detSeg, truthMul, truthSeg, r, region, geoMult, nearestName, nearestDistMm);
+
+                if (isRingError)
+                {
+                    ringErrorCount++;
+                    _logger.LogWarning(
+                        "RING-ERROR-DETAIL: {DartId} pred={PredMul}x{PredSeg} gt={GtMul}x{GtSeg} r={R:F6} region={Region} geoMult={GeoMult} nearest={Nearest} dist={Dist:F2}mm fx={FX:F6} fy={FY:F6}",
+                        dartId, detMul, detSeg, truthMul, truthSeg, r, region, geoMult, nearestName, nearestDistMm, fx, fy);
+                }
+
+                // Include in output if ring error or near boundary
+                if (isRingError || isNearBoundary)
+                {
+                    entries.Add(new
+                    {
+                        dart_id = dartId,
+                        pred_segment = detSeg,
+                        pred_multiplier = detMul,
+                        gt_segment = truthSeg,
+                        gt_multiplier = truthMul,
+                        fused_x = Math.Round(fx, 6),
+                        fused_y = Math.Round(fy, 6),
+                        r = Math.Round(r, 6),
+                        r_mm = Math.Round(r * DOUBLE_OUTER_MM, 2),
+                        radial_region_by_geometry = region,
+                        geo_multiplier = geoMult,
+                        nearest_boundary = nearestName,
+                        distance_to_boundary_mm = Math.Round(nearestDistMm, 2),
+                        is_ring_error = isRingError,
+                        method = nativeResult.Method,
+                        confidence = Math.Round(nativeResult.Confidence, 4)
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Radial analysis error for {Path}: {Error}", fullPath, ex.Message);
+            }
+        }
+
+        DartGameAPI.Services.DartDetectNative.ClearBoard("radial_bench");
+
+        var analysis = new
+        {
+            total_darts = totalDarts,
+            ring_error_count = ringErrorCount,
+            near_boundary_count = entries.Count(e => !((dynamic)e).is_ring_error),
+            entries
+        };
+
+        // Write to file
+        var outputPath = Path.Combine(basePath, "radial_analysis.json");
+        var jsonStr = JsonSerializer.Serialize(analysis, new JsonSerializerOptions { WriteIndented = true });
+        await System.IO.File.WriteAllTextAsync(outputPath, jsonStr);
+        _logger.LogInformation("RADIAL-ANALYSIS: Wrote {Path} with {Count} entries ({RingErrors} ring errors)",
+            outputPath, entries.Count, ringErrorCount);
+
+        return Ok(analysis);
+    }
+
 }
 
 public class ReplayResults
