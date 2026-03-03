@@ -608,6 +608,7 @@ public class BenchmarkController : ControllerBase
         DartGameAPI.Services.DartDetectNative.InitBoard("radial_bench");
 
         var entries = new List<object>();
+        var missArtifacts = new List<object>();
         int ringErrorCount = 0;
         int totalDarts = 0;
 
@@ -685,6 +686,30 @@ public class BenchmarkController : ControllerBase
                         dartId, detMul, detSeg, truthMul, truthSeg, r, region, geoMult, nearestName, nearestDistMm, fx, fy);
                 }
 
+                // Collect miss artifacts separately (wrong miss or MissOverride on real darts)
+                bool isMissArtifact = (detMul == 0 && truthMul > 0) 
+                    || (nativeResult.Method.StartsWith("MissOverride") && truthSeg != 0);
+                if (isMissArtifact)
+                {
+                    missArtifacts.Add(new
+                    {
+                        dart_id = dartId,
+                        pred_segment = detSeg,
+                        pred_multiplier = detMul,
+                        gt_segment = truthSeg,
+                        gt_multiplier = truthMul,
+                        fused_x = Math.Round(fx, 6),
+                        fused_y = Math.Round(fy, 6),
+                        r = Math.Round(r, 6),
+                        r_mm = Math.Round(r * DOUBLE_OUTER_MM, 2),
+                        radial_region_by_geometry = region,
+                        nearest_boundary = nearestName,
+                        distance_to_boundary_mm = Math.Round(nearestDistMm, 2),
+                        method = nativeResult.Method,
+                        confidence = Math.Round(nativeResult.Confidence, 4)
+                    });
+                }
+
                 // Include in output if ring error or near boundary
                 if (isRingError || isNearBoundary)
                 {
@@ -717,11 +742,20 @@ public class BenchmarkController : ControllerBase
 
         DartGameAPI.Services.DartDetectNative.ClearBoard("radial_bench");
 
+        // Build summary: true ring errors = ring errors excluding miss/S0 confusion
+        var trueRingErrors = entries.Cast<dynamic>()
+            .Where(e => (bool)e.is_ring_error 
+                && (int)e.pred_multiplier != 0 
+                && !((string)e.method).StartsWith("MissOverride"))
+            .ToList();
+
         var analysis = new
         {
             total_darts = totalDarts,
             ring_error_count = ringErrorCount,
-            near_boundary_count = entries.Count(e => !((dynamic)e).is_ring_error),
+            true_ring_errors = trueRingErrors,
+            miss_artifacts = missArtifacts,
+            near_boundary_count = entries.Cast<dynamic>().Count(e => !(bool)e.is_ring_error),
             entries
         };
 
