@@ -667,7 +667,7 @@ public class BenchmarkController : ControllerBase
                 int geoMult = MultiplierFromRegion(region);
                 var (nearestName, nearestDistMm) = NearestBoundary(r);
 
-                bool isRingError = (detSeg == truthSeg && detMul != truthMul);
+                bool isRingError = (detSeg == truthSeg && detMul != truthMul && !(detSeg == 0 && truthSeg == 0));
                 bool isNearBoundary = nearestDistMm <= 2.0;
 
                 string dartId = $"{gId}/{roundFolder}/{dartFolder}";
