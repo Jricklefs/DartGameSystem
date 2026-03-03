@@ -26,13 +26,13 @@ static constexpr double WIRE_EPS_DEG = 0.50;
 static constexpr double WIRE_HARD_EPS_DEG = 0.25;
 
 // === FEATURE FLAGS: Phase 10 BCWT ===
-static bool g_use_bcwt = false;
+static bool g_use_bcwt = true;   // Phase 43Y: default ON
 static bool g_bcwt_allow_soft_include = true;
 static double g_bcwt_min_weight = 0.15;
 static double g_bcwt_max_weight_cap = 1.0;
 
 // === FEATURE FLAGS: Phase 10B BCWT Radial Stability Clamp ===
-static bool g_use_bcwt_radial_clamp = false;
+static bool g_use_bcwt_radial_clamp = true;   // Phase 43Y: default ON
 static int g_radial_clamp_mode = 0;  // 0=fallback_to_bestpair, 1=hybrid
 static bool g_radial_clamp_only_near_rings = true;
 static bool g_radial_clamp_respect_miss = true;

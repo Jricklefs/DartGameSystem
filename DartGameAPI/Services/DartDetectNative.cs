@@ -74,15 +74,7 @@ public static class DartDetectNative
         return Marshal.PtrToStringUTF8(ptr) ?? "unknown";
     }
 
-    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int dd_set_flag([MarshalAs(UnmanagedType.LPUTF8Str)] string flagName, int value);
-
-    public static int SetFlag(string flagName, int value)
-    {
-        return dd_set_flag(flagName, value);
-    }
-
-    /// <summary>
+        /// <summary>
     /// Detect a dart from camera images.
     /// </summary>
     /// <param name="dartNumber">1-based dart number in turn</param>

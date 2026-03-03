@@ -16,25 +16,22 @@ public class BenchmarkController : ControllerBase
     private static readonly object _replayLock = new();
     private static readonly int[] SegmentOrder = { 20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5 };
     private readonly ILogger<BenchmarkController> _logger;
+    private readonly RuntimeIntegrityService _rilService;
     private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public BenchmarkController(BenchmarkSettings settings, ILogger<BenchmarkController> logger, IDartDetectService dartDetect)
+    public BenchmarkController(BenchmarkSettings settings, ILogger<BenchmarkController> logger, IDartDetectService dartDetect, RuntimeIntegrityService rilService)
     {
         _settings = settings;
         _logger = logger;
         _dartDetect = dartDetect;
+        _rilService = rilService;
     }
 
     /// <summary>
     /// List all benchmark games with stats and timestamps, ordered newest first.
     /// </summary>
     
-    [HttpPost("set-flag")]
-    public IActionResult SetFlag([FromQuery] string name, [FromQuery] int value)
-    {
-        var result = DartGameAPI.Services.DartDetectNative.SetFlag(name, value);
-        return Ok(new { flag = name, value, result = result == 0 ? "ok" : "not_found" });
-    }
+    
 
     [HttpGet("games")]
     public ActionResult GetGames()
@@ -372,6 +369,8 @@ public class BenchmarkController : ControllerBase
                 // Collect per-dart detail if requested
                 if (includeDetails)
                 {
+                    var (assertPassed, assertIssues) = _rilService.RunPreScoringAssertions();
+                    var snap = _rilService.CurrentSnapshot;
                     dartDetails.Add(new ReplayDartDetail
                     {
                         Round = roundFolder, Dart = dartFolder,
@@ -384,7 +383,11 @@ public class BenchmarkController : ControllerBase
                         CoordsY = nativeResult?.CoordsY ?? 0,
                         CameraDetails = nativeResult?.CameraDetails,
                         TriDebug = nativeResult?.TriDebug,
-                        DetectMs = dartMs
+                        DetectMs = dartMs,
+                        ConfigHash = snap.ConfigHash,
+                        EnabledStack = snap.EnabledStack,
+                        AssertionsPassed = assertPassed,
+                        AssertionIssues = assertIssues
                     });
                 }
             }
@@ -404,7 +407,9 @@ public class BenchmarkController : ControllerBase
             ElapsedMs = sw.ElapsedMilliseconds,
             Games = gameBreakdowns.Values.Select(g => { g.AccuracyPct = g.TotalDarts > 0 ? Math.Round(100.0 * g.Correct / g.TotalDarts, 1) : 0; return g; }).ToList(),
             Errors = errors,
-            DartDetails = includeDetails ? dartDetails : null
+            DartDetails = includeDetails ? dartDetails : null,
+            ConfigHash = _rilService.CurrentSnapshot.ConfigHash,
+            AssertionsSkipped = includeDetails ? dartDetails.Count(d => !d.AssertionsPassed) : 0
         };
 
         lock (_replayLock) { _lastReplayResults = results; }
@@ -527,6 +532,8 @@ public class ReplayResults
     [JsonPropertyName("games")] public List<GameBreakdown> Games { get; set; } = new();
     [JsonPropertyName("errors")] public List<ReplayError> Errors { get; set; } = new();
     [JsonPropertyName("dart_details")] public List<ReplayDartDetail>? DartDetails { get; set; }
+    [JsonPropertyName("config_hash")] public string ConfigHash { get; set; } = "";
+    [JsonPropertyName("assertions_skipped")] public int AssertionsSkipped { get; set; }
 }
 
 public class GameBreakdown
@@ -565,6 +572,10 @@ public class ReplayDartDetail
     [JsonPropertyName("camera_details")] public Dictionary<string, CameraDetail>? CameraDetails { get; set; }
     [JsonPropertyName("tri_debug")] public TriangulationDebugInfo? TriDebug { get; set; }
     [JsonPropertyName("detect_ms")] public long DetectMs { get; set; }
+    [JsonPropertyName("config_hash")] public string ConfigHash { get; set; } = "";
+    [JsonPropertyName("enabled_stack")] public List<string> EnabledStack { get; set; } = new();
+    [JsonPropertyName("assertions_passed")] public bool AssertionsPassed { get; set; } = true;
+    [JsonPropertyName("assertion_issues")] public List<string> AssertionIssues { get; set; } = new();
 }
 
 public class DebugDetectRequest

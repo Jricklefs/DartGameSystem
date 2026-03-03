@@ -68,6 +68,9 @@ builder.Configuration.GetSection("Benchmark").Bind(benchmarkSettings);
 builder.Services.AddSingleton(benchmarkSettings);
 builder.Services.AddSingleton<BenchmarkService>();
 
+// Phase 43Y: Runtime Integrity Lockdown
+builder.Services.AddSingleton<RuntimeIntegrityService>();
+
 // X01 Game Engine and supporting services
 builder.Services.AddSingleton<GameEventDispatcher>();
 builder.Services.AddSingleton<IDartSensorController, SignalRSensorController>();
@@ -111,6 +114,10 @@ using (var scope = app.Services.CreateScope())
 // Initialize dart detection (loads calibration for native, no-op for HTTP)
 var dartDetectService = app.Services.GetRequiredService<IDartDetectService>();
 await dartDetectService.InitializeAsync();
+
+// Phase 43Y: Write startup config snapshot
+var rilService = app.Services.GetRequiredService<RuntimeIntegrityService>();
+rilService.WriteStartupSnapshot();
 
 // Configure pipeline
 app.UseSwagger();

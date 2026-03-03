@@ -39,7 +39,7 @@ int g_hhs_baseline_wedge = -1;
 // ============================================================================
 // Feature Flags (default OFF)
 // ============================================================================
-static bool g_use_hhs = false;
+static bool g_use_hhs = true;   // Phase 43Y: default ON
 static bool g_hhs_enable_single = true;
 static bool g_hhs_enable_pair = true;
 static bool g_hhs_enable_tri = true;
