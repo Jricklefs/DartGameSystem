@@ -9,6 +9,9 @@
 #include <map>
 #include <cmath>
 #include <set>
+
+// Phase 45: CWSC needs WHRS candidate data (struct in dart_detect_internal.h)
+extern std::vector<HhsCandidateExport> g_hhs_candidates;
 #include <opencv2/calib3d.hpp>
 // === FEATURE FLAG: Dart Centerline V2 ===
 static bool g_use_robust_triangulation = true;
@@ -38,6 +41,10 @@ static bool g_radial_clamp_only_near_rings = true;
 static bool g_radial_clamp_respect_miss = true;
 static double RADIAL_DELTA_THRESHOLD = 0.030;
 static double NEAR_RING_EPS = 0.020;
+
+// === FEATURE FLAG: Phase 45 CWSC ===
+static bool g_use_cwsc = true;
+static double g_cwsc_epsilon_deg = 0.5;
 
 // Ring boundary radii in normalized space (radius / 170.0)
 static const double RING_RADII[] = {
@@ -70,6 +77,8 @@ int set_triangulation_flag(const char* name, int value) {
     if (s == "RadialClamp_RespectMissOverride") { g_radial_clamp_respect_miss = (value != 0); return 0; }
     if (s == "RadialClamp_DeltaThreshold") { RADIAL_DELTA_THRESHOLD = value / 1000.0; return 0; }
     if (s == "RadialClamp_NearRingEps") { NEAR_RING_EPS = value / 1000.0; return 0; }
+    if (s == "UseCWSC") { g_use_cwsc = (value != 0); return 0; }
+    if (s == "CWSC_EpsilonDeg") { g_cwsc_epsilon_deg = value / 100.0; return 0; }
     return -1;  // not our flag
 }
 
@@ -1105,6 +1114,81 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         }
     }
 
+
+    // === Phase 45: CWSC (Conditioned Wedge Stability Control) ===
+    bool cwsc_active = false;
+    bool cwsc_wedge_stable = true;
+    bool cwsc_perturbation_flip = false;
+    double cwsc_weighted_vote_margin = vote_margin;
+    bool cwsc_fallback_used = false;
+    std::string cwsc_fallback_type;
+
+    if (g_use_cwsc && boundary_distance_deg <= 2.0) {
+        cwsc_active = true;
+
+        double eps = g_cwsc_epsilon_deg;
+        auto wedge_at = [](double a) -> int {
+            double adj = std::fmod(a - 90.0 + 9.0 + 360.0, 360.0);
+            return ((int)(adj / 18.0)) % 20;
+        };
+        int wc = wedge_at(final_angle_deg);
+        if (wedge_at(final_angle_deg + eps) != wc || wedge_at(final_angle_deg - eps) != wc) {
+            cwsc_wedge_stable = false;
+            cwsc_perturbation_flip = true;
+        }
+
+        if (!cwsc_wedge_stable) {
+            // Perturbation flip detected. Check which wedge the perturbation 
+            // favors (the one that appears in 2 of the 3 test angles: center, +eps, -eps)
+            int wp = wedge_at(final_angle_deg + eps);
+            int wm = wedge_at(final_angle_deg - eps);
+            int perturb_favored = -1;
+            if (wp == wm) perturb_favored = wp;  // both perturbations agree
+            else if (wp == wc) perturb_favored = wc;
+            else if (wm == wc) perturb_favored = wc;
+            // else: all 3 different (very unlikely), do nothing
+
+            // Weighted vote conditioning
+            std::map<int, double> ww;
+            for (const auto& [cid, cl] : cam_lines) {
+                auto dit = camera_results.find(cid);
+                if (dit == camera_results.end()) continue;
+                double bc = cl.weak_barrel_signal ? 0.1
+                    : std::min(1.0, dit->second.barrel_pixel_count / 200.0)
+                    * std::min(1.0, dit->second.barrel_aspect_ratio / 6.0);
+                ww[cl.vote.segment] += bc * cl.detection_quality;
+            }
+            double bw = 0, sw2 = 0; int bs = final_score.segment;
+            for (const auto& [s, w] : ww) {
+                if (w > bw) { sw2 = bw; bw = w; bs = s; }
+                else if (w > sw2) sw2 = w;
+            }
+            cwsc_weighted_vote_margin = (bw > 1e-9) ? (bw - sw2) / bw : 0.0;
+
+            // Only switch wedge if:
+            // 1. The perturbation-favored wedge differs from current
+            // 2. The perturbation-favored segment matches the weighted vote winner
+            // 3. This is an adjacent wedge
+            // This ensures we only switch when BOTH the angle analysis 
+            // AND camera votes agree on the neighbor
+            if (perturb_favored >= 0 && perturb_favored != wc) {
+                int perturb_seg = SEGMENT_ORDER[perturb_favored];
+                if (perturb_seg == bs && perturb_seg != final_score.segment
+                    && cwsc_weighted_vote_margin >= 0.2) {
+                    int wedge_diff = std::abs(perturb_favored - wc);
+                    if (wedge_diff > 10) wedge_diff = 20 - wedge_diff;
+                    if (wedge_diff <= 1) {
+                        final_score.segment = perturb_seg;
+                        final_score.score = perturb_seg * final_score.multiplier;
+                        cwsc_fallback_used = true;
+                        cwsc_fallback_type = "perturb_vote_agree";
+                        cwsc_wedge_stable = true;
+                    }
+                }
+            }
+        }
+    }
+
     // === Phase 5: Confidence Score ===
     double avg_dq = 0;
     for (const auto& cid : cam_ids) avg_dq += cam_lines[cid].detection_quality;
@@ -1294,6 +1378,13 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     tri_dbg.x_preclamp_y = x_preclamp.y;
     tri_dbg.x_bestpair_x = x_bestpair_10b.x;
     tri_dbg.x_bestpair_y = x_bestpair_10b.y;
+    // Phase 45: CWSC
+    tri_dbg.cwsc_active = cwsc_active;
+    tri_dbg.cwsc_wedge_stable = cwsc_wedge_stable;
+    tri_dbg.cwsc_perturbation_flip = cwsc_perturbation_flip;
+    tri_dbg.cwsc_weighted_vote_margin = cwsc_weighted_vote_margin;
+    tri_dbg.cwsc_fallback_used = cwsc_fallback_used;
+    tri_dbg.cwsc_fallback_type = cwsc_fallback_type;
 
     if (radial_clamp_applied) {
         result.method = radial_clamp_method;

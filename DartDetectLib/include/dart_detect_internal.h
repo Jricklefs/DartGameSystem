@@ -225,6 +225,13 @@ struct IntersectionResult {
         double hhs_selected_residual = 0.0;
         int hhs_selected_axis_support = 0;
         double hhs_selected_qi = 0.0;
+        // Phase 45: CWSC
+        bool cwsc_active = false;
+        bool cwsc_wedge_stable = true;
+        bool cwsc_perturbation_flip = false;
+        double cwsc_weighted_vote_margin = 0.0;
+        bool cwsc_fallback_used = false;
+        std::string cwsc_fallback_type;
     };
     std::optional<TriangulationDebug> tri_debug;
 };
@@ -471,6 +478,24 @@ std::optional<IntersectionResult> hhs_select(
 // ============================================================================
 // Module: whrs.h - Phase 26: Weighted Hypothesis Ranking Selector
 // ============================================================================
+
+// Phase 45: Moved here so triangulation.cpp can use it
+struct HhsCandidateExport {
+    std::string type;
+    Point2f coords;
+    double radius;
+    double theta_deg;
+    ScoreResult score;
+    double weighted_median_residual;
+    int inlier_camera_count;
+    int axis_support_count;
+    double sum_qi;
+    double max_qi;
+    int cameras_used;
+    double radial_delta_from_tri;
+    double ring_boundary_distance;
+    std::map<std::string, double> reproj_error_per_cam;
+};
 
 int set_whrs_flag(const char* name, int value);
 bool is_whrs_enabled();

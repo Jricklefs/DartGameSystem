@@ -627,6 +627,15 @@ DD_API const char* dd_detect(
                          << ",\"hhs_selected_axis_support\":" << td.hhs_selected_axis_support
                          << ",\"hhs_selected_qi\":" << td.hhs_selected_qi;
                 }
+                // Phase 45: CWSC debug
+                json << ",\"cwsc_active\":" << (td.cwsc_active ? "true" : "false")
+                     << ",\"cwsc_wedge_stable\":" << (td.cwsc_wedge_stable ? "true" : "false")
+                     << ",\"cwsc_perturbation_flip\":" << (td.cwsc_perturbation_flip ? "true" : "false")
+                     << ",\"cwsc_weighted_vote_margin\":" << td.cwsc_weighted_vote_margin
+                     << ",\"cwsc_fallback_used\":" << (td.cwsc_fallback_used ? "true" : "false");
+                if (td.cwsc_fallback_used) {
+                    json << ",\"cwsc_fallback_type\":\"" << td.cwsc_fallback_type << "\"";
+                }
                 json << ",\"cam_debug\":{";
 
 
