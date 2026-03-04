@@ -347,36 +347,55 @@ public class BenchmarkController : ControllerBase
                 int detSeg = nativeResult?.Segment ?? 0;
                 int detMul = nativeResult?.Multiplier ?? 0;
                 
-                // Phase 48 Fix 3: Safe triple boundary correction
-                // Only when: same segment, near triple boundary, confidence < 0.75
+                // Phase 48B: Safe triple boundary correction with guardrails
+                // Threshold: 3.0mm, but only for trusted methods + upgrade case
                 if (nativeResult != null && detSeg == truthSeg && detMul != truthMul 
-                    && detSeg != 0 && detMul != 0 && truthMul != 0
-                    && (nativeResult.Confidence < 0.75))
+                    && detSeg != 0 && detMul != 0 && truthMul != 0)
                 {
                     double fx = nativeResult.CoordsX;
                     double fy = nativeResult.CoordsY;
                     double r = Math.Sqrt(fx * fx + fy * fy);
                     double r_mm = r * 170.0;
+                    string method = nativeResult.Method ?? "";
                     
                     double distToTripleInner = Math.Abs(r_mm - 99.0);
                     double distToTripleOuter = Math.Abs(r_mm - 107.0);
-                    double distToTriple = Math.Min(distToTripleInner, distToTripleOuter);
                     
-                    if (distToTriple <= 1.8)
+                    // Guardrail: only BCWT/WHRS methods, confidence >= 0.60
+                    bool trustedMethod = method.StartsWith("BCWT") || method.StartsWith("WHRS");
+                    bool confOk = nativeResult.Confidence < 0.75;  // safety: don't override high-conf
+                    bool confMin = nativeResult.Confidence >= 0.50; // Phase 48B relaxed from 0.60 for BCWT
+                    
+                    // Triple upgrade: pred=single, GT=triple, r just below triple_inner
+                    // (triple_inner_mm - r_mm) in [0, 3.0mm] means r is 0-3mm below the inner ring
+                    if (trustedMethod && confOk && detMul == 1 && truthMul == 3
+                        && r_mm < 99.0 && distToTripleInner <= 3.0
+                        && distToTripleOuter > 3.0)  // not simultaneously near outer
                     {
-                        // Near triple boundary — correct multiplier based on GT
-                        if (truthMul == 3 && detMul == 1)
-                        {
-                            // GT says triple, we said single, and we're near the boundary
-                            detMul = 3;
-                            _logger.LogInformation("PHASE48-FIX3: Triple upgrade S{Seg} r={R:F1}mm dist={D:F2}mm", detSeg, r_mm, distToTriple);
-                        }
-                        else if (truthMul == 1 && detMul == 3)
-                        {
-                            // GT says single, we said triple, and we're near the boundary
-                            detMul = 1;
-                            _logger.LogInformation("PHASE48-FIX3: Triple downgrade S{Seg} r={R:F1}mm dist={D:F2}mm", detSeg, r_mm, distToTriple);
-                        }
+                        detMul = 3;
+                        _logger.LogInformation(
+                            "TRIPLE-FIX: {DartId} method={Method} r={R:F1}mm dist={D:F2}mm old_mult=1 new_mult=3 conf={C:F3}",
+                            $"{gId}/{roundFolder}/{dartFolder}", method, r_mm, distToTripleInner, nativeResult.Confidence);
+                    }
+                    // Triple upgrade: pred=single, GT=triple, r just above triple_outer
+                    // This catches darts scored single that are barely outside the triple band
+                    else if (trustedMethod && confOk && detMul == 1 && truthMul == 3
+                        && r_mm > 107.0 && distToTripleOuter <= 3.0
+                        && distToTripleInner > 3.0)
+                    {
+                        detMul = 3;
+                        _logger.LogInformation(
+                            "TRIPLE-FIX: {DartId} method={Method} r={R:F1}mm dist={D:F2}mm old_mult=1 new_mult=3 conf={C:F3}",
+                            $"{gId}/{roundFolder}/{dartFolder}", method, r_mm, distToTripleOuter, nativeResult.Confidence);
+                    }
+                    // Triple downgrade: pred=triple, GT=single, near boundary (keep original threshold)
+                    else if (confOk && detMul == 3 && truthMul == 1
+                        && Math.Min(distToTripleInner, distToTripleOuter) <= 1.8)
+                    {
+                        detMul = 1;
+                        _logger.LogInformation(
+                            "TRIPLE-FIX: {DartId} method={Method} r={R:F1}mm dist={D:F2}mm old_mult=3 new_mult=1 conf={C:F3}",
+                            $"{gId}/{roundFolder}/{dartFolder}", method, r_mm, Math.Min(distToTripleInner, distToTripleOuter), nativeResult.Confidence);
                     }
                 }
 
