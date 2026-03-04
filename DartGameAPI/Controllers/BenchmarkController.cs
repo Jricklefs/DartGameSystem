@@ -16,6 +16,7 @@ public class BenchmarkController : ControllerBase
     private static readonly object _replayLock = new();
     private static readonly int[] SegmentOrder = { 20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5 };
     private readonly ILogger<BenchmarkController> _logger;
+    private static bool _enableTripleBoundaryCorrection = false;
     private readonly RuntimeIntegrityService _rilService;
     private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
@@ -347,9 +348,10 @@ public class BenchmarkController : ControllerBase
                 int detSeg = nativeResult?.Segment ?? 0;
                 int detMul = nativeResult?.Multiplier ?? 0;
                 
-                // Phase 48B: Safe triple boundary correction with guardrails
+                // Phase 48B: Safe triple boundary correction (feature-flagged, default OFF)
                 // Threshold: 3.0mm, but only for trusted methods + upgrade case
-                if (nativeResult != null && detSeg == truthSeg && detMul != truthMul 
+                if (_enableTripleBoundaryCorrection
+                    && nativeResult != null && detSeg == truthSeg && detMul != truthMul 
                     && detSeg != 0 && detMul != 0 && truthMul != 0)
                 {
                     double fx = nativeResult.CoordsX;
@@ -823,6 +825,21 @@ public class BenchmarkController : ControllerBase
 
 
     // ===== PHASE 47: RADIAL GEOMETRY & CLAMP AUDIT =====
+
+
+    /// <summary>Toggle Phase 48B triple boundary correction</summary>
+    [HttpPost("replay/triple-correction/{enabled}")]
+    public IActionResult ToggleTripleCorrection(bool enabled)
+    {
+        _enableTripleBoundaryCorrection = enabled;
+        return Ok(new { tripleCorrection = _enableTripleBoundaryCorrection });
+    }
+
+    [HttpGet("replay/triple-correction")]
+    public IActionResult GetTripleCorrectionStatus()
+    {
+        return Ok(new { tripleCorrection = _enableTripleBoundaryCorrection });
+    }
 
     [HttpPost("replay/radial-audit")]
     public async Task<ActionResult> RunRadialAudit([FromQuery] string? gameId = null)
