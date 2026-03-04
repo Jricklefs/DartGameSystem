@@ -760,11 +760,22 @@ DD_API const char* dd_detect(
             ScoreResult score = score_from_ellipse_calibration(
                 det.tip->x, det.tip->y, cal_it->second);
             
+            // Phase 48 Fix 2: Compute normalized coords via TPS warp for SingleCam
+            // so that fused_r is not zero (enables post-DLL radial analysis)
+            double sc_coords_x = 0, sc_coords_y = 0;
+            if (cal_it->second.tps_cache.valid) {
+                auto warped = cal_it->second.tps_cache.transform(det.tip->x, det.tip->y);
+                sc_coords_x = warped.x;
+                sc_coords_y = warped.y;
+            }
+            
             json << json_int("segment", score.segment) << ","
                  << json_int("multiplier", score.multiplier) << ","
                  << json_int("score", score.score) << ","
                  << json_string("method", "SingleCam_" + det.method) << ","
-                 << json_double("confidence", det.confidence * 0.5);
+                 << json_double("confidence", det.confidence * 0.5)
+                 << ",\"coords_x\":" << sc_coords_x
+                 << ",\"coords_y\":" << sc_coords_y;
         } else {
             json << json_int("segment", 0) << ","
                  << json_int("multiplier", 0) << ","

@@ -945,20 +945,29 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         
         if (!g_radial_clamp_only_near_rings) near_ring_any_10b = true;
         
+        // Phase 48 Fix 1: Cap radial clamp at 3mm. If delta > 3mm, keep BCWT (don't fall back to bestpair)
+        static const double MAX_CLAMP_DELTA_NORM = 3.0 / 170.0;  // 3mm in normalized space
         if (near_ring_any_10b && radial_delta_10b > RADIAL_DELTA_THRESHOLD) {
-            radial_clamp_applied = true;
-            if (g_radial_clamp_mode == 0) {
-                // Mode A: fallback to bestpair
-                final_coords = x_bestpair_10b;
-                radial_clamp_reason = "radial_delta";
-                radial_clamp_method = "BestPair_Fallback_RadialClamp";
+            if (radial_delta_10b > MAX_CLAMP_DELTA_NORM) {
+                // Delta too large — bestpair disagrees too much. Keep BCWT.
+                radial_clamp_applied = false;
+                radial_clamp_reason = "delta_exceeds_3mm_kept_bcwt";
+                // final_coords stays as BCWT (already set above)
             } else {
-                // Mode B: hybrid - BCWT angle, bestpair radius
-                double theta_bcwt = std::atan2(bcwt_point->y, bcwt_point->x);
-                final_coords = Point2f(std::cos(theta_bcwt) * r_bestpair_10b,
-                                       std::sin(theta_bcwt) * r_bestpair_10b);
-                radial_clamp_reason = "radial_delta_hybrid";
-                radial_clamp_method = "BCWT_HybridAngle_RadiusBestPair";
+                radial_clamp_applied = true;
+                if (g_radial_clamp_mode == 0) {
+                    // Mode A: fallback to bestpair
+                    final_coords = x_bestpair_10b;
+                    radial_clamp_reason = "radial_delta";
+                    radial_clamp_method = "BestPair_Fallback_RadialClamp";
+                } else {
+                    // Mode B: hybrid - BCWT angle, bestpair radius
+                    double theta_bcwt = std::atan2(bcwt_point->y, bcwt_point->x);
+                    final_coords = Point2f(std::cos(theta_bcwt) * r_bestpair_10b,
+                                           std::sin(theta_bcwt) * r_bestpair_10b);
+                    radial_clamp_reason = "radial_delta_hybrid";
+                    radial_clamp_method = "BCWT_HybridAngle_RadiusBestPair";
+                }
             }
         }
     }
