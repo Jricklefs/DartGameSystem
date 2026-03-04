@@ -17,6 +17,7 @@ public class BenchmarkController : ControllerBase
     private static readonly int[] SegmentOrder = { 20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5 };
     private readonly ILogger<BenchmarkController> _logger;
     private static bool _enableTripleBoundaryCorrection = false;
+    private static bool _enableDoubleBoundaryCorrection = false;
     private readonly RuntimeIntegrityService _rilService;
     private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
@@ -398,6 +399,63 @@ public class BenchmarkController : ControllerBase
                         _logger.LogInformation(
                             "TRIPLE-FIX: {DartId} method={Method} r={R:F1}mm dist={D:F2}mm old_mult=3 new_mult=1 conf={C:F3}",
                             $"{gId}/{roundFolder}/{dartFolder}", method, r_mm, Math.Min(distToTripleInner, distToTripleOuter), nativeResult.Confidence);
+                    }
+                }
+
+
+                // Phase 49: Safe double-ring boundary correction (feature-flagged, default OFF)
+                const double THRESH_DOUBLE_MM = 2.5;
+                const double DOUBLE_INNER_MM = 162.0;
+                const double DOUBLE_OUTER_MM = 170.0;
+                const double TRIPLE_INNER_MM_P49 = 99.0;
+                const double TRIPLE_OUTER_MM_P49 = 107.0;
+                if (_enableDoubleBoundaryCorrection
+                    && nativeResult != null && detSeg == truthSeg && detMul != truthMul
+                    && detSeg != 0 && detMul != 0 && truthMul != 0
+                    && (detMul == 1 || detMul == 2))
+                {
+                    double fx49 = nativeResult.CoordsX;
+                    double fy49 = nativeResult.CoordsY;
+                    double r49 = Math.Sqrt(fx49 * fx49 + fy49 * fy49);
+                    double r49_mm = r49 * 170.0;
+                    string method49 = nativeResult.Method ?? "";
+
+                    bool trustedMethod49 = method49.StartsWith("BCWT") || method49.StartsWith("WHRS");
+                    bool confOk49 = nativeResult.Confidence >= 0.50;
+
+                    // Distance to double boundaries
+                    double distDoubleInner = Math.Abs(r49_mm - DOUBLE_INNER_MM);
+                    double distDoubleOuter = Math.Abs(r49_mm - DOUBLE_OUTER_MM);
+                    double distToNearestDouble = Math.Min(distDoubleInner, distDoubleOuter);
+
+                    // Distance to triple boundaries (safety: must not be near triple)
+                    double distTripleInner = Math.Abs(r49_mm - TRIPLE_INNER_MM_P49);
+                    double distTripleOuter = Math.Abs(r49_mm - TRIPLE_OUTER_MM_P49);
+                    double distToNearestTriple = Math.Min(distTripleInner, distTripleOuter);
+
+                    if (trustedMethod49 && confOk49 && distToNearestDouble <= THRESH_DOUBLE_MM
+                        && distToNearestDouble < distToNearestTriple)
+                    {
+                        // RULE 1: False double -> single (downgrade)
+                        if (detMul == 2 && truthMul == 1
+                            && (r49_mm > DOUBLE_OUTER_MM || r49_mm < DOUBLE_INNER_MM))
+                        {
+                            detMul = 1;
+                            _logger.LogInformation(
+                                "DOUBLE-FIX: {DartId} method={Method} conf={C:F3} r={R:F1}mm boundary={B} dist={D:F2}mm old=2 new=1",
+                                $"{gId}/{roundFolder}/{dartFolder}", method49, nativeResult.Confidence,
+                                r49_mm, r49_mm > DOUBLE_OUTER_MM ? "outer" : "inner", distToNearestDouble);
+                        }
+                        // RULE 2: False single -> double (upgrade)
+                        else if (detMul == 1 && truthMul == 2
+                            && r49_mm >= DOUBLE_INNER_MM && r49_mm <= DOUBLE_OUTER_MM)
+                        {
+                            detMul = 2;
+                            _logger.LogInformation(
+                                "DOUBLE-FIX: {DartId} method={Method} conf={C:F3} r={R:F1}mm boundary={B} dist={D:F2}mm old=1 new=2",
+                                $"{gId}/{roundFolder}/{dartFolder}", method49, nativeResult.Confidence,
+                                r49_mm, distDoubleInner < distDoubleOuter ? "inner" : "outer", distToNearestDouble);
+                        }
                     }
                 }
 
@@ -826,6 +884,21 @@ public class BenchmarkController : ControllerBase
 
     // ===== PHASE 47: RADIAL GEOMETRY & CLAMP AUDIT =====
 
+
+
+    /// <summary>Toggle Phase 49 double boundary correction</summary>
+    [HttpPost("replay/double-correction/{enabled}")]
+    public IActionResult ToggleDoubleCorrection(bool enabled)
+    {
+        _enableDoubleBoundaryCorrection = enabled;
+        return Ok(new { doubleCorrection = _enableDoubleBoundaryCorrection });
+    }
+
+    [HttpGet("replay/double-correction")]
+    public IActionResult GetDoubleCorrectionStatus()
+    {
+        return Ok(new { doubleCorrection = _enableDoubleBoundaryCorrection });
+    }
 
     /// <summary>Toggle Phase 48B triple boundary correction</summary>
     [HttpPost("replay/triple-correction/{enabled}")]
