@@ -1,0 +1,157 @@
+{
+  "overall_accuracy": 82.01,
+  "total_darts": 1073,
+  "accuracy_by_cam_usage_pattern": {
+    "2_cams_cam2_dropped": {
+      "count": 376,
+      "correct": 331,
+      "accuracy": 88.03
+    },
+    "3_cams": {
+      "count": 436,
+      "correct": 315,
+      "accuracy": 72.25
+    },
+    "2_cams_cam0_dropped": {
+      "count": 79,
+      "correct": 71,
+      "accuracy": 89.87
+    },
+    "2_cams_cam1_dropped": {
+      "count": 182,
+      "correct": 163,
+      "accuracy": 89.56
+    }
+  },
+  "cam2_accuracy_when_used": 78.77,
+  "cam2_accuracy_when_dropped": 88.03,
+  "method_accuracy_table": {
+    "edge_pair": {
+      "uses": 1932,
+      "accuracy": 85.71,
+      "avg_residual": 0.005043,
+      "drop_rate": 8.64,
+      "errors": {
+        "adjacent_seg": 92,
+        "far_seg": 4,
+        "ring_error": 74,
+        "miss_false_neg": 99,
+        "miss_false_pos": 7
+      }
+    },
+    "ridge_centerline": {
+      "uses": 53,
+      "accuracy": 84.91,
+      "avg_residual": 0.009002,
+      "drop_rate": 41.51,
+      "errors": {
+        "adjacent_seg": 3,
+        "ring_error": 4,
+        "miss_false_neg": 1
+      }
+    },
+    "barrel_fitline": {
+      "uses": 674,
+      "accuracy": 84.12,
+      "avg_residual": 0.012175,
+      "drop_rate": 49.41,
+      "errors": {
+        "adjacent_seg": 23,
+        "miss_false_neg": 50,
+        "ring_error": 27,
+        "miss_false_pos": 7
+      }
+    },
+    "barrel_width_fit": {
+      "uses": 65,
+      "accuracy": 75.38,
+      "avg_residual": 0.021221,
+      "drop_rate": 36.92,
+      "errors": {
+        "miss_false_neg": 4,
+        "ring_error": 10,
+        "adjacent_seg": 2
+      }
+    },
+    "skeleton_hough_fallback": {
+      "uses": 132,
+      "accuracy": 68.18,
+      "avg_residual": 0.013456,
+      "drop_rate": 37.12,
+      "errors": {
+        "adjacent_seg": 7,
+        "ring_error": 12,
+        "miss_false_neg": 19,
+        "miss_false_pos": 3,
+        "far_seg": 1
+      }
+    },
+    "barrel_ransac": {
+      "uses": 235,
+      "accuracy": 77.45,
+      "avg_residual": 0.006241,
+      "drop_rate": 9.79,
+      "errors": {
+        "adjacent_seg": 15,
+        "ring_error": 12,
+        "miss_false_neg": 22,
+        "miss_false_pos": 4
+      }
+    },
+    "centroid_constrained": {
+      "uses": 70,
+      "accuracy": 55.71,
+      "avg_residual": 0.010141,
+      "drop_rate": 27.14,
+      "errors": {
+        "ring_error": 2,
+        "miss_false_neg": 25,
+        "miss_false_pos": 1,
+        "far_seg": 1,
+        "adjacent_seg": 2
+      }
+    }
+  },
+  "conditioning_vs_error": {
+    "condition_bins": [
+      {
+        "range": "1.0-2.0",
+        "count": 926,
+        "error_rate": 10.37
+      },
+      {
+        "range": "2.0-5.0",
+        "count": 32,
+        "error_rate": 18.75
+      },
+      {
+        "range": "5.0-10.0",
+        "count": 14,
+        "error_rate": 21.43
+      },
+      {
+        "range": "10.0+",
+        "count": 13,
+        "error_rate": 7.69
+      }
+    ]
+  },
+  "drop_simulation": {
+    "strict_drop": {
+      "accuracy": 83.35,
+      "correct": 861
+    },
+    "all_3_weighted": {
+      "accuracy": 68.05,
+      "correct": 703
+    },
+    "best_2_cam": {
+      "accuracy": 63.5,
+      "correct": 656
+    },
+    "3_cam_wls": {
+      "accuracy": 66.6,
+      "correct": 688
+    }
+  }
+}

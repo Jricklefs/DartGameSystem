@@ -1,0 +1,2882 @@
+{
+  "notes": "Image references for visual inspection. Benchmark images stored at C:\\Users\\clawd\\DartDetectionAI\\benchmark\\{game_id}\\round_{round_index}_dart_{dart_index}\\cam{N}_previous.jpg",
+  "images": [
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_5_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_5_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_5_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 11,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_11_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 11,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_11_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 11,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_11_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_5_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_5_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_5_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round_index": 8,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b11f0c09-3ccd-4eb3-b6ff-f894477575da/round_8_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round_index": 8,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b11f0c09-3ccd-4eb3-b6ff-f894477575da/round_8_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round_index": 8,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b11f0c09-3ccd-4eb3-b6ff-f894477575da/round_8_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 15,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_15_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 15,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_15_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 15,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_15_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 15,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_15_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 15,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_15_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 15,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_15_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+      "round_index": 3,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/6da749d1-b908-425f-9c47-b77a99682969/round_3_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+      "round_index": 3,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/6da749d1-b908-425f-9c47-b77a99682969/round_3_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+      "round_index": 3,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/6da749d1-b908-425f-9c47-b77a99682969/round_3_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_5_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_5_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_5_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_18_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_18_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_18_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 5,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_5_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 5,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_5_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 5,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_5_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_4_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_4_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_4_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 6,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_6_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 6,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_6_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 6,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_6_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 19,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_19_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 19,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_19_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 19,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_19_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_1_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_1_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_1_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_5_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_5_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_5_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 13,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_13_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 13,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_13_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 13,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_13_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 16,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_16_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 16,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_16_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 16,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_16_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 9,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_9_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 9,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_9_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 9,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_9_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_10_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_10_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_10_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_10_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_10_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_10_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 27,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_27_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 27,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_27_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 27,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_27_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 17,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_17_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 17,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_17_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 17,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_17_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 2,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_2_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 2,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_2_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 2,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_2_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 9,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_9_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 9,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_9_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 9,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_9_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_4_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_4_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_4_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 15,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_15_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 15,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_15_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 15,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_15_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 21,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_21_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 21,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_21_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 21,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_21_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_10_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_10_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_10_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_2_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_2_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_2_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_10_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_10_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_10_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+      "round_index": 4,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/820b85b1-afc0-4b91-b7b4-b349bc025c78/round_4_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+      "round_index": 4,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/820b85b1-afc0-4b91-b7b4-b349bc025c78/round_4_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+      "round_index": 4,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/820b85b1-afc0-4b91-b7b4-b349bc025c78/round_4_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 15,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_15_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 15,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_15_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 15,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_15_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 7,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_7_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 7,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_7_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 7,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_7_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 20,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_20_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 20,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_20_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 20,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_20_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+      "round_index": 4,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/a48aef5d-3077-432c-87ab-a8c724d8cac0/round_4_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+      "round_index": 4,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/a48aef5d-3077-432c-87ab-a8c724d8cac0/round_4_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+      "round_index": 4,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/a48aef5d-3077-432c-87ab-a8c724d8cac0/round_4_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 20,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_20_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 20,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_20_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 20,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_20_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_5_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_5_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_5_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_5_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_5_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_5_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_1_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_1_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_1_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 18,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_18_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 18,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_18_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 18,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_18_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 5,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_5_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 5,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_5_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 5,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_5_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 9,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_9_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 9,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_9_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 9,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_9_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+      "round_index": 7,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/820b85b1-afc0-4b91-b7b4-b349bc025c78/round_7_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+      "round_index": 7,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/820b85b1-afc0-4b91-b7b4-b349bc025c78/round_7_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+      "round_index": 7,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/820b85b1-afc0-4b91-b7b4-b349bc025c78/round_7_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/7b67ae9a-8763-4504-8e02-22d94f04647e/round_1_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/7b67ae9a-8763-4504-8e02-22d94f04647e/round_1_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/7b67ae9a-8763-4504-8e02-22d94f04647e/round_1_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 10,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_10_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 10,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_10_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 10,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_10_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_2_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_2_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_2_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 22,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_22_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 22,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_22_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 22,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_22_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+      "round_index": 6,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5d2799f-c559-4e2f-9ec7-252df1a644f8/round_6_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+      "round_index": 6,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5d2799f-c559-4e2f-9ec7-252df1a644f8/round_6_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+      "round_index": 6,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5d2799f-c559-4e2f-9ec7-252df1a644f8/round_6_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_18_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_18_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_18_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_4_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_4_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_4_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 25,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_25_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 25,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_25_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 25,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_25_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 17,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_17_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 17,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_17_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 17,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_17_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 9,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_9_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 9,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_9_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 9,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_9_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 9,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_9_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 9,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_9_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 9,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_9_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 11,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_11_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 11,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_11_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 11,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_11_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 9,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_9_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 9,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_9_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 9,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_9_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_4_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_4_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_4_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 9,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_9_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 9,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_9_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 9,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_9_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_12_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_12_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_12_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_1_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_1_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_1_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 14,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_14_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 14,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_14_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 14,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_14_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 11,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_11_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 11,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_11_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 11,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_11_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 11,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_11_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 11,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_11_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 11,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_11_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/36c3b7ad-c52f-418f-acfb-7b68f2142a7c/round_12_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/36c3b7ad-c52f-418f-acfb-7b68f2142a7c/round_12_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/36c3b7ad-c52f-418f-acfb-7b68f2142a7c/round_12_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+      "round_index": 6,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603/round_6_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+      "round_index": 6,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603/round_6_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+      "round_index": 6,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603/round_6_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_13_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_13_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_13_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_1_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_1_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_1_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5d2799f-c559-4e2f-9ec7-252df1a644f8/round_5_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5d2799f-c559-4e2f-9ec7-252df1a644f8/round_5_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5d2799f-c559-4e2f-9ec7-252df1a644f8/round_5_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 2,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_2_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 2,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_2_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 2,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_2_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 13,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_13_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 13,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_13_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 13,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_13_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_12_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_12_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "8f63b841-6574-4539-bf97-26304c8a40c6",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/8f63b841-6574-4539-bf97-26304c8a40c6/round_12_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 10,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_10_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 10,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_10_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 10,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_10_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_2_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_2_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_2_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 11,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_11_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 11,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_11_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 11,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_11_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 15,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_15_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 15,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_15_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 15,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_15_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 12,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_12_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 12,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_12_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 12,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_12_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 3,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_3_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 3,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_3_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 3,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_3_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_1_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_1_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/003a16ee-4a45-4aea-a399-740ac6f3ca1e/round_1_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+      "round_index": 7,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/6da749d1-b908-425f-9c47-b77a99682969/round_7_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+      "round_index": 7,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/6da749d1-b908-425f-9c47-b77a99682969/round_7_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "6da749d1-b908-425f-9c47-b77a99682969",
+      "round_index": 7,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/6da749d1-b908-425f-9c47-b77a99682969/round_7_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 10,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_10_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 10,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_10_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 10,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_10_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b11f0c09-3ccd-4eb3-b6ff-f894477575da/round_1_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b11f0c09-3ccd-4eb3-b6ff-f894477575da/round_1_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b11f0c09-3ccd-4eb3-b6ff-f894477575da/round_1_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 14,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_14_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 14,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_14_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 14,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_14_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 11,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_11_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 11,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_11_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 11,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_11_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 17,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_17_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 17,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_17_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 17,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_17_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/30600e71-c62b-477f-8143-fe78c2039c98/round_2_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/30600e71-c62b-477f-8143-fe78c2039c98/round_2_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/30600e71-c62b-477f-8143-fe78c2039c98/round_2_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 7,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_7_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 7,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_7_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 7,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_7_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_1_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_1_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 1,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_1_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 15,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_15_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 15,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_15_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 15,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_15_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_13_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_13_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_13_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5d2799f-c559-4e2f-9ec7-252df1a644f8/round_1_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5d2799f-c559-4e2f-9ec7-252df1a644f8/round_1_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5d2799f-c559-4e2f-9ec7-252df1a644f8/round_1_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/a48aef5d-3077-432c-87ab-a8c724d8cac0/round_2_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/a48aef5d-3077-432c-87ab-a8c724d8cac0/round_2_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+      "round_index": 2,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/a48aef5d-3077-432c-87ab-a8c724d8cac0/round_2_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 19,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_19_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 19,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_19_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 19,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_19_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 3,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_3_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 3,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_3_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 3,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_3_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round_index": 11,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b11f0c09-3ccd-4eb3-b6ff-f894477575da/round_11_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round_index": 11,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b11f0c09-3ccd-4eb3-b6ff-f894477575da/round_11_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+      "round_index": 11,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b11f0c09-3ccd-4eb3-b6ff-f894477575da/round_11_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_5_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_5_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 5,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_5_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_12_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_12_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 12,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_12_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 6,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_6_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 6,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_6_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 6,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_6_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 16,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_16_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 16,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_16_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 16,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_16_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+      "round_index": 3,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/30600e71-c62b-477f-8143-fe78c2039c98/round_3_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+      "round_index": 3,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/30600e71-c62b-477f-8143-fe78c2039c98/round_3_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+      "round_index": 3,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/30600e71-c62b-477f-8143-fe78c2039c98/round_3_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 25,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_25_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 25,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_25_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 25,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_25_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_4_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_4_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 4,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_4_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 4,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_4_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 4,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_4_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 4,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_4_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 2,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_2_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 2,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_2_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 2,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_2_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_13_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_13_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 13,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_13_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 5,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_5_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 5,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_5_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 5,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_5_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 20,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_20_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 20,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_20_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 20,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_20_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 14,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_14_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 14,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_14_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+      "round_index": 14,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/c6ac2b34-d507-4849-a4cd-e70df4df0d7c/round_14_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_18_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_18_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_18_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 14,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_14_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 14,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_14_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 14,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_14_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 7,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_7_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 7,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_7_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "ae300144-10eb-4b57-8362-4500f8fe9947",
+      "round_index": 7,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/ae300144-10eb-4b57-8362-4500f8fe9947/round_7_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 8,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_8_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 8,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_8_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 8,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_8_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 16,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_16_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 16,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_16_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 16,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_16_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 30,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_30_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 30,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_30_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 30,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_30_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 17,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_17_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 17,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_17_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 17,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_17_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_5_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_5_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/693748f9-2e14-4d66-b7a8-a98e8483e775/round_5_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 10,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_10_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 10,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_10_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+      "round_index": 10,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/83e1ed4d-3d1b-4f11-beab-d9310d756d44/round_10_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 8,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_8_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 8,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_8_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+      "round_index": 8,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b93cfde2-6ed9-4a94-82b0-bdf335bc64ca/round_8_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 8,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_8_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 8,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_8_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 8,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_8_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 21,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_21_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 21,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_21_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 21,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_21_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_5_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_5_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/2bc6d5e5-99a9-4c35-984c-3d839e707620/round_5_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_10_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_10_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 10,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_10_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 18,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_18_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 18,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_18_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+      "round_index": 18,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/903800fb-00c1-4138-a2d2-ae0432bf4cf8/round_18_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 21,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_21_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 21,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_21_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+      "round_index": 21,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d76f6ea1-27f1-4a60-8183-791a07e8dff1/round_21_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+      "round_index": 3,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/30600e71-c62b-477f-8143-fe78c2039c98/round_3_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+      "round_index": 3,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/30600e71-c62b-477f-8143-fe78c2039c98/round_3_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "30600e71-c62b-477f-8143-fe78c2039c98",
+      "round_index": 3,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/30600e71-c62b-477f-8143-fe78c2039c98/round_3_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+      "round_index": 13,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/d91f735c-b8f7-41d9-a83d-8ae197b63e7b/round_13_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603/round_1_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603/round_1_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603/round_1_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 2,
+      "dart_index": 3,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_2_dart_3/cam0_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 2,
+      "dart_index": 3,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_2_dart_3/cam1_previous.jpg"
+    },
+    {
+      "game_id": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+      "round_index": 2,
+      "dart_index": 3,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/4a77fb1f-f306-4794-8e0f-7b93c9ae760d/round_2_dart_3/cam2_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_18_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_18_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+      "round_index": 18,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/3cd0adf1-7c90-412b-aa5e-36b661719df4/round_18_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_1_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_1_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 1,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_1_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+      "round_index": 10,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/7b67ae9a-8763-4504-8e02-22d94f04647e/round_10_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+      "round_index": 10,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/7b67ae9a-8763-4504-8e02-22d94f04647e/round_10_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+      "round_index": 10,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/7b67ae9a-8763-4504-8e02-22d94f04647e/round_10_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 21,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_21_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 21,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_21_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 21,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_21_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 26,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_26_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 26,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_26_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+      "round_index": 26,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/dbd66921-6a17-40c8-a775-43ab7331ce4a/round_26_dart_2/cam2_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 12,
+      "dart_index": 1,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_12_dart_1/cam0_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 12,
+      "dart_index": 1,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_12_dart_1/cam1_previous.jpg"
+    },
+    {
+      "game_id": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+      "round_index": 12,
+      "dart_index": 1,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1/round_12_dart_1/cam2_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam0",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_5_dart_2/cam0_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam1",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_5_dart_2/cam1_previous.jpg"
+    },
+    {
+      "game_id": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+      "round_index": 5,
+      "dart_index": 2,
+      "cam_id": "cam2",
+      "path_pattern": "benchmark/782ce2f4-12b3-43f2-9a1e-bae0ba4c8542/round_5_dart_2/cam2_previous.jpg"
+    }
+  ]
+}

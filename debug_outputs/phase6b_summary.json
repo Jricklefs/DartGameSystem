@@ -1,0 +1,42 @@
+{
+  "total_darts": 1073,
+  "legacy_accuracy_pct": 82.01,
+  "legacy_correct": 880,
+  "phase6b_accuracy_pct": 82.01,
+  "phase6b_correct": 880,
+  "delta_correct": 0,
+  "errors_by_category_legacy": {
+    "correct": 880,
+    "adjacent_seg": 50,
+    "far_seg": 4,
+    "ring_error": 52,
+    "miss_false_neg": 79,
+    "miss_false_pos": 8
+  },
+  "errors_by_category_phase6b": {
+    "correct": 880,
+    "adjacent_seg": 50,
+    "far_seg": 4,
+    "ring_error": 52,
+    "miss_false_neg": 79,
+    "miss_false_pos": 8
+  },
+  "adjacent_seg_fixed": 0,
+  "adjacent_seg_broken": 0,
+  "overrides_applied": 0,
+  "overrides_blocked_by_gate": 53,
+  "overrides_blocked_reasons": {
+    "gate_boundary_dist": 28,
+    "gate_confidence": 38,
+    "gate_weak_barrel": 27,
+    "gate_camera_dropped": 36,
+    "gate_residual": 28,
+    "gate_wedge_spread": 7
+  },
+  "near_boundary_count": 54,
+  "near_boundary_correct_legacy": 29,
+  "near_boundary_correct_phase6b": 29,
+  "success_condition_met": true,
+  "boundary_epsilon_deg": 0.5,
+  "safe_gate_threshold_deg": 0.25
+}

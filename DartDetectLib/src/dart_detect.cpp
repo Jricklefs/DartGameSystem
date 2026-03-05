@@ -19,6 +19,9 @@
 // Simple JSON builder (avoids external dependency)
 #include <vector>
 
+// Forward declaration for skeleton.cpp flag setter
+extern int set_skeleton_flag(const char* name, int value);
+
 // ============================================================================
 // Global State
 // ============================================================================
@@ -378,8 +381,55 @@ DD_API const char* dd_detect(
 #endif
                 }
 
+                // Phase 9B: Set per-camera dual-path flag
+                {
+                    extern int set_skeleton_flag(const char* name, int value);
+                    bool dp_active = false;
+                    if (true) {  // g_use_dual_path_arbitration checked inside skeleton
+                        // cam2-only check: task.cam_id typically "cam0","cam1","cam2" or index
+                        bool is_cam2 = (task.cam_id.find("2") != std::string::npos);
+                        // If cam2-only mode is on, only activate for cam2
+                        // The flags are in skeleton.cpp; we just set the per-call flag
+                        dp_active = is_cam2;  // refined below by skeleton.cpp internal flags
+                    }
+                    set_skeleton_flag("_DualPathActiveForThisCam", dp_active ? 1 : 0);
+                }
                 DetectionResult det = detect_dart(
                     current, before, detect_center, prev_masks, 30, res_scale);
+
+                // Phase 17: IQDL subpixel refinement (before ROI transform)
+                extern bool g_use_iqdl;
+                if (det.tip && g_use_iqdl) {
+                    try {
+                        cv::Mat iqdl_mask = det.motion_mask;
+                        if (iqdl_mask.empty() || 
+                            iqdl_mask.rows != current.rows || 
+                            iqdl_mask.cols != current.cols) {
+                            iqdl_mask = cv::Mat::ones(current.rows, current.cols, CV_8U) * 255;
+                        }
+                        
+                        IqdlResult iqdl = iqdl_refine_tip(
+                            current, before, iqdl_mask, detect_center,
+                            *det.tip, det.pca_line, res_scale);
+                        
+                        // Phase 25: Cache IQDL quality for HHS
+                        det.hhs_iqdl_Q = iqdl.Q;
+                        det.hhs_iqdl_inlier_count = iqdl.inlier_count;
+                        
+                        if (iqdl.valid && !iqdl.fallback) {
+                            if (iqdl.tip_px_subpixel.x >= 0 && 
+                                iqdl.tip_px_subpixel.x < current.cols &&
+                                iqdl.tip_px_subpixel.y >= 0 && 
+                                iqdl.tip_px_subpixel.y < current.rows) {
+                                det.tip = iqdl.tip_px_subpixel;
+                                det.method = det.method + "+iqdl";
+                                det.confidence = std::min(1.0, det.confidence * 1.05);
+                            }
+                        }
+                    } catch (...) {
+                        // IQDL failed silently, keep legacy
+                    }
+                }
 
 #ifdef ENABLE_ROI_CROP
                 // Transform tip back to full-image space
@@ -404,6 +454,8 @@ DD_API const char* dd_detect(
                 }
 #endif
 
+
+                
                 if (det.tip) {
                     return CameraResult{task.cam_id, det, task.cal};
                 }
@@ -433,6 +485,20 @@ DD_API const char* dd_detect(
     
     if (camera_results.size() >= 2) {
         auto tri = triangulate_with_line_intersection(camera_results, active_cals);
+        
+        // Phase 25: HHS post-processing
+        if (tri && is_hhs_enabled()) {
+            auto hhs_override = hhs_select(*tri, camera_results, active_cals);
+            // Phase 26: If WHRS enabled, use weighted scoring instead of HHS rule-based selection
+            if (is_whrs_enabled()) {
+                auto whrs_override = whrs_select(*tri, camera_results, active_cals);
+                if (whrs_override) {
+                    tri = whrs_override;
+                }
+            } else if (hhs_override) {
+                tri = hhs_override;
+            }
+        }
         
         if (tri) {
             json << json_int("segment", tri->segment) << ","
@@ -477,11 +543,131 @@ DD_API const char* dd_detect(
                      << json_double("line_vy", det.pca_line ? det.pca_line->vy : 0) << ","
                      << json_double("line_x0", det.pca_line ? det.pca_line->x0 : 0) << ","
                      << json_double("line_y0", det.pca_line ? det.pca_line->y0 : 0) << ","
-                     << json_double("line_elongation", det.pca_line ? det.pca_line->elongation : 0)
-                     << "}";
+                     << json_double("line_elongation", det.pca_line ? det.pca_line->elongation : 0);
+                // Phase 9 ridge metrics
+                if (!det.line_fit_method_p9.empty()) {
+                    json << ",\"p9_ridge_point_count\":" << det.ridge_point_count
+                         << ",\"p9_ridge_inlier_ratio\":" << det.ridge_inlier_ratio
+                         << ",\"p9_ridge_mean_perp\":" << det.ridge_mean_perp_residual
+                         << ",\"p9_mean_thickness\":" << det.mean_thickness_px
+                         << ",\"p9_thickness_p90\":" << det.thickness_p90_px
+                         << ",\"p9_shaft_length\":" << det.shaft_length_px
+                         << ",\"p9_barrel_cand_px\":" << det.barrel_candidate_pixel_count
+                         << ",\"p9_flight_excl_removed\":" << det.flight_exclusion_removed_px
+                         << ",\"p9_quality_class\":\"" << det.barrel_quality_class << "\""
+                         << ",\"p9_line_method\":\"" << det.line_fit_method_p9 << "\""
+                         << ",\"p9_angle_vs_pca\":" << det.angle_line_vs_pca_deg
+                         << ",\"p9_angle_vs_flighttip\":" << det.angle_line_vs_flighttip_deg
+                         << ",\"p9_tip_ahead_flight\":" << (det.tip_ahead_of_flight ? "true" : "false")
+                         << ",\"p9_tip_swap\":" << (det.tip_swap_applied ? "true" : "false");
+                }
+                json << "}";
                 first_det = false;
             }
             json << "}";
+
+            // Phase 7: Triangulation debug export
+            if (tri->tri_debug) {
+                const auto& td = *tri->tri_debug;
+                json << ",\"tri_debug\":{"
+                     << json_double("angle_spread_deg", td.angle_spread_deg) << ","
+                     << json_double("median_residual", td.median_residual) << ","
+                     << json_double("max_residual", td.max_residual) << ","
+                     << json_double("residual_spread", td.residual_spread) << ","
+                     << json_double("final_confidence", td.final_confidence) << ","
+                     << "\"camera_dropped\":" << (td.camera_dropped ? "true" : "false") << ","
+                     << json_string("dropped_cam_id", td.dropped_cam_id) << ","
+                     << json_double("board_radius", td.board_radius) << ","
+                     << json_string("radius_gate_reason", td.radius_gate_reason) << ","
+                     << "\"segment_label_corrected\":" << (td.segment_label_corrected ? "true" : "false")
+                     << ",\"boundary_distance_deg\":" << td.boundary_distance_deg
+                     << ",\"is_wire_ambiguous\":" << (td.is_wire_ambiguous ? "true" : "false")
+                     << ",\"wedge_chosen_by\":\"" << td.wedge_chosen_by << "\""
+                     << ",\"base_wedge\":" << td.base_wedge
+                     << ",\"neighbor_wedge\":" << td.neighbor_wedge
+                     << ",\"winner_pct\":" << td.winner_pct
+                     << ",\"vote_margin\":" << td.vote_margin;
+                json << ",\"wedge_votes\":{";
+                {
+                    bool first_wv = true;
+                    for (const auto& [wk, wv] : td.wedge_votes) {
+                        if (!first_wv) json << ",";
+                        json << "\"" << wk << "\":" << wv;
+                        first_wv = false;
+                    }
+                }
+                json << "}";
+                if (!td.low_conf_reason.empty()) {
+                    json << ",\"low_conf_reason\":\"" << td.low_conf_reason << "\"";
+                }
+                // Phase 10B: Radial clamp fields
+                json << ",\"radial_clamp_applied\":" << (td.radial_clamp_applied ? "true" : "false");
+                if (td.radial_clamp_applied) {
+                    json << ",\"radial_clamp_reason\":\"" << td.radial_clamp_reason << "\"";
+                }
+                json << ",\"r_bcwt\":" << td.r_bcwt
+                     << ",\"r_bestpair\":" << td.r_bestpair
+                     << ",\"radial_delta\":" << td.radial_delta
+                     << ",\"near_ring_bcwt\":" << (td.near_ring_bcwt ? "true" : "false")
+                     << ",\"near_ring_best\":" << (td.near_ring_best ? "true" : "false")
+                     << ",\"near_ring_any\":" << (td.near_ring_any ? "true" : "false")
+                     << ",\"x_preclamp_x\":" << td.x_preclamp_x
+                     << ",\"x_preclamp_y\":" << td.x_preclamp_y
+                     << ",\"x_bestpair_x\":" << td.x_bestpair_x
+                     << ",\"x_bestpair_y\":" << td.x_bestpair_y;
+                // Phase 25: HHS debug
+                json << ",\"hhs_applied\":" << (td.hhs_applied ? "true" : "false");
+                if (td.hhs_applied) {
+                    json << ",\"hhs_selected_type\":\"" << td.hhs_selected_type << "\""
+                         << ",\"hhs_selection_reason\":\"" << td.hhs_selection_reason << "\""
+                         << ",\"hhs_candidate_count\":" << td.hhs_candidate_count
+                         << ",\"hhs_baseline_wedge\":" << td.hhs_baseline_wedge
+                         << ",\"hhs_selected_wedge\":" << td.hhs_selected_wedge
+                         << ",\"hhs_selected_residual\":" << td.hhs_selected_residual
+                         << ",\"hhs_selected_axis_support\":" << td.hhs_selected_axis_support
+                         << ",\"hhs_selected_qi\":" << td.hhs_selected_qi;
+                }
+                // Phase 45: CWSC debug
+                json << ",\"cwsc_active\":" << (td.cwsc_active ? "true" : "false")
+                     << ",\"cwsc_wedge_stable\":" << (td.cwsc_wedge_stable ? "true" : "false")
+                     << ",\"cwsc_perturbation_flip\":" << (td.cwsc_perturbation_flip ? "true" : "false")
+                     << ",\"cwsc_weighted_vote_margin\":" << td.cwsc_weighted_vote_margin
+                     << ",\"cwsc_fallback_used\":" << (td.cwsc_fallback_used ? "true" : "false");
+                if (td.cwsc_fallback_used) {
+                    json << ",\"cwsc_fallback_type\":\"" << td.cwsc_fallback_type << "\"";
+                }
+                // Phase 54B
+                json << ",\"evidence_weighting_active\":" << (td.evidence_weighting_active ? "true" : "false");
+                json << ",\"cam_debug\":{";
+
+
+                bool first_cd = true;
+                for (const auto& [cid, cd] : td.cam_debug) {
+                    if (!first_cd) json << ",";
+                    json << "\"" << cid << "\":{"
+                         << json_double("warped_dir_x", cd.warped_dir_x) << ","
+                         << json_double("warped_dir_y", cd.warped_dir_y) << ","
+                         << json_double("perp_residual", cd.perp_residual) << ","
+                         << json_int("barrel_pixel_count", cd.barrel_pixel_count) << ","
+                         << json_double("barrel_aspect_ratio", cd.barrel_aspect_ratio) << ","
+                         << json_double("detection_quality", cd.detection_quality) << ","
+                         << "\"weak_barrel_signal\":" << (cd.weak_barrel_signal ? "true" : "false") << ","
+                         << json_double("warped_point_x", cd.warped_point_x) << ","
+                         << json_double("warped_point_y", cd.warped_point_y) << ","
+                         << json_double("e_cam", cd.e_cam) << ","
+                         << json_double("mask_quality", cd.mask_quality) << ","
+                         << json_double("ransac_inlier_ratio", cd.ransac_inlier_ratio)
+                         << "}";
+                    // Phase 9: Ridge metrics (stored in DetectionResult, look up from camera_results)
+                    auto det_it9 = camera_results.find(cid);
+                    if (det_it9 != camera_results.end()) {
+                        const auto& d9 = det_it9->second;
+                        // Append to cam_debug (re-open the object won't work, so we output as sibling)
+                    }
+                    first_cd = false;
+                }
+                json << "}}";
+            }
 
             // === PCA DUAL PIPELINE ===
             // Run PCA-based barrel detection (only when enabled)
@@ -579,11 +765,22 @@ DD_API const char* dd_detect(
             ScoreResult score = score_from_ellipse_calibration(
                 det.tip->x, det.tip->y, cal_it->second);
             
+            // Phase 48 Fix 2: Compute normalized coords via TPS warp for SingleCam
+            // so that fused_r is not zero (enables post-DLL radial analysis)
+            double sc_coords_x = 0, sc_coords_y = 0;
+            if (cal_it->second.tps_cache.valid) {
+                auto warped = cal_it->second.tps_cache.transform(det.tip->x, det.tip->y);
+                sc_coords_x = warped.x;
+                sc_coords_y = warped.y;
+            }
+            
             json << json_int("segment", score.segment) << ","
                  << json_int("multiplier", score.multiplier) << ","
                  << json_int("score", score.score) << ","
                  << json_string("method", "SingleCam_" + det.method) << ","
-                 << json_double("confidence", det.confidence * 0.5);
+                 << json_double("confidence", det.confidence * 0.5)
+                 << ",\"coords_x\":" << sc_coords_x
+                 << ",\"coords_y\":" << sc_coords_y;
         } else {
             json << json_int("segment", 0) << ","
                  << json_int("multiplier", 0) << ","
@@ -624,6 +821,21 @@ DD_API void dd_clear_board(const char* board_id)
 DD_API void dd_free_string(const char* str)
 {
     delete[] str;
+}
+
+// Forward declaration for triangulation.cpp flag setter
+extern int set_triangulation_flag(const char* name, int value);
+
+DD_API int dd_set_flag(const char* flag_name, int value)
+{
+    if (!flag_name) return -1;
+    int r = set_skeleton_flag(flag_name, value);
+    if (r == 0) return 0;
+    r = set_triangulation_flag(flag_name, value);
+    if (r == 0) return 0;
+    r = set_hhs_flag(flag_name, value);
+    if (r == 0) return 0;
+    return set_whrs_flag(flag_name, value);
 }
 
 DD_API const char* dd_version(void)
@@ -858,3 +1070,5 @@ DD_API int GetFrontonView(
 
     return 0;
 }
+
+

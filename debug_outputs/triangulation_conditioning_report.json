@@ -1,0 +1,115 @@
+{
+  "error_rate_by_condition_bins": [
+    {
+      "range": "1.0-1.5",
+      "count": 873,
+      "error_rate": 10.31,
+      "errors": {
+        "adjacent_seg": 40,
+        "ring_error": 42,
+        "miss_false_pos": 6,
+        "miss_false_neg": 2
+      }
+    },
+    {
+      "range": "1.5-2.0",
+      "count": 53,
+      "error_rate": 11.32,
+      "errors": {
+        "adjacent_seg": 3,
+        "far_seg": 1,
+        "miss_false_pos": 2
+      }
+    },
+    {
+      "range": "2.0-3.0",
+      "count": 26,
+      "error_rate": 19.23,
+      "errors": {
+        "adjacent_seg": 3,
+        "ring_error": 1,
+        "far_seg": 1
+      }
+    },
+    {
+      "range": "3.0-5.0",
+      "count": 6,
+      "error_rate": 16.67,
+      "errors": {
+        "ring_error": 1
+      }
+    },
+    {
+      "range": "5.0+",
+      "count": 27,
+      "error_rate": 14.81,
+      "errors": {
+        "adjacent_seg": 2,
+        "ring_error": 2
+      }
+    }
+  ],
+  "error_rate_by_angle_spread_bins": [
+    {
+      "range": "0-30",
+      "count": 1,
+      "error_rate": 0.0
+    },
+    {
+      "range": "30-60",
+      "count": 5,
+      "error_rate": 40.0
+    },
+    {
+      "range": "60-90",
+      "count": 31,
+      "error_rate": 16.13
+    },
+    {
+      "range": "90-120",
+      "count": 342,
+      "error_rate": 10.82
+    },
+    {
+      "range": "120-180",
+      "count": 606,
+      "error_rate": 10.23
+    }
+  ],
+  "uncertainty_vs_accuracy": {
+    "low_uncertainty": {
+      "count": 328,
+      "accuracy": 90.24
+    },
+    "medium_uncertainty": {
+      "count": 328,
+      "accuracy": 91.16
+    },
+    "high_uncertainty": {
+      "count": 329,
+      "accuracy": 86.32
+    }
+  },
+  "drop_rate_vs_residual_bins": [
+    {
+      "residual_range": "0-0.005",
+      "count": 633,
+      "drop_rate": 79.78
+    },
+    {
+      "residual_range": "0.005-0.01",
+      "count": 239,
+      "drop_rate": 38.49
+    },
+    {
+      "residual_range": "0.01-0.05",
+      "count": 108,
+      "drop_rate": 35.19
+    },
+    {
+      "residual_range": "0.05+",
+      "count": 5,
+      "drop_rate": 40.0
+    }
+  ]
+}

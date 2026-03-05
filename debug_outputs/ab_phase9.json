@@ -1,0 +1,23 @@
+{
+  "overall_accuracy_delta": -4.7,
+  "correct_delta": -54,
+  "miss_false_neg_delta": 32,
+  "ring_error_delta": 2,
+  "adjacent_seg_delta": 22,
+  "camera_drop_rate_delta": {
+    "cam0": -0.74,
+    "cam1": -0.74,
+    "cam2": -4.01
+  },
+  "cam2_used_rate_baseline": 91.61,
+  "cam2_used_rate_variant": 88.72,
+  "variant_p9_metric_counts": {
+    "barrel_cand_px": 0,
+    "ridge_point_count": 0,
+    "ridge_inlier_ratio": 0,
+    "angle_vs_pca": 0,
+    "angle_vs_flighttip": 0
+  },
+  "cam2_catastrophic_outliers_baseline": 0,
+  "cam2_catastrophic_outliers_variant": 0
+}

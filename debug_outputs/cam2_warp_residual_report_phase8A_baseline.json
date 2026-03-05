@@ -1,0 +1,12 @@
+{
+  "label": "baseline",
+  "total_cam2_darts": 0,
+  "mean_d_cam2_to_global": 0.0,
+  "max_d_cam2_to_global": 0,
+  "d_gt_050_count": 0,
+  "d_gt_090_count": 0,
+  "cam2_drops": 0,
+  "dir_enforced_count": 0,
+  "dir_flip_count": 0,
+  "details": []
+}

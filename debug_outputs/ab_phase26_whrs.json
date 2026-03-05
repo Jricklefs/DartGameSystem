@@ -1,0 +1,19 @@
+{
+  "phase": "26-WHRS",
+  "baseline": {
+    "flags": "UseIQDL=1, BCWT=1, RadialClamp=1, UseHHS=1, UseWHRS=0",
+    "totalDarts": 1163,
+    "correct": 912,
+    "accuracyPct": 78.4
+  },
+  "variant": {
+    "flags": "UseIQDL=1, BCWT=1, RadialClamp=1, UseHHS=1, UseWHRS=1",
+    "totalDarts": 1163,
+    "correct": 939,
+    "accuracyPct": 80.7
+  },
+  "delta": {
+    "correct_change": 27,
+    "accuracy_delta_pct": 2.3
+  }
+}

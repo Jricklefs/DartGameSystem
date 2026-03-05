@@ -1,0 +1,99 @@
+{
+  "cam2_overall": {
+    "total_darts": 1073,
+    "dropped_count": 376,
+    "drop_rate": 35.04
+  },
+  "drop_rate_by_category": {
+    "correct": 37.61,
+    "adjacent_seg": 38.0,
+    "far_seg": 0.0,
+    "ring_error": 40.38,
+    "miss_false_neg": 2.53,
+    "miss_false_pos": 37.5
+  },
+  "residual_histogram": {
+    "correct": {
+      "p50": 0.005904,
+      "p90": 0.019389,
+      "p95": 0.032173,
+      "max": 0.170279
+    },
+    "wrong": {
+      "p50": 0.00884,
+      "p90": 0.038697,
+      "p95": 0.070324,
+      "max": 0.15049
+    }
+  },
+  "strength_vs_accuracy": {
+    "bins": [
+      {
+        "range": "0.0-0.2",
+        "count": 457,
+        "accuracy": 71.55
+      },
+      {
+        "range": "0.2-0.4",
+        "count": 15,
+        "accuracy": 100.0
+      },
+      {
+        "range": "0.4-0.6",
+        "count": 153,
+        "accuracy": 91.5
+      },
+      {
+        "range": "0.6-0.8",
+        "count": 448,
+        "accuracy": 88.84
+      },
+      {
+        "range": "0.8-1.0",
+        "count": 0,
+        "accuracy": 0.0
+      }
+    ]
+  },
+  "method_breakdown": {
+    "edge_pair": {
+      "count": 531,
+      "accuracy": 84.93,
+      "avg_residual": 0.007368
+    },
+    "barrel_fitline": {
+      "count": 307,
+      "accuracy": 84.36,
+      "avg_residual": 0.013677
+    },
+    "barrel_width_fit": {
+      "count": 21,
+      "accuracy": 76.19,
+      "avg_residual": 0.019082
+    },
+    "skeleton_hough_fallback": {
+      "count": 59,
+      "accuracy": 72.88,
+      "avg_residual": 0.018963
+    },
+    "barrel_ransac": {
+      "count": 81,
+      "accuracy": 86.42,
+      "avg_residual": 0.008136
+    },
+    "ridge_centerline": {
+      "count": 24,
+      "accuracy": 91.67,
+      "avg_residual": 0.008543
+    },
+    "centroid_constrained": {
+      "count": 33,
+      "accuracy": 48.48,
+      "avg_residual": 0.010429
+    }
+  },
+  "correlation_metrics": {
+    "drop_correlates_with_error": -0.143,
+    "weak_barrel_correlates_with_error": -0.2261
+  }
+}

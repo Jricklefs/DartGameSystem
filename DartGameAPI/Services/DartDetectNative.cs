@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -37,6 +37,11 @@ public static class DartDetectNative
     private static extern void dd_set_pca_enabled(int enabled);
 
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int dd_set_flag([MarshalAs(UnmanagedType.LPUTF8Str)] string flagName, int value);
+
+    public static int SetFlag(string name, int value) => dd_set_flag(name, value);
+
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
     private static extern void dd_free_string(IntPtr str);
 
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "GetFrontonView")]
@@ -69,7 +74,7 @@ public static class DartDetectNative
         return Marshal.PtrToStringUTF8(ptr) ?? "unknown";
     }
 
-    /// <summary>
+        /// <summary>
     /// Detect a dart from camera images.
     /// </summary>
     /// <param name="dartNumber">1-based dart number in turn</param>
@@ -206,6 +211,60 @@ public class DetectionResult
     
     [System.Text.Json.Serialization.JsonPropertyName("camera_details")]
     public Dictionary<string, CameraDetail>? CameraDetails { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("tri_debug")]
+    public TriangulationDebugInfo? TriDebug { get; set; }
+}
+
+public class TriangulationDebugInfo
+{
+    [System.Text.Json.Serialization.JsonPropertyName("angle_spread_deg")]
+    public double AngleSpreadDeg { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("median_residual")]
+    public double MedianResidual { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("max_residual")]
+    public double MaxResidual { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("residual_spread")]
+    public double ResidualSpread { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("final_confidence")]
+    public double FinalConfidence { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("camera_dropped")]
+    public bool CameraDropped { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("dropped_cam_id")]
+    public string DroppedCamId { get; set; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("cam_debug")]
+    public Dictionary<string, CamTriDebug>? CamDebug { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("board_radius")]
+    public double BoardRadius { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("radius_gate_reason")]
+    public string RadiusGateReason { get; set; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("segment_label_corrected")]
+    public bool SegmentLabelCorrected { get; set; }
+
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get; set; }
+}
+
+public class CamTriDebug
+{
+    [System.Text.Json.Serialization.JsonPropertyName("warped_dir_x")]
+    public double WarpedDirX { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("warped_dir_y")]
+    public double WarpedDirY { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("perp_residual")]
+    public double PerpResidual { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("barrel_pixel_count")]
+    public int BarrelPixelCount { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("barrel_aspect_ratio")]
+    public double BarrelAspectRatio { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("detection_quality")]
+    public double DetectionQuality { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("weak_barrel_signal")]
+    public bool WeakBarrelSignal { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("warped_point_x")]
+    public double WarpedPointX { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("warped_point_y")]
+    public double WarpedPointY { get; set; }
 }
 
 public class CameraDetail

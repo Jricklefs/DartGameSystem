@@ -1,0 +1,227 @@
+[
+  {
+    "gameId": "83e1ed4d-3d1b-4f11-beab-d9310d756d44",
+    "baseline_correct": 45,
+    "variant_correct": 51,
+    "baseline_total": 57,
+    "delta": 6,
+    "baseline_pct": 78.9,
+    "variant_pct": 89.5
+  },
+  {
+    "gameId": "903800fb-00c1-4138-a2d2-ae0432bf4cf8",
+    "baseline_correct": 51,
+    "variant_correct": 54,
+    "baseline_total": 64,
+    "delta": 3,
+    "baseline_pct": 79.7,
+    "variant_pct": 84.4
+  },
+  {
+    "gameId": "ae300144-10eb-4b57-8362-4500f8fe9947",
+    "baseline_correct": 36,
+    "variant_correct": 39,
+    "baseline_total": 41,
+    "delta": 3,
+    "baseline_pct": 87.8,
+    "variant_pct": 95.1
+  },
+  {
+    "gameId": "d76f6ea1-27f1-4a60-8183-791a07e8dff1",
+    "baseline_correct": 50,
+    "variant_correct": 53,
+    "baseline_total": 65,
+    "delta": 3,
+    "baseline_pct": 76.9,
+    "variant_pct": 81.5
+  },
+  {
+    "gameId": "b11f0c09-3ccd-4eb3-b6ff-f894477575da",
+    "baseline_correct": 29,
+    "variant_correct": 31,
+    "baseline_total": 37,
+    "delta": 2,
+    "baseline_pct": 78.4,
+    "variant_pct": 83.8
+  },
+  {
+    "gameId": "003a16ee-4a45-4aea-a399-740ac6f3ca1e",
+    "baseline_correct": 30,
+    "variant_correct": 31,
+    "baseline_total": 36,
+    "delta": 1,
+    "baseline_pct": 83.3,
+    "variant_pct": 86.1
+  },
+  {
+    "gameId": "2bc6d5e5-99a9-4c35-984c-3d839e707620",
+    "baseline_correct": 16,
+    "variant_correct": 17,
+    "baseline_total": 20,
+    "delta": 1,
+    "baseline_pct": 80,
+    "variant_pct": 85
+  },
+  {
+    "gameId": "36c3b7ad-c52f-418f-acfb-7b68f2142a7c",
+    "baseline_correct": 33,
+    "variant_correct": 34,
+    "baseline_total": 37,
+    "delta": 1,
+    "baseline_pct": 89.2,
+    "variant_pct": 91.9
+  },
+  {
+    "gameId": "3cd0adf1-7c90-412b-aa5e-36b661719df4",
+    "baseline_correct": 63,
+    "variant_correct": 64,
+    "baseline_total": 70,
+    "delta": 1,
+    "baseline_pct": 90,
+    "variant_pct": 91.4
+  },
+  {
+    "gameId": "4a77fb1f-f306-4794-8e0f-7b93c9ae760d",
+    "baseline_correct": 37,
+    "variant_correct": 38,
+    "baseline_total": 39,
+    "delta": 1,
+    "baseline_pct": 94.9,
+    "variant_pct": 97.4
+  },
+  {
+    "gameId": "693748f9-2e14-4d66-b7a8-a98e8483e775",
+    "baseline_correct": 29,
+    "variant_correct": 30,
+    "baseline_total": 33,
+    "delta": 1,
+    "baseline_pct": 87.9,
+    "variant_pct": 90.9
+  },
+  {
+    "gameId": "7b67ae9a-8763-4504-8e02-22d94f04647e",
+    "baseline_correct": 24,
+    "variant_correct": 25,
+    "baseline_total": 29,
+    "delta": 1,
+    "baseline_pct": 82.8,
+    "variant_pct": 86.2
+  },
+  {
+    "gameId": "7e61f4e0-a5d8-4ba0-a234-c2b8ca38f603",
+    "baseline_correct": 29,
+    "variant_correct": 30,
+    "baseline_total": 34,
+    "delta": 1,
+    "baseline_pct": 85.3,
+    "variant_pct": 88.2
+  },
+  {
+    "gameId": "820b85b1-afc0-4b91-b7b4-b349bc025c78",
+    "baseline_correct": 31,
+    "variant_correct": 32,
+    "baseline_total": 35,
+    "delta": 1,
+    "baseline_pct": 88.6,
+    "variant_pct": 91.4
+  },
+  {
+    "gameId": "a48aef5d-3077-432c-87ab-a8c724d8cac0",
+    "baseline_correct": 11,
+    "variant_correct": 12,
+    "baseline_total": 12,
+    "delta": 1,
+    "baseline_pct": 91.7,
+    "variant_pct": 100
+  },
+  {
+    "gameId": "c6ac2b34-d507-4849-a4cd-e70df4df0d7c",
+    "baseline_correct": 53,
+    "variant_correct": 54,
+    "baseline_total": 61,
+    "delta": 1,
+    "baseline_pct": 86.9,
+    "variant_pct": 88.5
+  },
+  {
+    "gameId": "dbd66921-6a17-40c8-a775-43ab7331ce4a",
+    "baseline_correct": 57,
+    "variant_correct": 58,
+    "baseline_total": 78,
+    "delta": 1,
+    "baseline_pct": 73.1,
+    "variant_pct": 74.4
+  },
+  {
+    "gameId": "30600e71-c62b-477f-8143-fe78c2039c98",
+    "baseline_correct": 17,
+    "variant_correct": 17,
+    "baseline_total": 18,
+    "delta": 0,
+    "baseline_pct": 94.4,
+    "variant_pct": 94.4
+  },
+  {
+    "gameId": "6da749d1-b908-425f-9c47-b77a99682969",
+    "baseline_correct": 21,
+    "variant_correct": 21,
+    "baseline_total": 22,
+    "delta": 0,
+    "baseline_pct": 95.5,
+    "variant_pct": 95.5
+  },
+  {
+    "gameId": "782ce2f4-12b3-43f2-9a1e-bae0ba4c8542",
+    "baseline_correct": 52,
+    "variant_correct": 52,
+    "baseline_total": 60,
+    "delta": 0,
+    "baseline_pct": 86.7,
+    "variant_pct": 86.7
+  },
+  {
+    "gameId": "b5127201-3ff3-4d6e-94ac-fd5f9ee9b6c1",
+    "baseline_correct": 54,
+    "variant_correct": 54,
+    "baseline_total": 62,
+    "delta": 0,
+    "baseline_pct": 87.1,
+    "variant_pct": 87.1
+  },
+  {
+    "gameId": "b5d2799f-c559-4e2f-9ec7-252df1a644f8",
+    "baseline_correct": 32,
+    "variant_correct": 32,
+    "baseline_total": 37,
+    "delta": 0,
+    "baseline_pct": 86.5,
+    "variant_pct": 86.5
+  },
+  {
+    "gameId": "b93cfde2-6ed9-4a94-82b0-bdf335bc64ca",
+    "baseline_correct": 36,
+    "variant_correct": 36,
+    "baseline_total": 43,
+    "delta": 0,
+    "baseline_pct": 83.7,
+    "variant_pct": 83.7
+  },
+  {
+    "gameId": "d91f735c-b8f7-41d9-a83d-8ae197b63e7b",
+    "baseline_correct": 44,
+    "variant_correct": 44,
+    "baseline_total": 48,
+    "delta": 0,
+    "baseline_pct": 91.7,
+    "variant_pct": 91.7
+  },
+  {
+    "gameId": "8f63b841-6574-4539-bf97-26304c8a40c6",
+    "baseline_correct": 32,
+    "variant_correct": 30,
+    "baseline_total": 35,
+    "delta": -2,
+    "baseline_pct": 91.4,
+    "variant_pct": 85.7
+  }
+]

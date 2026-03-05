@@ -1,0 +1,488 @@
+{
+  "cam0": {
+    "edge_pair": {
+      "uses": 765,
+      "accuracy_pct": 84.1,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 3.5118977682628336,
+        "p90": 28.139553308203077,
+        "p95": 51.10491153709034,
+        "max": 89.721216923716,
+        "count": 765
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 1.7716516977735812,
+        "p90": 11.473767314497877,
+        "p95": 26.65036419547276,
+        "max": 88.8514637494176,
+        "count": 740
+      },
+      "tip_ahead_false_rate": 0.0135
+    },
+    "skeleton_hough_fallback": {
+      "uses": 42,
+      "accuracy_pct": 73.8,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 6.59049689814328,
+        "p90": 60.68141444711437,
+        "p95": 69.37369879627205,
+        "max": 77.86446148330243,
+        "count": 42
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 4.237412668821941,
+        "p90": 16.346853309667857,
+        "p95": 65.11114717971203,
+        "max": 83.91984459284797,
+        "count": 40
+      },
+      "tip_ahead_false_rate": 0.05
+    },
+    "barrel_fitline": {
+      "uses": 131,
+      "accuracy_pct": 86.3,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 2.259990522262875,
+        "p90": 33.661268050919034,
+        "p95": 50.75754207172837,
+        "max": 86.81817660122863,
+        "count": 131
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 2.088397534753179,
+        "p90": 22.830006646083216,
+        "p95": 33.49825770339275,
+        "max": 64.7316614626521,
+        "count": 130
+      },
+      "tip_ahead_false_rate": 0.0
+    },
+    "barrel_ransac": {
+      "uses": 71,
+      "accuracy_pct": 74.6,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 8.252056896958699,
+        "p90": 30.71361887659342,
+        "p95": 59.47387842864151,
+        "max": 89.06120124274804,
+        "count": 71
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 7.738657679611756,
+        "p90": 20.10947407385031,
+        "p95": 62.69877640657954,
+        "max": 80.58677774608576,
+        "count": 68
+      },
+      "tip_ahead_false_rate": 0.0147
+    },
+    "null": {
+      "uses": 26,
+      "accuracy_pct": 30.8,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": null,
+        "p90": null,
+        "p95": null,
+        "max": null,
+        "count": 0
+      },
+      "angle_line_vs_flighttip": {
+        "p50": null,
+        "p90": null,
+        "p95": null,
+        "max": null,
+        "count": 0
+      },
+      "tip_ahead_false_rate": null
+    },
+    "barrel_width_fit": {
+      "uses": 24,
+      "accuracy_pct": 87.5,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 12.515757612540748,
+        "p90": 62.23474196456159,
+        "p95": 64.55730264642386,
+        "max": 75.59889123585532,
+        "count": 24
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 8.149526835328961,
+        "p90": 26.687781898178137,
+        "p95": 38.02685820707218,
+        "max": 81.89265470641492,
+        "count": 23
+      },
+      "tip_ahead_false_rate": 0.0
+    },
+    "ridge_centerline": {
+      "uses": 7,
+      "accuracy_pct": 85.7,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 20.72237235549282,
+        "p90": 68.7609817617976,
+        "p95": 68.7609817617976,
+        "max": 68.7609817617976,
+        "count": 7
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 8.017620728941907,
+        "p90": 16.432561650430475,
+        "p95": 16.432561650430475,
+        "max": 16.432561650430475,
+        "count": 7
+      },
+      "tip_ahead_false_rate": 0.0
+    },
+    "centroid_constrained": {
+      "uses": 7,
+      "accuracy_pct": 71.4,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 10.804743556036593,
+        "p90": 34.51437753932641,
+        "p95": 34.51437753932641,
+        "max": 34.51437753932641,
+        "count": 7
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 11.599240255663844,
+        "p90": 57.97463705679965,
+        "p95": 57.97463705679965,
+        "max": 57.97463705679965,
+        "count": 7
+      },
+      "tip_ahead_false_rate": 0.1429
+    }
+  },
+  "cam1": {
+    "edge_pair": {
+      "uses": 636,
+      "accuracy_pct": 88.4,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 4.130636701710344,
+        "p90": 36.9596343659219,
+        "p95": 62.82145566574794,
+        "max": 89.06977342010923,
+        "count": 636
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 2.017260755411025,
+        "p90": 53.88163632159968,
+        "p95": 74.82639194893116,
+        "max": 89.83748943499138,
+        "count": 633
+      },
+      "tip_ahead_false_rate": 0.0979
+    },
+    "ridge_centerline": {
+      "uses": 22,
+      "accuracy_pct": 77.3,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 8.336099274110685,
+        "p90": 80.32724879614922,
+        "p95": 81.39561642786157,
+        "max": 83.84123097358466,
+        "count": 22
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 5.12260475518645,
+        "p90": 80.31461271264187,
+        "p95": 86.85533349451933,
+        "max": 89.95630798709381,
+        "count": 22
+      },
+      "tip_ahead_false_rate": 0.0909
+    },
+    "barrel_ransac": {
+      "uses": 83,
+      "accuracy_pct": 71.1,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 7.630587488208617,
+        "p90": 71.67853242246936,
+        "p95": 81.314850306984,
+        "max": 85.36818446226903,
+        "count": 83
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 7.476890003485255,
+        "p90": 76.5286753609411,
+        "p95": 85.16559619821547,
+        "max": 89.15685071141849,
+        "count": 81
+      },
+      "tip_ahead_false_rate": 0.1358
+    },
+    "barrel_width_fit": {
+      "uses": 20,
+      "accuracy_pct": 60.0,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 14.920234216437361,
+        "p90": 79.81319304518007,
+        "p95": 84.0139015904945,
+        "max": 84.0139015904945,
+        "count": 20
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 11.582544309578537,
+        "p90": 78.22575228227444,
+        "p95": 79.51706932193323,
+        "max": 79.51706932193323,
+        "count": 20
+      },
+      "tip_ahead_false_rate": 0.25
+    },
+    "skeleton_hough_fallback": {
+      "uses": 31,
+      "accuracy_pct": 51.6,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 9.850158435604248,
+        "p90": 60.04490026340801,
+        "p95": 85.28540732678528,
+        "max": 85.84863213962784,
+        "count": 31
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 4.866386325626233,
+        "p90": 60.08651856962768,
+        "p95": 69.93772411442333,
+        "max": 79.32108233046765,
+        "count": 31
+      },
+      "tip_ahead_false_rate": 0.2258
+    },
+    "barrel_fitline": {
+      "uses": 236,
+      "accuracy_pct": 82.6,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 3.8188632309540034,
+        "p90": 39.801935300700805,
+        "p95": 64.71287773275611,
+        "max": 88.91952394696763,
+        "count": 236
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 3.8065442681947053,
+        "p90": 58.69712314811038,
+        "p95": 78.5666955092618,
+        "max": 87.99774825749847,
+        "count": 231
+      },
+      "tip_ahead_false_rate": 0.0823
+    },
+    "centroid_constrained": {
+      "uses": 30,
+      "accuracy_pct": 60.0,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": 21.713399011010704,
+        "p90": 71.24650771987554,
+        "p95": 74.0608136697347,
+        "max": 87.97763469141711,
+        "count": 30
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 14.948745011205235,
+        "p90": 74.19593656626013,
+        "p95": 74.21282200530102,
+        "max": 78.72554322210932,
+        "count": 30
+      },
+      "tip_ahead_false_rate": 0.3
+    },
+    "null": {
+      "uses": 15,
+      "accuracy_pct": 6.7,
+      "drop_rate": null,
+      "angle_line_vs_pca": {
+        "p50": null,
+        "p90": null,
+        "p95": null,
+        "max": null,
+        "count": 0
+      },
+      "angle_line_vs_flighttip": {
+        "p50": null,
+        "p90": null,
+        "p95": null,
+        "max": null,
+        "count": 0
+      },
+      "tip_ahead_false_rate": null
+    }
+  },
+  "cam2": {
+    "edge_pair": {
+      "uses": 531,
+      "accuracy_pct": 84.9,
+      "drop_rate": 0.1733,
+      "angle_line_vs_pca": {
+        "p50": 3.770588462725302,
+        "p90": 44.91204909018245,
+        "p95": 64.97107795948008,
+        "max": 88.94533756865467,
+        "count": 531
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 1.9239272086121737,
+        "p90": 21.113304419259315,
+        "p95": 38.78019696886911,
+        "max": 85.16821733196484,
+        "count": 517
+      },
+      "tip_ahead_false_rate": 0.0696
+    },
+    "barrel_fitline": {
+      "uses": 307,
+      "accuracy_pct": 84.4,
+      "drop_rate": 0.658,
+      "angle_line_vs_pca": {
+        "p50": 6.805356966283032,
+        "p90": 46.86921081164378,
+        "p95": 72.30998820993162,
+        "max": 88.59780329840224,
+        "count": 307
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 4.299538021600424,
+        "p90": 22.160838283924154,
+        "p95": 46.260935387148514,
+        "max": 84.29782321400342,
+        "count": 304
+      },
+      "tip_ahead_false_rate": 0.0329
+    },
+    "barrel_width_fit": {
+      "uses": 21,
+      "accuracy_pct": 76.2,
+      "drop_rate": 0.381,
+      "angle_line_vs_pca": {
+        "p50": 12.39628743817026,
+        "p90": 74.37418330827002,
+        "p95": 77.03946006107218,
+        "max": 86.3708412675179,
+        "count": 21
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 6.226722013260227,
+        "p90": 70.14092005816464,
+        "p95": 70.55467913460798,
+        "max": 81.13585185465713,
+        "count": 21
+      },
+      "tip_ahead_false_rate": 0.0
+    },
+    "skeleton_hough_fallback": {
+      "uses": 59,
+      "accuracy_pct": 72.9,
+      "drop_rate": 0.5763,
+      "angle_line_vs_pca": {
+        "p50": 3.7775953592765985,
+        "p90": 48.88100244042214,
+        "p95": 74.64024211073045,
+        "max": 80.64238480951016,
+        "count": 59
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 3.3065387886589734,
+        "p90": 47.07771961975409,
+        "p95": 67.16522718117463,
+        "max": 78.36680415987772,
+        "count": 56
+      },
+      "tip_ahead_false_rate": 0.0893
+    },
+    "barrel_ransac": {
+      "uses": 81,
+      "accuracy_pct": 86.4,
+      "drop_rate": 0.1728,
+      "angle_line_vs_pca": {
+        "p50": 7.332891994978569,
+        "p90": 56.70005926172173,
+        "p95": 78.23483349033447,
+        "max": 88.43919601098924,
+        "count": 81
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 8.376241631323705,
+        "p90": 55.89123274318598,
+        "p95": 78.37856147495637,
+        "max": 87.51579455398239,
+        "count": 78
+      },
+      "tip_ahead_false_rate": 0.0641
+    },
+    "ridge_centerline": {
+      "uses": 24,
+      "accuracy_pct": 91.7,
+      "drop_rate": 0.5833,
+      "angle_line_vs_pca": {
+        "p50": 11.138068090572359,
+        "p90": 83.4952866800724,
+        "p95": 84.79592406275754,
+        "max": 86.64342202182392,
+        "count": 24
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 2.950035809478353,
+        "p90": 18.093148935539112,
+        "p95": 23.09135780318754,
+        "max": 88.50170371214728,
+        "count": 24
+      },
+      "tip_ahead_false_rate": 0.0
+    },
+    "null": {
+      "uses": 17,
+      "accuracy_pct": 17.6,
+      "drop_rate": 0.0,
+      "angle_line_vs_pca": {
+        "p50": null,
+        "p90": null,
+        "p95": null,
+        "max": null,
+        "count": 0
+      },
+      "angle_line_vs_flighttip": {
+        "p50": null,
+        "p90": null,
+        "p95": null,
+        "max": null,
+        "count": 0
+      },
+      "tip_ahead_false_rate": null
+    },
+    "centroid_constrained": {
+      "uses": 33,
+      "accuracy_pct": 48.5,
+      "drop_rate": 0.3636,
+      "angle_line_vs_pca": {
+        "p50": 16.520496715611984,
+        "p90": 65.34004287376231,
+        "p95": 70.35494744143583,
+        "max": 80.25400448603818,
+        "count": 33
+      },
+      "angle_line_vs_flighttip": {
+        "p50": 15.364146660091071,
+        "p90": 58.08506356053444,
+        "p95": 77.1840231122244,
+        "max": 86.29439050066244,
+        "count": 33
+      },
+      "tip_ahead_false_rate": 0.2424
+    }
+  }
+}

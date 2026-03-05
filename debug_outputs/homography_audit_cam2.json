@@ -1,0 +1,157 @@
+{
+  "total_darts": 1163,
+  "count_with_cam2": 983,
+  "count_processed": 1073,
+  "homography_compute_mode": "recomputed_per_detection",
+  "homography_compute_mode_detail": "H is recomputed every detection via cv::findHomography(RANSAC, 5.0) using ~161 cached TPS control points. BUT all 161 points are always inliers (reproj error << 5.0), so RANSAC produces the EXACT SAME H every time. H variability is ZERO \u2014 this is NOT the cause of cam2 outliers.",
+  "key_finding": "The homography is perfectly stable and deterministic. Cam2 outliers are NOT caused by homography instability. They must be caused by upstream detection issues (bad tip location, bad PCA line direction, poor mask quality) that get warped through a stable-but-imperfect H.",
+  "homography_source_points_count": 161,
+  "ransac_used": true,
+  "ransac_reproj_threshold": 5.0,
+  "ransac_all_inliers": true,
+  "ransac_variability": {
+    "num_runs": 100,
+    "det_H_std": 0.0,
+    "det_H_range": [
+      -0.00026228907849999196,
+      -0.00026228907849999196
+    ],
+    "inlier_range": [
+      161,
+      161
+    ],
+    "center_warp_std": [
+      0.0,
+      4.656612873077393e-10
+    ]
+  },
+  "H_reference": {
+    "matrix": [
+      -0.007084907075865229,
+      -0.006744645470813911,
+      6.688421121819857,
+      -0.003695561044177067,
+      0.012235403397736292,
+      -1.0434395027840027,
+      0.00012472808803291237,
+      0.004401965613377038,
+      1.0
+    ],
+    "det": -0.00026228907849999196,
+    "cond": 2316.675803484485,
+    "frobenius_norm": 6.842808015723737,
+    "warp_consistency": {
+      "canonical_points": [
+        {
+          "name": "center",
+          "img_pt": [
+            670.0,
+            287.0
+          ],
+          "board_pt": [
+            0.00247988905963309,
+            -0.0033680683550497323
+          ],
+          "radius": 0.004182551158369172,
+          "is_nan_inf": false,
+          "is_absurd": false
+        },
+        {
+          "name": "top",
+          "img_pt": [
+            670.0,
+            71.0
+          ],
+          "board_pt": [
+            1.047672676258047,
+            -1.8986732709840888
+          ],
+          "radius": 2.1685428809518887,
+          "is_nan_inf": false,
+          "is_absurd": false
+        },
+        {
+          "name": "bottom",
+          "img_pt": [
+            670.0,
+            503.0
+          ],
+          "board_pt": [
+            -0.4400031600042219,
+            0.7990106269800173
+          ],
+          "radius": 0.9121517213932676,
+          "is_nan_inf": false,
+          "is_absurd": false
+        },
+        {
+          "name": "left",
+          "img_pt": [
+            286.0,
+            287.0
+          ],
+          "board_pt": [
+            1.185898792395924,
+            0.6138183961315996
+          ],
+          "radius": 1.335338522336445,
+          "is_nan_inf": false,
+          "is_absurd": false
+        },
+        {
+          "name": "right",
+          "img_pt": [
+            1054.0,
+            287.0
+          ],
+          "board_pt": [
+            -1.1336032117776051,
+            -0.5958675716095726
+          ],
+          "radius": 1.2806695142183995,
+          "is_nan_inf": false,
+          "is_absurd": false
+        }
+      ],
+      "center_error": 0.004182551158369172,
+      "any_nan_inf": false,
+      "absurd_radius": false,
+      "warp_consistency_pass": true
+    }
+  },
+  "distributions": {
+    "d_cam2_to_global": {
+      "p50": 0.06729040005825496,
+      "p90": 0.1657220391891193,
+      "p95": 0.24758207573006977,
+      "max": 1.0965677258473367,
+      "min": 0.0006450193795538552,
+      "mean": 0.09736204298932583
+    },
+    "center_error": {
+      "value": 0.004182551158369172,
+      "note": "Same for all darts (H is identical)"
+    }
+  },
+  "outlier_definition": "d_cam2_to_global > 0.90 OR warp_consistency_pass == false OR center_error > 0.20",
+  "outlier_count": 6,
+  "normal_vs_outlier": {
+    "normal_count": 1067,
+    "outlier_count": 6,
+    "normal": {
+      "d_cam2_median": 0.06705980916316419,
+      "perp_residual_median": 0.00606856,
+      "detection_quality_median": 0.73725
+    },
+    "outlier": {
+      "d_cam2_median": 0.06990964700955088,
+      "perp_residual_median": 0.0311165,
+      "detection_quality_median": 0.659837,
+      "barrel_pixel_count_median": 34.0,
+      "mask_quality_median": 0.949302,
+      "cam2_dropped_count": 3,
+      "cam2_dir_enforced_count": 0
+    }
+  },
+  "conclusion": "Since H is identical for every dart (RANSAC always selects all 161 inliers), the homography matrix is NOT the source of cam2 outliers. The warp is stable. Cam2 outliers must originate from: (1) bad tip detection, (2) bad PCA line direction, (3) poor mask quality, or (4) the inherent accuracy limits of the homography approximation vs TPS for cam2's particular viewing angle."
+}

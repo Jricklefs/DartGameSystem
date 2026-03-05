@@ -1,0 +1,83 @@
+{
+  "baseline": {
+    "cam0": {
+      "count": 1047,
+      "methods": {
+        "pca_blob_chain": 1047
+      },
+      "mask_quality_mean": 0.9433,
+      "mask_quality_median": 1,
+      "ransac_inlier_mean": 0.8048,
+      "ransac_inlier_median": 1,
+      "barrel_aspect_mean": 5.4471,
+      "barrel_aspect_median": 5.1784
+    },
+    "cam1": {
+      "count": 1058,
+      "methods": {
+        "pca_blob_chain": 1057,
+        "line_walk_fallback": 1
+      },
+      "mask_quality_mean": 0.8199,
+      "mask_quality_median": 1,
+      "ransac_inlier_mean": 0.7076,
+      "ransac_inlier_median": 1,
+      "barrel_aspect_mean": 5.7186,
+      "barrel_aspect_median": 5.4485
+    },
+    "cam2": {
+      "count": 1056,
+      "methods": {
+        "pca_blob_chain": 1056
+      },
+      "mask_quality_mean": 0.7679,
+      "mask_quality_median": 1,
+      "ransac_inlier_mean": 0.6113,
+      "ransac_inlier_median": 1,
+      "barrel_aspect_mean": 5.1058,
+      "barrel_aspect_median": 4.571
+    }
+  },
+  "variant": {
+    "cam0": {
+      "count": 1047,
+      "methods": {
+        "pca_blob_chain+iqdl": 503,
+        "pca_blob_chain": 544
+      },
+      "mask_quality_mean": 0.9433,
+      "mask_quality_median": 1,
+      "ransac_inlier_mean": 0.8048,
+      "ransac_inlier_median": 1,
+      "barrel_aspect_mean": 5.4471,
+      "barrel_aspect_median": 5.1784
+    },
+    "cam1": {
+      "count": 1058,
+      "methods": {
+        "pca_blob_chain": 733,
+        "pca_blob_chain+iqdl": 324,
+        "line_walk_fallback": 1
+      },
+      "mask_quality_mean": 0.8199,
+      "mask_quality_median": 1,
+      "ransac_inlier_mean": 0.7076,
+      "ransac_inlier_median": 1,
+      "barrel_aspect_mean": 5.7186,
+      "barrel_aspect_median": 5.4485
+    },
+    "cam2": {
+      "count": 1056,
+      "methods": {
+        "pca_blob_chain+iqdl": 345,
+        "pca_blob_chain": 711
+      },
+      "mask_quality_mean": 0.7679,
+      "mask_quality_median": 1,
+      "ransac_inlier_mean": 0.6113,
+      "ransac_inlier_median": 1,
+      "barrel_aspect_mean": 5.1058,
+      "barrel_aspect_median": 4.571
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "baseline": {
+    "totalDarts": 1163,
+    "correct": 880,
+    "accuracyPct": 75.7,
+    "error_categories": {
+      "adjacent_seg": 50,
+      "far_seg": 12,
+      "ring_error": 39,
+      "miss_false_neg": 92
+    },
+    "cam2_analysis": {
+      "total_with_cam2": 983,
+      "cam2_drops": 376,
+      "cam2_dir_enforced": 0,
+      "cam2_dir_flipped": 0,
+      "d_cam2_to_global_gt_050": 26,
+      "d_cam2_to_global_gt_090": 6
+    }
+  },
+  "variant": {
+    "totalDarts": 1163,
+    "correct": 880,
+    "accuracyPct": 75.7,
+    "error_categories": {
+      "adjacent_seg": 50,
+      "far_seg": 12,
+      "ring_error": 39,
+      "miss_false_neg": 92
+    },
+    "cam2_analysis": {
+      "total_with_cam2": 983,
+      "cam2_drops": 376,
+      "cam2_dir_enforced": 511,
+      "cam2_dir_flipped": 511,
+      "d_cam2_to_global_gt_050": 26,
+      "d_cam2_to_global_gt_090": 6
+    }
+  },
+  "deltas": {
+    "accuracy_delta": 0.0,
+    "correct_delta": 0,
+    "cam2_drop_delta": 0,
+    "cam2_flips_variant": 511,
+    "d_cam2_gt_090_delta": 0,
+    "error_category_deltas": {
+      "ring_error": 0,
+      "miss_false_neg": 0,
+      "far_seg": 0,
+      "adjacent_seg": 0
+    },
+    "gt090_reduction_pct": 0.0
+  },
+  "conclusion": "Phase8A inconclusive: direction enforcement did not reduce outliers materially. Flips=511, accuracy_delta=0.0"
+}

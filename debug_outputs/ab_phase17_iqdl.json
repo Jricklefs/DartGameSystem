@@ -1,0 +1,36 @@
+{
+  "phase": "phase17_iqdl",
+  "baseline": {
+    "label": "baseline",
+    "total": 1073,
+    "total_all_darts": 1163,
+    "correct": 885,
+    "correct_api": 885,
+    "accuracy_api": 76.1,
+    "accuracy": 82.48,
+    "miss_false_neg": 76,
+    "miss_false_pos": 8,
+    "adjacent_seg": 48,
+    "far_seg": 5,
+    "ring_error": 38
+  },
+  "variant": {
+    "label": "variant_iqdl",
+    "total": 1073,
+    "total_all_darts": 1163,
+    "correct": 897,
+    "correct_api": 897,
+    "accuracy_api": 77.1,
+    "accuracy": 83.6,
+    "miss_false_neg": 78,
+    "miss_false_pos": 8,
+    "adjacent_seg": 42,
+    "far_seg": 5,
+    "ring_error": 30
+  },
+  "delta_accuracy": 1.12,
+  "delta_adjacent_seg": -6,
+  "delta_far_seg": 0,
+  "delta_ring_error": -8,
+  "delta_miss_false_neg": 2
+}
