@@ -46,6 +46,13 @@ static double NEAR_RING_EPS = 0.020;
 static bool g_use_cwsc = true;
 static double g_cwsc_epsilon_deg = 0.5;
 
+// === FEATURE FLAG: Phase 54B Per-Dart Evidence Weighting ===
+static bool g_use_evidence_weighting = true;
+static constexpr int EVIDENCE_PIX_LOW = 15;
+static constexpr int EVIDENCE_PIX_MED = 40;
+static constexpr double EVIDENCE_FLOOR = 0.70;
+static constexpr double EVIDENCE_RANGE = 0.30;
+
 // Ring boundary radii in normalized space (radius / 170.0)
 static const double RING_RADII[] = {
     6.35 / 170.0,   // bullseye outer
@@ -373,6 +380,7 @@ struct BcwtCamWeight {
     bool cam_invalid = false;
     bool dropped_by_legacy = false;
     bool included_by_bcwt = false;
+    double e_cam = 1.0;  // Phase 54B
 };
 
 static BcwtCamWeight bcwt_compute_weight(const DetectionResult& det, double mask_quality) {
@@ -409,6 +417,16 @@ static BcwtCamWeight bcwt_compute_weight(const DetectionResult& det, double mask
                  + 0.15 * bw.mask_score_val;
     
     bw.w_final = clamp01(w_raw) * g_bcwt_max_weight_cap;
+    
+    // Phase 54B: Compute E_cam from barrel_pixel_count
+    if (det.barrel_pixel_count < EVIDENCE_PIX_LOW) {
+        bw.e_cam = 0.60;
+    } else if (det.barrel_pixel_count < EVIDENCE_PIX_MED) {
+        bw.e_cam = 0.80;
+    } else {
+        bw.e_cam = 1.00;
+    }
+    
     return bw;
 }
 
@@ -700,6 +718,9 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     std::optional<Point2f> robust_point;
     std::optional<Point2f> bcwt_point;
     std::string bcwt_method_used = "legacy";
+    // Phase 54B: declared at wider scope for evidence re-weighting
+    std::vector<double> bcwt_w_original;
+    std::vector<std::string> bcwt_included_ids_outer;
     
     if (g_use_bcwt) {
         // Compute BCWT weights for all cameras
@@ -744,6 +765,10 @@ const TpsTransform& tps = cal_it->second.tps_cache;
                 }
             }
         }
+        
+        // Phase 54B: Store original BCWT weights for potential re-solve
+        bcwt_w_original = bcwt_w;
+        bcwt_included_ids_outer = bcwt_included_ids;
         
         // Check angle spread among included lines
         double bcwt_angle_spread = 0.0;
@@ -795,6 +820,9 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     }
 
 
+    
+    // Phase 54B: tracking
+    bool evidence_weighting_active = false;
     
     // Step 3: Voting hierarchy
     // Per-camera segment votes
@@ -860,6 +888,40 @@ const TpsTransform& tps = cal_it->second.tps_cache;
             [](const auto& a, const auto& b) { return a.total_error < b.total_error; });
         method = "BestError";
         confidence = 0.5;
+    }
+    
+    // === Phase 54B: Evidence Re-weighting for Risky Darts ===
+    // Only activate when method is Cam+1 or BestError (risky)
+    if (g_use_evidence_weighting && g_use_bcwt && bcwt_point 
+        && !bcwt_w_original.empty() && bcwt_included_ids_outer.size() >= 2
+        && (method == "Cam+1" || method == "BestError")) {
+        // Apply bounded evidence scaling: w * (0.70 + 0.30 * E_cam)
+        std::vector<double> evidence_w;
+        bool any_different = false;
+        for (size_t i = 0; i < bcwt_included_ids_outer.size(); i++) {
+            const std::string& cid = bcwt_included_ids_outer[i];
+            double e = bcwt_weights[cid].e_cam;
+            double scaled = bcwt_w_original[i] * (EVIDENCE_FLOOR + EVIDENCE_RANGE * e);
+            evidence_w.push_back(scaled);
+            if (std::abs(e - 1.0) > 0.01) any_different = true;
+        }
+        
+        if (any_different) {
+            // Re-solve BCWT with evidence-adjusted weights
+            std::vector<std::pair<Point2f, Point2f>> ev_lines;
+            for (const std::string& cid : bcwt_included_ids_outer) {
+                const auto& cl = cam_lines[cid];
+                ev_lines.push_back({cl.line_start, cl.line_end});
+            }
+            auto ev_point = robust_least_squares_point(ev_lines, evidence_w, 5, 0.01);
+            if (ev_point) {
+                double ev_dist = std::sqrt(ev_point->x * ev_point->x + ev_point->y * ev_point->y);
+                if (ev_dist <= 1.3) {
+                    bcwt_point = ev_point;
+                    evidence_weighting_active = true;
+                }
+            }
+        }
     }
     
     // Miss detection: two independent checks
@@ -949,7 +1011,7 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         static const double MAX_CLAMP_DELTA_NORM = 3.0 / 170.0;  // 3mm in normalized space
         if (near_ring_any_10b && radial_delta_10b > RADIAL_DELTA_THRESHOLD) {
             if (radial_delta_10b > MAX_CLAMP_DELTA_NORM) {
-                // Delta too large — bestpair disagrees too much. Keep BCWT.
+                // Delta too large ï¿½ bestpair disagrees too much. Keep BCWT.
                 radial_clamp_applied = false;
                 radial_clamp_reason = "delta_exceeds_3mm_kept_bcwt";
                 // final_coords stays as BCWT (already set above)
@@ -1344,6 +1406,19 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         cd.weak_barrel_signal = cl.weak_barrel_signal;
         cd.warped_point_x = cl.line_end.x;
         cd.warped_point_y = cl.line_end.y;
+        cd.mask_quality = cl.mask_quality;
+        // ransac_inlier_ratio from original DetectionResult
+        {
+            auto det_it2 = camera_results.find(cid);
+            cd.ransac_inlier_ratio = (det_it2 != camera_results.end()) ? det_it2->second.ransac_inlier_ratio : 0.0;
+        }
+        // Phase 54B: evidence weight
+        {
+            auto bw_it = bcwt_weights.find(cid);
+            if (bw_it != bcwt_weights.end()) {
+                cd.e_cam = bw_it->second.e_cam;
+            }
+        }
         tri_dbg.cam_debug[cid] = cd;
     }
 
@@ -1373,6 +1448,7 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     tri_dbg.wedge_votes = wedge_votes_map;
     tri_dbg.winner_pct = winner_pct;
     tri_dbg.vote_margin = vote_margin;
+    tri_dbg.evidence_weighting_active = evidence_weighting_active;
     tri_dbg.low_conf_reason = wire_low_conf;
     // Phase 10B debug fields
     tri_dbg.radial_clamp_applied = radial_clamp_applied;
