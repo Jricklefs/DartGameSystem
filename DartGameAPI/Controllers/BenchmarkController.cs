@@ -16,8 +16,8 @@ public class BenchmarkController : ControllerBase
     private static readonly object _replayLock = new();
     private static readonly int[] SegmentOrder = { 20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5 };
     private readonly ILogger<BenchmarkController> _logger;
-    private static bool _enableTripleBoundaryCorrection = true;
-    private static bool _enableDoubleBoundaryCorrection = true;
+    private static bool _enableTripleBoundaryCorrection = false;
+    private static bool _enableDoubleBoundaryCorrection = false;
     private readonly RuntimeIntegrityService _rilService;
     private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
