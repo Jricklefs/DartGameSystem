@@ -629,7 +629,39 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         cam_lines[cam_id] = std::move(cl);
     }
     
-    if (cam_lines.size() < 2) return std::nullopt;
+    if (cam_lines.size() < 2) {
+        // Return partial result with cam_debug so C# fallback aggregator can use it
+        IntersectionResult result;
+        result.segment = 0;
+        result.multiplier = 0;
+        result.score = 0;
+        result.confidence = 0.0;
+        result.coords = Point2f(0, 0);
+        result.total_error = 0;
+        if (cam_lines.size() == 1) {
+            result.method = "Partial_1cam";
+            auto& [cid, cl] = *cam_lines.begin();
+            result.per_camera[cid] = cl.vote;
+            // Populate tri_debug with the single camera's data
+            IntersectionResult::TriangulationDebug td;
+            IntersectionResult::TriangulationDebug::CamDebug cd;
+            cd.warped_dir_x = cl.warped_dir_x;
+            cd.warped_dir_y = cl.warped_dir_y;
+            cd.perp_residual = 0.0;
+            cd.barrel_pixel_count = cl.barrel_pixel_count;
+            cd.barrel_aspect_ratio = cl.barrel_aspect_ratio;
+            cd.detection_quality = cl.detection_quality;
+            cd.weak_barrel_signal = cl.weak_barrel_signal;
+            cd.warped_point_x = cl.tip_normalized.x;
+            cd.warped_point_y = cl.tip_normalized.y;
+            td.cam_debug[cid] = cd;
+            td.board_radius = cl.tip_dist;
+            result.tri_debug = td;
+        } else {
+            result.method = "Partial_0cam";
+        }
+        return result;
+    }
 
     // === Phase 3: Barrel Signal Gate ===
     if (g_use_barrel_signal_gate && cam_lines.size() >= 2) {
@@ -1485,3 +1517,4 @@ const TpsTransform& tps = cal_it->second.tps_cache;
     
     return result;
 }
+

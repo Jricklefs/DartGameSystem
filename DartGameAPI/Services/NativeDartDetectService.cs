@@ -238,6 +238,18 @@ public class NativeDartDetectService : IDartDetectService
                 result.PcaResult != null, 
                 result.PcaResult?.Method ?? "null",
                 result.PcaResult?.Segment ?? -1);
+            // === NULL Fallback Aggregator ===
+            // If DLL returned score=0 (NULL/partial), try to rescue using cam_debug data
+            if (result.Score == 0 && (result.Method == "Partial_1cam" || result.Method == "Partial_0cam" || string.IsNullOrEmpty(result.Method)))
+            {
+                var rescued = FallbackAggregator.TryFallback(result, _logger);
+                if (rescued)
+                {
+                    _logger.LogInformation("[NATIVE] Fallback rescued NULL: S{Seg}x{Mult}={Score} ({Method})",
+                        result.Segment, result.Multiplier, result.Score, result.Method);
+                }
+            }
+
             int finalSegment = result.Segment;
             int finalMultiplier = result.Multiplier;
             int finalScore = result.Score;
