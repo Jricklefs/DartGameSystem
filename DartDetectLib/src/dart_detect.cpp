@@ -651,7 +651,10 @@ DD_API const char* dd_detect(
                          << json_double("detection_quality", cd.detection_quality) << ","
                          << "\"weak_barrel_signal\":" << (cd.weak_barrel_signal ? "true" : "false") << ","
                          << json_double("warped_point_x", cd.warped_point_x) << ","
-                         << json_double("warped_point_y", cd.warped_point_y)
+                         << json_double("warped_point_y", cd.warped_point_y) << ","
+                         << json_double("e_cam", cd.e_cam) << ","
+                         << json_double("mask_quality", cd.mask_quality) << ","
+                         << json_double("ransac_inlier_ratio", cd.ransac_inlier_ratio)
                          << "}";
                     // Phase 9: Ridge metrics (stored in DetectionResult, look up from camera_results)
                     auto det_it9 = camera_results.find(cid);

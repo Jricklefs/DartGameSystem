@@ -180,6 +180,9 @@ struct IntersectionResult {
             bool weak_barrel_signal = false;
             double warped_point_x = 0.0;
             double warped_point_y = 0.0;
+            double e_cam = 1.0;
+            double mask_quality = 0.0;
+            double ransac_inlier_ratio = 0.0;
         };
         std::map<std::string, CamDebug> cam_debug;
         double angle_spread_deg = 0.0;

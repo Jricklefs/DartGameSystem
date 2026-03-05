@@ -373,6 +373,7 @@ struct BcwtCamWeight {
     bool cam_invalid = false;
     bool dropped_by_legacy = false;
     bool included_by_bcwt = false;
+    double e_cam = 1.0;
 };
 
 static BcwtCamWeight bcwt_compute_weight(const DetectionResult& det, double mask_quality) {
@@ -409,6 +410,18 @@ static BcwtCamWeight bcwt_compute_weight(const DetectionResult& det, double mask
                  + 0.15 * bw.mask_score_val;
     
     bw.w_final = clamp01(w_raw) * g_bcwt_max_weight_cap;
+    
+    // Telemetry: E_cam from barrel_pixel_count (not applied to weights)
+    if (det.barrel_pixel_count == 0) {
+        bw.e_cam = 0.0;
+    } else if (det.barrel_pixel_count < 15) {
+        bw.e_cam = 0.60;
+    } else if (det.barrel_pixel_count < 40) {
+        bw.e_cam = 0.80;
+    } else {
+        bw.e_cam = 1.00;
+    }
+    
     return bw;
 }
 
@@ -949,7 +962,7 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         static const double MAX_CLAMP_DELTA_NORM = 3.0 / 170.0;  // 3mm in normalized space
         if (near_ring_any_10b && radial_delta_10b > RADIAL_DELTA_THRESHOLD) {
             if (radial_delta_10b > MAX_CLAMP_DELTA_NORM) {
-                // Delta too large — bestpair disagrees too much. Keep BCWT.
+                // Delta too large ï¿½ bestpair disagrees too much. Keep BCWT.
                 radial_clamp_applied = false;
                 radial_clamp_reason = "delta_exceeds_3mm_kept_bcwt";
                 // final_coords stays as BCWT (already set above)
@@ -1344,6 +1357,15 @@ const TpsTransform& tps = cal_it->second.tps_cache;
         cd.weak_barrel_signal = cl.weak_barrel_signal;
         cd.warped_point_x = cl.line_end.x;
         cd.warped_point_y = cl.line_end.y;
+        cd.mask_quality = cl.mask_quality;
+        {
+            auto det_it2 = camera_results.find(cid);
+            cd.ransac_inlier_ratio = (det_it2 != camera_results.end()) ? det_it2->second.ransac_inlier_ratio : 0.0;
+        }
+        {
+            auto bw_it = bcwt_weights.find(cid);
+            if (bw_it != bcwt_weights.end()) cd.e_cam = bw_it->second.e_cam;
+        }
         tri_dbg.cam_debug[cid] = cd;
     }
 
