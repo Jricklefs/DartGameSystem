@@ -805,34 +805,24 @@ async function selectCamera(camIndex) {
     
     // Show live camera feed with stored calibration overlay
     if (stored) {
-        // Try to show live snapshot in the img tag directly
+        // Draw live snapshot + overlay both on canvas (ensures perfect alignment)
         try {
             const snapUrl = `${DART_SENSOR_URL}/cameras/${camIndex}/snapshot?t=${Date.now()}`;
-            img.onload = () => {
-                img.style.display = 'block';
-                img.classList.add('loaded');
+            const liveImg = new Image();
+            liveImg.crossOrigin = 'anonymous';
+            liveImg.onload = () => {
+                const canvas = document.getElementById('calibration-canvas');
+                if (canvas) {
+                    // Hide img tag, show canvas
+                    img.style.display = 'none';
+                    canvas.style.display = 'block';
+                    // Draw live image + overlay on canvas together
+                    drawCalibrationOverlay(canvas, stored.calibrationData, liveImg, false);
+                }
                 loading.classList.add('hidden');
                 offline.classList.add('hidden');
-                // Draw calibration overlay on canvas on top
-                const canvas = document.getElementById('calibration-canvas');
-                console.log('[CALIBRATION] img loaded:', img.naturalWidth, 'x', img.naturalHeight, 
-                    'calibrationData:', !!stored.calibrationData, 'canvas:', !!canvas);
-                if (canvas && stored.calibrationData) {
-                    canvas.style.display = 'block';
-                    canvas.style.position = 'absolute';
-                    canvas.style.top = '0';
-                    canvas.style.left = '0';
-                    canvas.style.width = '100%';
-                    canvas.style.height = '100%';
-                    canvas.style.zIndex = '10';
-                    canvas.style.pointerEvents = 'none';
-                    drawCalibrationOverlay(canvas, stored.calibrationData, img, true);
-                    console.log('[CALIBRATION] Overlay drawn on canvas:', canvas.width, 'x', canvas.height);
-                } else {
-                    console.warn('[CALIBRATION] No overlay - canvas:', !!canvas, 'calData:', !!stored.calibrationData);
-                }
             };
-            img.onerror = () => {
+            liveImg.onerror = () => {
                 console.warn('[CALIBRATION] Live snapshot failed, falling back to stored overlay');
                 if (stored.overlayImagePath) {
                     const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
@@ -842,7 +832,7 @@ async function selectCamera(camIndex) {
                 }
                 loading.classList.add('hidden');
             };
-            img.src = snapUrl;
+            liveImg.src = snapUrl;
         } catch (e) {
             console.warn('[CALIBRATION] Live snapshot error:', e);
             loading.classList.add('hidden');
