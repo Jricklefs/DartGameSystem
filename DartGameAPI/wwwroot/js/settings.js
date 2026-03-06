@@ -2,7 +2,7 @@
  * DartsMob Settings Page
  */
 
-const DART_DETECT_URL = 'http://192.168.0.158:8000';
+const DART_DETECT_URL = 'http://192.168.0.158:8001';  // DartSensorDirect (has calibration + camera snapshots)
 const DART_SENSOR_URL = 'http://192.168.0.158:8001';  // DartSensor for camera snapshots
 const DART_GAME_URL = window.location.origin;
 
