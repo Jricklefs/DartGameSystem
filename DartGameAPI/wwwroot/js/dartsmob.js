@@ -836,12 +836,13 @@ function showWinnerModal(winner) {
         modal.id = 'winner-modal';
         modal.className = 'modal hidden';
         modal.innerHTML = `
-            <div class="modal-content winner-content">
-                <h2 class="winner-title">?? WINNER! ??</h2>
-                <div class="winner-name"></div>
-                <div class="winner-buttons">
-                    <button class="btn btn-primary" id="winner-play-again">?? Play Again</button>
-                    <button class="btn btn-secondary" id="winner-quit">?? Quit</button>
+            <div class="modal-backdrop"></div>
+            <div class="modal-content winner-content" style="background: var(--bg-dark, #1a1a1a); padding: 40px; text-align: center; min-width: 300px;">
+                <h2 class="winner-title" style="font-family: 'Bebas Neue', sans-serif; color: var(--gold, #d4a44c); font-size: 2.5rem; margin-bottom: 10px;">&#127942; WINNER! &#127942;</h2>
+                <div class="winner-name" style="font-size: 2rem; color: white; margin-bottom: 30px;"></div>
+                <div class="winner-buttons" style="display: flex; gap: 15px; justify-content: center;">
+                    <button class="btn btn-primary" id="winner-play-again" style="padding: 12px 24px; font-size: 1.1rem; cursor: pointer;">&#127922; Play Again</button>
+                    <button class="btn btn-secondary" id="winner-quit" style="padding: 12px 24px; font-size: 1.1rem; cursor: pointer;">&#128682; Quit</button>
                 </div>
             </div>
         `;
