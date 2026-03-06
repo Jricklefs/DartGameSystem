@@ -125,6 +125,17 @@ public static class GameHubExtensions
             // Fall back to group (in case sensor joined via group)
             await hub.Clients.Group($"sensor:{boardId}").SendAsync("StartGame", gameId);
         }
+        
+        // Also call HTTP endpoint as fallback (SignalR can be unreliable)
+        try
+        {
+            using var http = new System.Net.Http.HttpClient { Timeout = System.TimeSpan.FromSeconds(2) };
+            var content = new System.Net.Http.StringContent(
+                System.Text.Json.JsonSerializer.Serialize(new { gameId }),
+                System.Text.Encoding.UTF8, "application/json");
+            await http.PostAsync("http://127.0.0.1:8001/start", content);
+        }
+        catch { /* Sensor may not be running */ }
     }
     
     /// <summary>
