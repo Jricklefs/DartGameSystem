@@ -802,16 +802,18 @@ async function selectCamera(camIndex) {
     // Show live camera feed with stored calibration overlay
     if (stored) {
         // Try live snapshot + overlay first
-        const liveOk = await showLiveCalibration(camIndex);
-        if (!liveOk && stored.overlayImagePath) {
-            // Fallback to stored overlay image
-            console.log('[CALIBRATION] Falling back to stored overlay:', stored.overlayImagePath);
-            const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
-            img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
-            img.style.display = 'block';
-            img.classList.add('loaded');
-            loading.classList.add('hidden');
-            offline.classList.add('hidden');
+        try {
+            await showLiveCalibration(camIndex);
+        } catch (e) {
+            console.warn('[CALIBRATION] Live snapshot failed, falling back to stored overlay:', e);
+            if (stored.overlayImagePath) {
+                const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
+                img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
+                img.style.display = 'block';
+                img.classList.add('loaded');
+                loading.classList.add('hidden');
+                offline.classList.add('hidden');
+            }
         }
         if (stored.calibrationImagePath) {
             lastCameraSnapshot = stored.calibrationImagePath;
@@ -1435,7 +1437,6 @@ async function refreshCameraWithOverlay() {
                         refreshBtn.disabled = false;
                         refreshBtn.textContent = '🔄 Refresh';
                     }
-                    resolve();
                 };
                 overlayImg.onerror = () => {
                     console.warn('Failed to load overlay image');
@@ -1444,7 +1445,6 @@ async function refreshCameraWithOverlay() {
                         refreshBtn.disabled = false;
                         refreshBtn.textContent = '🔄 Refresh';
                     }
-                    resolve(); // still resolved - frame is shown, just no overlay
                 };
                 overlayImg.src = stored.overlayImagePath;
             } else {
@@ -1454,26 +1454,20 @@ async function refreshCameraWithOverlay() {
                     refreshBtn.disabled = false;
                     refreshBtn.textContent = '🔄 Refresh';
                 }
-                resolve();
             }
         };
         
         frameImg.onerror = () => {
-            reject(new Error('Failed to load frame image'));
+            throw new Error('Failed to load frame image');
         };
         
         frameImg.src = `data:image/jpeg;base64,${frameBase64}`;
-        }); // end promise
-        
-        canvas.style.display = 'block';
-        return true;
         
     } catch (err) {
         console.error('Refresh failed:', err);
         loading.classList.add('hidden');
         offline.classList.remove('hidden');
         offline.querySelector('span').textContent = '❌ ' + err.message;
-        return false;
         if (refreshBtn) {
             refreshBtn.disabled = false;
             refreshBtn.textContent = '🔄 Refresh';
