@@ -110,8 +110,10 @@ public class GamesController : ControllerBase
             await _hubContext.SendDartThrown(game.BoardId, directDart, game);
 
             if (game.State == GameState.Finished)
+            {
                 await _hubContext.SendGameEnded(game.BoardId, game);
-            await _hubContext.SendPauseDetection(game.BoardId, "game_ended");
+                await _hubContext.SendPauseDetection(game.BoardId, "game_ended");
+            }
             else if (game.LegWinnerId != null)
             {
                 var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
@@ -868,8 +870,10 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
         await _hubContext.SendDartThrown(game.BoardId, dart, game);
         
         if (game.State == GameState.Finished)
+        {
             await _hubContext.SendGameEnded(game.BoardId, game);
             await _hubContext.SendPauseDetection(game.BoardId, "game_ended");
+        }
         else if (game.LegWinnerId != null)
         {
             var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);

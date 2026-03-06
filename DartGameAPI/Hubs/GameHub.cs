@@ -173,7 +173,7 @@ public static class GameHubExtensions
     /// <summary>
     /// Tell sensor to pause motion detection (e.g., bust confirmed, player pulling darts)
     /// </summary>
-    public static async Task SendPauseDetection(this IHubContext<GameHub> hub, string boardId)
+    public static async Task SendPauseDetection(this IHubContext<GameHub> hub, string boardId, string reason = "unknown")
     {
         var connId = GameHub.GetSensorConnectionId(boardId);
         if (connId != null)
@@ -218,7 +218,6 @@ public static class GameHubExtensions
                 game.WinnerId,
                 WinnerName = game.Players.FirstOrDefault(p => p.Id == game.WinnerId)?.Name,
                 game.CurrentPlayerIndex,
-                game.CurrentRound,
                 CurrentPlayer = game.CurrentPlayer?.Name,
                 Players = game.Players.Select(p => new
                 {
@@ -277,7 +276,6 @@ public static class GameHubExtensions
                 game.Mode,
                 game.State,
                 game.CurrentPlayerIndex,
-                game.CurrentRound,
                 CurrentPlayer = game.CurrentPlayer?.Name,
                 Players = game.Players.Select(p => new
                 {
@@ -384,7 +382,6 @@ public static class GameHubExtensions
                 game.State,
                 game.CurrentRound,
                 game.CurrentPlayerIndex,
-                game.CurrentRound,
                 CurrentPlayer = game.CurrentPlayer?.Name,
                 Players = game.Players.Select(p => new
                 {
