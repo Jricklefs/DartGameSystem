@@ -95,7 +95,9 @@ public class GamesController : ControllerBase
                 Multiplier = request.DirectResult.Multiplier,
                 Zone = GetZoneName(request.DirectResult.Segment, request.DirectResult.Multiplier),
                 Score = request.DirectResult.Score,
-                Confidence = request.DirectResult.Confidence
+                Confidence = request.DirectResult.Confidence,
+                XMm = request.DirectResult.XMm,
+                YMm = request.DirectResult.YMm
             };
 
             if (game.IsX01Engine)
@@ -1144,6 +1146,8 @@ public class DirectResultPayload
     public double Confidence { get; set; }
     public string Method { get; set; } = "";
     public string Source { get; set; } = "DartSensorDirect";
+    public double XMm { get; set; }
+    public double YMm { get; set; }
 }
 
 public class ImagePayload
