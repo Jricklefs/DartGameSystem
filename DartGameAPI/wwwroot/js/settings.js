@@ -172,8 +172,8 @@ function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage, overlayO
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
             // Highlight segment 20 boundaries in blue
-            let sNum = SEGMENT_ORDER[(i + seg20Idx) % 20];
-            let nextSNum = SEGMENT_ORDER[((i + 1) + seg20Idx) % 20];
+            let sNum = SEGMENT_ORDER[(i - seg20Idx + 20) % 20];
+            let nextSNum = SEGMENT_ORDER[((i + 1) - seg20Idx + 20) % 20];
             if (sNum === 20 || nextSNum === 20) {
                 ctx.strokeStyle = 'rgba(0, 150, 255, 0.9)';
                 ctx.lineWidth = 3;
@@ -191,7 +191,7 @@ function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage, overlayO
                 else a1 += 2 * Math.PI;
             }
             const midAngle = (a1 + a2) / 2;
-            const segNum = SEGMENT_ORDER[(i + seg20Idx) % 20];
+            const segNum = SEGMENT_ORDER[(i - seg20Idx + 20) % 20];
             const labelR = maxR * 1.08;
             const lx = cx + labelR * Math.cos(midAngle);
             const ly = cy + labelR * Math.sin(midAngle);
