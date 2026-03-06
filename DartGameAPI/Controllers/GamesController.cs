@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -79,6 +79,48 @@ public class GamesController : ControllerBase
         {
             _logger.LogWarning("[GUARD] Rejected dart detection - turn is busted, waiting for confirmation.");
             return Ok(new { message = "Turn busted - waiting for confirmation", darts = new List<object>() });
+        }
+
+        // === DIRECT RESULT (from DartSensorDirect - detection already done) ===
+        if (request.DirectResult != null)
+        {
+            _logger.LogInformation("[{RequestId}] DirectResult from {Source}: S{Seg}x{Mul}={Score}",
+                requestId, request.DirectResult.Source, request.DirectResult.Segment, 
+                request.DirectResult.Multiplier, request.DirectResult.Score);
+            
+            var directDart = new DartThrow
+            {
+                Index = (game.CurrentTurn?.Darts?.Count ?? 0),
+                Segment = request.DirectResult.Segment,
+                Multiplier = request.DirectResult.Multiplier,
+                Zone = GetZoneName(request.DirectResult.Segment, request.DirectResult.Multiplier),
+                Score = request.DirectResult.Score,
+                Confidence = request.DirectResult.Confidence
+            };
+
+            if (game.IsX01Engine)
+                _x01Engine.ProcessDart(game, directDart);
+            else if (game.IsCricketEngine)
+                _cricketEngine.ProcessDart(game, directDart);
+            else
+                _gameService.ApplyManualDart(game, directDart);
+            
+            await _hubContext.SendDartThrown(game.BoardId, directDart, game);
+
+            if (game.State == GameState.Finished)
+                await _hubContext.SendGameEnded(game.BoardId, game);
+            else if (game.LegWinnerId != null)
+            {
+                var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
+                if (legWinner != null)
+                    await _hubContext.SendLegWon(game.BoardId, legWinner.Name, legWinner.LegsWon, game.LegsToWin, game);
+            }
+
+            _logger.LogInformation("[TIMING][{RequestId}] DG: DirectResult complete total={Total}ms", requestId, sw.ElapsedMilliseconds);
+            return Ok(new { 
+                message = "DirectResult applied", 
+                darts = new[] { new { directDart.Zone, directDart.Score, directDart.Segment, directDart.Multiplier, directDart.Confidence } } 
+            });
         }
 
         // Forward images to DartDetect API
@@ -1090,6 +1132,18 @@ public class DetectRequest
     public string? RequestId { get; set; }
     /// <summary>Camera hardware settings at time of capture (from DartSensor)</summary>
     public Dictionary<string, Dictionary<string, object>>? CameraSettings { get; set; }
+    /// <summary>Pre-computed detection result from DartSensorDirect (skip DLL call)</summary>
+    public DirectResultPayload? DirectResult { get; set; }
+}
+
+public class DirectResultPayload
+{
+    public int Segment { get; set; }
+    public int Multiplier { get; set; }
+    public int Score { get; set; }
+    public double Confidence { get; set; }
+    public string Method { get; set; } = "";
+    public string Source { get; set; } = "DartSensorDirect";
 }
 
 public class ImagePayload
