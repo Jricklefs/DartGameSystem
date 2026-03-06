@@ -132,6 +132,32 @@ function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage, overlayO
             bullR = Math.max(cal.bull_ellipse[1][0], cal.bull_ellipse[1][1]) / 2;
         }
         
+        // Draw blue filled wedge for segment 20
+        const seg20BoundaryIdx = seg20Idx;
+        const seg20Angle1 = segAngles[seg20BoundaryIdx];
+        const seg20Angle2 = segAngles[(seg20BoundaryIdx + 1) % 20];
+        
+        // Draw filled wedge using ellipse path if available, else arc
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        // Use arc between the two boundary angles
+        let startA = seg20Angle1;
+        let endA = seg20Angle2;
+        // Handle angle wrapping
+        if (endA < startA) endA += 2 * Math.PI;
+        if (endA - startA > Math.PI) {
+            // Wrong direction, swap
+            startA = seg20Angle2;
+            endA = seg20Angle1;
+            if (endA < startA) endA += 2 * Math.PI;
+        }
+        ctx.arc(cx, cy, maxR, startA, endA);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0, 100, 255, 0.25)';
+        ctx.fill();
+        ctx.restore();
+
         for (let i = 0; i < 20; i++) {
             const angle = segAngles[i];
             const dx = Math.cos(angle);
@@ -145,8 +171,16 @@ function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage, overlayO
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
-            ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-            ctx.lineWidth = 2;
+            // Highlight segment 20 boundaries in blue
+            const segNum = SEGMENT_ORDER[(i + seg20Idx) % 20];
+            const nextSegNum = SEGMENT_ORDER[((i + 1) + seg20Idx) % 20];
+            if (segNum === 20 || nextSegNum === 20) {
+                ctx.strokeStyle = 'rgba(0, 150, 255, 0.9)';
+                ctx.lineWidth = 3;
+            } else {
+                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                ctx.lineWidth = 2;
+            }
             ctx.stroke();
             
             // Label: segment between boundary i and i+1
