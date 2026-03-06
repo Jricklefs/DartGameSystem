@@ -172,9 +172,9 @@ function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage, overlayO
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
             // Highlight segment 20 boundaries in blue
-            const segNum = SEGMENT_ORDER[(i + seg20Idx) % 20];
-            const nextSegNum = SEGMENT_ORDER[((i + 1) + seg20Idx) % 20];
-            if (segNum === 20 || nextSegNum === 20) {
+            let sNum = SEGMENT_ORDER[(i + seg20Idx) % 20];
+            let nextSNum = SEGMENT_ORDER[((i + 1) + seg20Idx) % 20];
+            if (sNum === 20 || nextSNum === 20) {
                 ctx.strokeStyle = 'rgba(0, 150, 255, 0.9)';
                 ctx.lineWidth = 3;
             } else {
