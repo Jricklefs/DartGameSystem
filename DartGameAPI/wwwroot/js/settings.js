@@ -1435,6 +1435,7 @@ async function refreshCameraWithOverlay() {
                         refreshBtn.disabled = false;
                         refreshBtn.textContent = '🔄 Refresh';
                     }
+                    resolve();
                 };
                 overlayImg.onerror = () => {
                     console.warn('Failed to load overlay image');
@@ -1443,6 +1444,7 @@ async function refreshCameraWithOverlay() {
                         refreshBtn.disabled = false;
                         refreshBtn.textContent = '🔄 Refresh';
                     }
+                    resolve(); // still resolved - frame is shown, just no overlay
                 };
                 overlayImg.src = stored.overlayImagePath;
             } else {
@@ -1452,20 +1454,26 @@ async function refreshCameraWithOverlay() {
                     refreshBtn.disabled = false;
                     refreshBtn.textContent = '🔄 Refresh';
                 }
+                resolve();
             }
         };
         
         frameImg.onerror = () => {
-            throw new Error('Failed to load frame image');
+            reject(new Error('Failed to load frame image'));
         };
         
         frameImg.src = `data:image/jpeg;base64,${frameBase64}`;
+        }); // end promise
+        
+        canvas.style.display = 'block';
+        return true;
         
     } catch (err) {
         console.error('Refresh failed:', err);
         loading.classList.add('hidden');
         offline.classList.remove('hidden');
         offline.querySelector('span').textContent = '❌ ' + err.message;
+        return false;
         if (refreshBtn) {
             refreshBtn.disabled = false;
             refreshBtn.textContent = '🔄 Refresh';
