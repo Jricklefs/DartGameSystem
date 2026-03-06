@@ -166,6 +166,22 @@ async function initConnection() {
     connection.on('GameStarted', (data) => { handleGameStarted(data); _initHeatmapIfNeeded(); });
     connection.on('GameEnded', handleGameEnded);
     connection.on('TurnEnded', handleTurnEnded);
+
+// Pause/resume detection on sensor
+function pauseDetection(reason) {
+    if (connection && connection.state === 'Connected') {
+        connection.invoke('PauseDetection', boardId, reason).catch(e => console.warn('PauseDetection failed:', e));
+    }
+    // Also call DartSensorDirect directly as fallback
+    fetch('http://192.168.0.158:8001/stop', { method: 'POST' }).catch(() => {});
+}
+function resumeDetection() {
+    if (connection && connection.state === 'Connected') {
+        connection.invoke('ResumeDetection', boardId).catch(e => console.warn('ResumeDetection failed:', e));
+    }
+    fetch('http://192.168.0.158:8001/start', { method: 'POST' }).catch(() => {});
+}
+
     connection.on('DartNotFound', handleDartNotFound);
     connection.on('LegWon', handleLegWon);
     connection.on('BustDetected', handleBustDetected);
@@ -561,6 +577,7 @@ function showBustPopup(dart) {
 }
 
 function showBustModal() {
+    pauseDetection('bust');
     document.getElementById('bust-modal')?.remove();
     
     const turn = currentGame?.currentTurn;
@@ -829,6 +846,7 @@ async function checkLegWonReady() {
 }
 
 function showWinnerModal(winner) {
+    pauseDetection('game_won');
     // Create modal if it doesn't exist
     let modal = document.getElementById('winner-modal');
     if (!modal) {
@@ -850,12 +868,13 @@ function showWinnerModal(winner) {
         
         document.getElementById('winner-play-again').addEventListener('click', () => {
             modal.classList.add('hidden');
-            // Restart with same players
-            location.reload();  // Simple reload for now
+            resumeDetection();
+            location.reload();
         });
         
         document.getElementById('winner-quit').addEventListener('click', () => {
             modal.classList.add('hidden');
+            resumeDetection();
             showScreen('setup-screen');
         });
     }

@@ -111,6 +111,7 @@ public class GamesController : ControllerBase
 
             if (game.State == GameState.Finished)
                 await _hubContext.SendGameEnded(game.BoardId, game);
+            await _hubContext.SendPauseDetection(game.BoardId, "game_ended");
             else if (game.LegWinnerId != null)
             {
                 var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
@@ -240,6 +241,7 @@ public class GamesController : ControllerBase
         if (game.State == GameState.Finished)
         {
             await _hubContext.SendGameEnded(game.BoardId, game);
+            await _hubContext.SendPauseDetection(game.BoardId, "game_ended");
         }
         else if (dartResult?.Type == DartResultType.Bust)
         {
@@ -675,6 +677,7 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
         if (game == null) return NotFound();
         _gameService.EndGame(id);
         await _hubContext.SendGameEnded(game.BoardId, game);
+            await _hubContext.SendPauseDetection(game.BoardId, "game_ended");
         return Ok(new { message = "Game ended" });
     }
 
@@ -771,6 +774,7 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
         
         if (game.State == GameState.Finished)
             await _hubContext.SendGameEnded(game.BoardId, game);
+            await _hubContext.SendPauseDetection(game.BoardId, "game_ended");
         
         return Ok(new { result = result.Type.ToString(), game });
     }
@@ -855,6 +859,7 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
         
         if (game.State == GameState.Finished)
             await _hubContext.SendGameEnded(game.BoardId, game);
+            await _hubContext.SendPauseDetection(game.BoardId, "game_ended");
         else if (game.LegWinnerId != null)
         {
             var legWinner = game.Players.FirstOrDefault(p => p.Id == game.LegWinnerId);
@@ -924,6 +929,7 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
         if (game.State == GameState.Finished)
         {
             await _hubContext.SendGameEnded(game.BoardId, game);
+            await _hubContext.SendPauseDetection(game.BoardId, "game_ended");
         }
         else if (correctionResult?.Type == DartResultType.LegWon || game.LegWinnerId != null)
         {

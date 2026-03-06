@@ -45,6 +45,18 @@ public class GameHub : Hub
     /// <summary>
     /// Register a sensor for a board
     /// </summary>
+    public async Task PauseDetection(string boardId, string reason)
+    {
+        _logger.LogInformation("PauseDetection for board {BoardId}: {Reason}", boardId, reason);
+        await Clients.Group($"sensor:{boardId}").SendAsync("PauseDetection", new { boardId, reason });
+    }
+
+    public async Task ResumeDetection(string boardId)
+    {
+        _logger.LogInformation("ResumeDetection for board {BoardId}", boardId);
+        await Clients.Group($"sensor:{boardId}").SendAsync("ResumeDetection", new { boardId });
+    }
+
     public async Task RegisterBoard(string boardId)
     {
         _sensorConnections[boardId] = Context.ConnectionId;
