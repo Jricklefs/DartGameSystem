@@ -815,9 +815,21 @@ async function selectCamera(camIndex) {
                 offline.classList.add('hidden');
                 // Draw calibration overlay on canvas on top
                 const canvas = document.getElementById('calibration-canvas');
+                console.log('[CALIBRATION] img loaded:', img.naturalWidth, 'x', img.naturalHeight, 
+                    'calibrationData:', !!stored.calibrationData, 'canvas:', !!canvas);
                 if (canvas && stored.calibrationData) {
-                    drawCalibrationOverlay(canvas, stored.calibrationData, img, true);
                     canvas.style.display = 'block';
+                    canvas.style.position = 'absolute';
+                    canvas.style.top = '0';
+                    canvas.style.left = '0';
+                    canvas.style.width = '100%';
+                    canvas.style.height = '100%';
+                    canvas.style.zIndex = '10';
+                    canvas.style.pointerEvents = 'none';
+                    drawCalibrationOverlay(canvas, stored.calibrationData, img, true);
+                    console.log('[CALIBRATION] Overlay drawn on canvas:', canvas.width, 'x', canvas.height);
+                } else {
+                    console.warn('[CALIBRATION] No overlay - canvas:', !!canvas, 'calData:', !!stored.calibrationData);
                 }
             };
             img.onerror = () => {
