@@ -67,13 +67,17 @@ let dragState = null;    // {type: 'standard'|'nsfw', index: number}
 // Dartboard segment order (clockwise starting from 20 at top)
 const SEGMENT_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
 // Draw calibration overlay on canvas using stored calibration data
-function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage) {
+function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage, overlayOnly) {
     const ctx = canvas.getContext('2d');
     canvas.width = baseImage.naturalWidth || baseImage.width;
     canvas.height = baseImage.naturalHeight || baseImage.height;
     
-    // Draw base image
-    ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+    // Draw base image (skip if overlayOnly — live feed is behind in img tag)
+    if (!overlayOnly) {
+        ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+    } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
     
     if (!calibrationDataJson) return;
     
@@ -812,7 +816,7 @@ async function selectCamera(camIndex) {
                 // Draw calibration overlay on canvas on top
                 const canvas = document.getElementById('calibration-canvas');
                 if (canvas && stored.calibrationData) {
-                    drawCalibrationOverlay(canvas, stored.calibrationData, img);
+                    drawCalibrationOverlay(canvas, stored.calibrationData, img, true);
                     canvas.style.display = 'block';
                 }
             };
