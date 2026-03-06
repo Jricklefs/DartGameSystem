@@ -122,7 +122,17 @@ public class GamesController : ControllerBase
             _logger.LogInformation("[TIMING][{RequestId}] DG: DirectResult complete total={Total}ms", requestId, sw.ElapsedMilliseconds);
             return Ok(new { 
                 message = "DirectResult applied", 
-                darts = new[] { new { directDart.Zone, directDart.Score, directDart.Segment, directDart.Multiplier, directDart.Confidence } } 
+                darts = new[] { new { directDart.Zone, directDart.Score, directDart.Segment, directDart.Multiplier, directDart.Confidence } },
+                game = new {
+                    game.Id,
+                    game.State,
+                    CurrentPlayer = game.CurrentPlayer?.Name,
+                    CurrentTurn = game.CurrentTurn == null ? null : new {
+                        game.CurrentTurn.TurnNumber,
+                        game.CurrentTurn.TurnScore,
+                        DartCount = game.CurrentTurn.Darts?.Count ?? 0
+                    }
+                }
             });
         }
 
