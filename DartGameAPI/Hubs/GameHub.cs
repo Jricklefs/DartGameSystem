@@ -207,6 +207,7 @@ public static class GameHubExtensions
                 game.WinnerId,
                 WinnerName = game.Players.FirstOrDefault(p => p.Id == game.WinnerId)?.Name,
                 game.CurrentPlayerIndex,
+                game.CurrentRound,
                 CurrentPlayer = game.CurrentPlayer?.Name,
                 Players = game.Players.Select(p => new
                 {
@@ -265,6 +266,7 @@ public static class GameHubExtensions
                 game.Mode,
                 game.State,
                 game.CurrentPlayerIndex,
+                game.CurrentRound,
                 CurrentPlayer = game.CurrentPlayer?.Name,
                 Players = game.Players.Select(p => new
                 {
@@ -371,6 +373,7 @@ public static class GameHubExtensions
                 game.State,
                 game.CurrentRound,
                 game.CurrentPlayerIndex,
+                game.CurrentRound,
                 CurrentPlayer = game.CurrentPlayer?.Name,
                 Players = game.Players.Select(p => new
                 {
