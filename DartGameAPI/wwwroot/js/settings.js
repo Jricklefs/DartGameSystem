@@ -801,19 +801,35 @@ async function selectCamera(camIndex) {
     
     // Show live camera feed with stored calibration overlay
     if (stored) {
-        // Try live snapshot + overlay first
+        // Try to show live snapshot in the img tag directly
         try {
-            await showLiveCalibration(camIndex);
-        } catch (e) {
-            console.warn('[CALIBRATION] Live snapshot failed, falling back to stored overlay:', e);
-            if (stored.overlayImagePath) {
-                const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
-                img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
+            const snapUrl = `${DART_SENSOR_URL}/cameras/${camIndex}/snapshot?t=${Date.now()}`;
+            img.onload = () => {
                 img.style.display = 'block';
                 img.classList.add('loaded');
                 loading.classList.add('hidden');
                 offline.classList.add('hidden');
-            }
+                // Draw calibration overlay on canvas on top
+                const canvas = document.getElementById('calibration-canvas');
+                if (canvas && stored.calibrationData) {
+                    drawCalibrationOverlay(canvas, stored.calibrationData, img);
+                    canvas.style.display = 'block';
+                }
+            };
+            img.onerror = () => {
+                console.warn('[CALIBRATION] Live snapshot failed, falling back to stored overlay');
+                if (stored.overlayImagePath) {
+                    const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
+                    img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
+                    img.style.display = 'block';
+                    img.classList.add('loaded');
+                }
+                loading.classList.add('hidden');
+            };
+            img.src = snapUrl;
+        } catch (e) {
+            console.warn('[CALIBRATION] Live snapshot error:', e);
+            loading.classList.add('hidden');
         }
         if (stored.calibrationImagePath) {
             lastCameraSnapshot = stored.calibrationImagePath;
