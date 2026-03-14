@@ -132,48 +132,48 @@ function drawPolygonOverlay(ctx, cal, poly, cx, cy) {
     }
     
     // Draw the 4 ring polygons
-    drawRingPolygon(dOuters, 'rgba(255,255,0,0.8)', 2);   // Board edge
-    drawRingPolygon(dInners, 'rgba(255,200,0,0.6)', 1.5);  // Double inner
-    drawRingPolygon(tOuters, 'rgba(255,255,0,0.8)', 2);   // Triple outer
-    drawRingPolygon(tInners, 'rgba(255,200,0,0.6)', 1.5);  // Triple inner
+    drawRingPolygon(dOuters, 'rgba(255,255,0,0.8)', 2);
+    drawRingPolygon(dInners, 'rgba(255,200,0,0.6)', 1.5);
+    drawRingPolygon(tOuters, 'rgba(255,255,0,0.8)', 2);
+    drawRingPolygon(tInners, 'rgba(255,200,0,0.6)', 1.5);
     
     // Draw bull ellipses if available
     if (cal.bull_ellipse) drawEllipseShape(ctx, cal.bull_ellipse, 'rgba(255,255,0,0.6)', 1);
     if (cal.bullseye_ellipse) drawEllipseShape(ctx, cal.bullseye_ellipse, 'rgba(255,255,0,0.6)', 1);
     
     // Draw segment 20 filled wedge
-    const seg20Idx = 0; // polygon points start at segment 20
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    // Walk along treble inner → treble outer → double outer → double inner for segment 20
-    const i0 = seg20Idx;
-    const i1 = (seg20Idx + 1) % 20;
-    if (dOuters[i0] && dOuters[i1]) {
-        ctx.lineTo(dOuters[i0][0], dOuters[i0][1]);
-        ctx.lineTo(dOuters[i1][0], dOuters[i1][1]);
+    if (dOuters[0] && dOuters[1]) {
+        ctx.lineTo(dOuters[0][0], dOuters[0][1]);
+        ctx.lineTo(dOuters[1][0], dOuters[1][1]);
     }
     ctx.closePath();
     ctx.fillStyle = 'rgba(0, 100, 255, 0.2)';
     ctx.fill();
     ctx.restore();
     
-    // Draw segment boundary lines (from bull to outer double)
+    // Draw segment boundary lines from center to outer double + 30px extension
     for (let i = 0; i < 20; i++) {
         const outerPt = dOuters[i];
         if (!outerPt) continue;
         
-        // Segment number is between boundary i and i+1
-        const segNum = SEGMENTS[i];
-        const nextSegNum = SEGMENTS[(i + 1) % 20];
+        // Extend line 30px past the outer double point
+        const dx = outerPt[0] - cx;
+        const dy = outerPt[1] - cy;
+        const len = Math.hypot(dx, dy);
+        const extendPx = 30;
+        const endX = outerPt[0] + (dx / len) * extendPx;
+        const endY = outerPt[1] + (dy / len) * extendPx;
         
-        // Line from center to outer
+        // Line from center to extended point
         ctx.beginPath();
         ctx.moveTo(cx, cy);
-        ctx.lineTo(outerPt[0], outerPt[1]);
+        ctx.lineTo(endX, endY);
         
-        // Highlight segment 20 boundaries
-        if (segNum === 20 || (i > 0 && SEGMENTS[i-1] === 20)) {
+        // Highlight segment 20 boundaries (boundary 0 and 1 border segment 20)
+        if (i === 0 || i === 1) {
             ctx.strokeStyle = 'rgba(0, 150, 255, 0.9)';
             ctx.lineWidth = 3;
         } else {
@@ -182,21 +182,21 @@ function drawPolygonOverlay(ctx, cal, poly, cx, cy) {
         }
         ctx.stroke();
         
-        // Draw tick marks where boundary crosses each ring
-        function drawTick(pt, color) {
+        // Small dots at ring intersections
+        function drawDot(pt, color, r) {
             if (!pt) return;
             ctx.beginPath();
-            ctx.arc(pt[0], pt[1], 3, 0, 2 * Math.PI);
+            ctx.arc(pt[0], pt[1], r, 0, 2 * Math.PI);
             ctx.fillStyle = color;
             ctx.fill();
         }
-        drawTick(dOuters[i], 'rgba(255,255,0,0.7)');
-        drawTick(dInners[i], 'rgba(255,200,0,0.5)');
-        drawTick(tOuters[i], 'rgba(255,255,0,0.7)');
-        drawTick(tInners[i], 'rgba(255,200,0,0.5)');
+        drawDot(dOuters[i], 'rgba(255,255,0,0.8)', 3);
+        if (dInners && dInners[i]) drawDot(dInners[i], 'rgba(255,200,0,0.6)', 2);
+        if (tOuters && tOuters[i]) drawDot(tOuters[i], 'rgba(255,255,0,0.8)', 3);
+        if (tInners && tInners[i]) drawDot(tInners[i], 'rgba(255,200,0,0.6)', 2);
     }
     
-    // Label segments (between boundary i and i+1)
+    // Label segments between boundaries
     for (let i = 0; i < 20; i++) {
         const p1 = dOuters[i];
         const p2 = dOuters[(i + 1) % 20];
@@ -204,25 +204,23 @@ function drawPolygonOverlay(ctx, cal, poly, cx, cy) {
         
         const segNum = SEGMENTS[i];
         
-        // Midpoint of the two outer boundary points, pushed outward
+        // Midpoint of outer boundary points, pushed outward
         const midX = (p1[0] + p2[0]) / 2;
         const midY = (p1[1] + p2[1]) / 2;
         const dx = midX - cx;
         const dy = midY - cy;
         const len = Math.hypot(dx, dy);
         
-        // Place label 8% beyond the outer ring
-        const labelX = cx + dx / len * (len * 1.08);
-        const labelY = cy + dy / len * (len * 1.08);
+        // Label ~50px beyond the outer ring
+        const labelX = midX + (dx / len) * 50;
+        const labelY = midY + (dy / len) * 50;
         
         ctx.font = 'bold 16px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        // Black outline
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
         ctx.strokeText(String(segNum), labelX, labelY);
-        // Green for 20, white for others
         ctx.fillStyle = segNum === 20 ? '#00ff00' : '#ffffff';
         ctx.fillText(String(segNum), labelX, labelY);
     }
@@ -243,7 +241,7 @@ function drawEllipseOverlay(ctx, cal, cx, cy) {
     if (segAngles && segAngles.length >= 20) {
         let maxR = 300;
         if (cal.outer_double_ellipse) {
-            maxR = Math.max(cal.outer_double_ellipse[1][0], cal.outer_double_ellipse[1][1]) / 2 + 10;
+            maxR = Math.max(cal.outer_double_ellipse[1][0], cal.outer_double_ellipse[1][1]) / 2 + 30;
         }
         let bullR = 20;
         if (cal.bull_ellipse) {
