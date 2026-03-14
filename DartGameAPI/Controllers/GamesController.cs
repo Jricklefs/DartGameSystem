@@ -1119,7 +1119,7 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
                 corrected_segment = newDart.Segment,
                 corrected_multiplier = newDart.Multiplier
             };
-            await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/benchmark/correction", payload);
+            await client.PostAsJsonAsync("http://127.0.0.1:8001/v1/benchmark/correction", payload);
         }
         catch (Exception ex)
         {
@@ -1134,7 +1134,7 @@ else if (game != null && (game.EngineState == EngineState.LegEnded || game.Engin
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(2);
             var payload = new { board_id = boardId, game_id = gameId, round_num = round, player_name = playerName ?? "player" };
-            await client.PostAsJsonAsync("http://127.0.0.1:8000/v1/benchmark/context", payload);
+            await client.PostAsJsonAsync("http://127.0.0.1:8001/v1/benchmark/context", payload);
         }
         catch (Exception ex)
         {
