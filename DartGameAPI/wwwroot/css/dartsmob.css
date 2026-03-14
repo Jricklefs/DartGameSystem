@@ -2814,7 +2814,7 @@ html, body {
 /* Loaded calibration image should be on top */
 .camera-preview-full .calibration-camera-img.loaded {
     z-index: 15;
-    display: block !important;
+    display: block;
 }
 
 
