@@ -701,6 +701,12 @@ function updateCalibrationView() {
     const img = document.getElementById('camera-base-img');
     const canvas = document.getElementById('calibration-canvas');
     
+    // If canvas is visible (live feed + overlay), don't hide it
+    if (canvas && canvas.style.display === 'block') {
+        // Canvas has live feed - leave it alone
+        return;
+    }
+    
     // Hide fronton canvas if switching away from fronton mode
     if (calibrationViewMode !== 'fronton' && canvas) {
         canvas.style.display = 'none';
@@ -828,66 +834,90 @@ async function selectCamera(camIndex) {
     });
     
     const img = document.getElementById('camera-base-img');
-    const baseImg = document.getElementById('camera-base-img');
+    const canvas = document.getElementById('calibration-canvas');
     const loading = document.getElementById('main-camera-loading');
     const offline = document.getElementById('main-camera-offline');
     const qualityLabel = document.getElementById('cam-quality-label');
+    
+    // Reset state: hide everything first
+    img.classList.remove('loaded');
+    img.style.setProperty('display', 'none', 'important');
+    if (canvas) canvas.style.display = 'none';
+    offline.classList.add('hidden');
+    loading.classList.remove('hidden');
+    loading.querySelector('span').textContent = '📷 Loading camera...';
+    
+    // Hide live badge
+    const badge = document.getElementById('live-badge');
+    if (badge) badge.style.display = 'none';
     
     const stored = storedCalibrations[`cam${camIndex}`];
     
     console.log('[CALIBRATION] selectCamera:', camIndex, 'stored:', stored);
     
-    // Show live camera feed with stored calibration overlay
     if (stored) {
-        // Draw live snapshot + overlay both on canvas (ensures perfect alignment)
+        // Try to get live snapshot + draw calibration overlay on canvas
         try {
             const snapUrl = `${DART_SENSOR_URL}/cameras/${camIndex}/snapshot?t=${Date.now()}`;
             const liveImg = new Image();
             liveImg.crossOrigin = 'anonymous';
-            liveImg.onload = () => {
-                const canvas = document.getElementById('calibration-canvas');
-                if (canvas) {
-                    // Hide img tag, show canvas
-                    img.style.display = 'none';
-                    canvas.style.display = 'block';
-                    // Draw live image + overlay on canvas together
-                    drawCalibrationOverlay(canvas, stored.calibrationData, liveImg, false);
+            
+            // Use promise to properly await the image load
+            const loaded = await new Promise((resolve) => {
+                liveImg.onload = () => resolve(true);
+                liveImg.onerror = () => resolve(false);
+                liveImg.src = snapUrl;
+                setTimeout(() => resolve(false), 5000);
+            });
+            
+            if (loaded && canvas) {
+                // SUCCESS: Draw live image + overlay on canvas
+                canvas.style.display = 'block';
+                drawCalibrationOverlay(canvas, stored.calibrationData, liveImg, false);
+                
+                // Show LIVE badge
+                let liveBadge = document.getElementById('live-badge');
+                if (!liveBadge) {
+                    liveBadge = document.createElement('div');
+                    liveBadge.id = 'live-badge';
+                    liveBadge.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(220,20,20,0.85); color:white; padding:4px 12px; border-radius:4px; font-weight:bold; font-size:13px; z-index:20; letter-spacing:1px;';
+                    liveBadge.textContent = '● LIVE';
+                    canvas.parentElement.appendChild(liveBadge);
                 }
+                liveBadge.style.display = 'block';
+                
                 loading.classList.add('hidden');
-                offline.classList.add('hidden');
-            };
-            liveImg.onerror = () => {
+                const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
+                const modelInfo = stored.calibrationModel ? ` [${stored.calibrationModel}]` : '';
+                qualityLabel.textContent = `✅ Live + Overlay (${Math.round(stored.quality * 100)}%)${angleInfo}${modelInfo}`;
+                qualityLabel.className = 'cam-quality-label calibrated';
+            } else {
+                // FALLBACK: Show stored overlay image
                 console.warn('[CALIBRATION] Live snapshot failed, falling back to stored overlay');
                 if (stored.overlayImagePath) {
                     const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
                     img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
-                    img.style.display = 'block';
                     img.classList.add('loaded');
+                    img.style.setProperty('display', 'block', 'important');
                 }
                 loading.classList.add('hidden');
-            };
-            liveImg.src = snapUrl;
+                const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
+                const modelInfo = stored.calibrationModel ? ` [${stored.calibrationModel}]` : '';
+                qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}%${angleInfo}${modelInfo}`;
+                qualityLabel.className = 'cam-quality-label calibrated';
+            }
         } catch (e) {
             console.warn('[CALIBRATION] Live snapshot error:', e);
             loading.classList.add('hidden');
         }
+        
         if (stored.calibrationImagePath) {
             lastCameraSnapshot = stored.calibrationImagePath;
         } else {
             lastCameraSnapshot = null;
         }
-        updateCalibrationView();
-        
-        // Show 20-angle info if Mark 20 was used
-        const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
-        
-        const modelInfo = stored.calibrationModel ? ` [${stored.calibrationModel}]` : '';
-        qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}%${angleInfo}${modelInfo}`;
-        qualityLabel.className = 'cam-quality-label calibrated';
     } else {
-        // No stored calibration - show placeholder
-        img.classList.remove('loaded');
-        img.style.display = 'none';
+        // No stored calibration
         lastCameraSnapshot = null;
         loading.classList.add('hidden');
         offline.classList.remove('hidden');
@@ -899,39 +929,70 @@ async function selectCamera(camIndex) {
 }
 
 async function refreshCurrentCamera() {
-    // Get live snapshot from camera (for preview before calibrating)
+    // Get live snapshot and draw calibration overlay on top
     const img = document.getElementById('camera-base-img');
     const baseImg = document.getElementById('camera-base-img');
+    const canvas = document.getElementById('calibration-canvas');
     const loading = document.getElementById('main-camera-loading');
     const offline = document.getElementById('main-camera-offline');
     const qualityLabel = document.getElementById('cam-quality-label');
     
     img.classList.remove('loaded');
-    img.src = '';  // Clear existing image immediately
+    img.src = '';
     baseImg.style.display = 'none';
+    if (canvas) canvas.style.display = 'none';
     lastCameraSnapshot = null;
     loading.classList.remove('hidden');
     loading.querySelector('span').textContent = '📷 Loading live view...';
     offline.classList.add('hidden');
     
+    // Hide live badge during refresh
+    const badge = document.getElementById('live-badge');
+    if (badge) badge.style.display = 'none';
+    
     try {
-        const res = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot`, {
-            signal: AbortSignal.timeout(5000)
+        // Fetch raw JPEG snapshot (not JSON)
+        const snapUrl = `${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot?t=${Date.now()}`;
+        const stored = storedCalibrations[`cam${selectedCamera}`];
+        
+        const liveImg = new Image();
+        liveImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+            liveImg.onload = resolve;
+            liveImg.onerror = reject;
+            liveImg.src = snapUrl;
+            setTimeout(() => reject(new Error('Timeout')), 5000);
         });
         
-        if (res.ok) {
-            const data = await res.json();
-            const imgData = `data:image/jpeg;base64,${data.image}`;
-            img.src = imgData;
+        if (stored && stored.calibrationData && canvas) {
+            // Draw live snapshot + calibration overlay on canvas
+            img.classList.remove('loaded');
+            img.style.setProperty('display', 'none', 'important');
+            canvas.style.display = 'block';
+            drawCalibrationOverlay(canvas, stored.calibrationData, liveImg, false);
+            // Show LIVE badge
+            let liveBadge = document.getElementById('live-badge');
+            if (!liveBadge) {
+                liveBadge = document.createElement('div');
+                liveBadge.id = 'live-badge';
+                liveBadge.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(220,20,20,0.85); color:white; padding:4px 12px; border-radius:4px; font-weight:bold; font-size:13px; z-index:20; letter-spacing:1px;';
+                liveBadge.textContent = '● LIVE';
+                canvas.parentElement.appendChild(liveBadge);
+            }
+            liveBadge.style.display = 'block';
+        } else {
+            // No calibration data - just show raw image
+            img.src = liveImg.src;
+            img.style.display = 'block';
             img.classList.add('loaded');
-            loading.classList.add('hidden');
-            
-            // Store snapshot for combined view
-            lastCameraSnapshot = imgData;
-            updateCalibrationView();
-            
-            qualityLabel.textContent = '📷 Live Preview';
-            qualityLabel.className = 'cam-quality-label';
+        }
+        
+        loading.classList.add('hidden');
+        lastCameraSnapshot = snapUrl;
+        
+        qualityLabel.textContent = stored ? `✅ Live + Overlay (${Math.round(stored.quality * 100)}%)` : '📷 Live Preview';
+        qualityLabel.className = 'cam-quality-label' + (stored ? ' calibrated' : '');
         } else {
             throw new Error('Camera unavailable');
         }
@@ -1286,10 +1347,11 @@ function setStatus(id, online, text) {
 
 
 // ============================================================================
-// Rotate 20 - Shift segment alignment by 1 position
+// ============================================================================
+// Rotate Calibration - Shift segment alignment left or right
 // ============================================================================
 
-async function rotate20() {
+async function rotateCalibration(direction) {
     const camId = `cam${selectedCamera}`;
     const stored = storedCalibrations[camId];
     
@@ -1298,39 +1360,57 @@ async function rotate20() {
         return;
     }
     
-    const btn = document.getElementById('rotate20-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Rotating...';
+    const leftBtn = document.getElementById('rotate-left-btn');
+    const rightBtn = document.getElementById('rotate-right-btn');
+    const activeBtn = direction === 'left' ? leftBtn : rightBtn;
+    
+    if (activeBtn) {
+        activeBtn.disabled = true;
+        activeBtn.textContent = direction === 'left' ? '⏳ Rotating...' : 'Rotating... ⏳';
+    }
     
     try {
-        // Call API to rotate the 20 position by 1 segment (18 degrees)
-        const res = await fetch(`${DART_DETECT_URL}/v1/calibrations/${camId}/rotate20`, {
+        // Call API to rotate calibration
+        const res = await fetch(`${DART_DETECT_URL}/v1/calibrations/${camId}/rotate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ direction })
         });
         
         if (res.ok) {
             const data = await res.json();
-            console.log('Rotate 20 result:', data);
+            console.log('Rotate result:', data);
             
             // Reload calibrations and refresh view
             await loadStoredCalibrations();
             await selectCamera(selectedCamera);
             
-            // Show new angle
+            // Update rotation offset display
+            const rotLabel = document.getElementById('rotation-offset-label');
+            const rotValue = document.getElementById('rotation-offset-value');
+            if (rotLabel && rotValue) {
+                rotLabel.style.display = 'inline';
+                rotValue.textContent = `${Math.round(data.new_rotation_deg || 0)}°`;
+            }
+            
+            // Flash success message
             const qualityLabel = document.getElementById('cam-quality-label');
-            qualityLabel.textContent = `✅ Rotated! 20 now at ${Math.round(data.twentyAngle || 0)}°`;
+            const oldText = qualityLabel.textContent;
+            qualityLabel.textContent = `✓ Rotated ${direction}!`;
+            setTimeout(() => { qualityLabel.textContent = oldText; }, 2000);
         } else {
             const err = await res.json();
-            alert(`Rotate failed: ${err.error || err.detail || 'Unknown error'}`);
+            alert(`Rotate failed: ${err.error || 'Unknown error'}`);
         }
     } catch (e) {
-        console.error('Rotate 20 error:', e);
+        console.error('Rotate error:', e);
         alert(`Rotate failed: ${e.message}`);
     }
     
-    btn.disabled = false;
-    btn.textContent = '🔄 Rotate 20';
+    if (activeBtn) {
+        activeBtn.disabled = false;
+        activeBtn.textContent = direction === 'left' ? '← Rotate Left' : 'Rotate Right →';
+    }
 }
 
 // ============================================================================
@@ -1545,10 +1625,11 @@ function initEventListeners() {
     document.getElementById('calibrate-btn')?.addEventListener('click', calibrateCurrentCamera);
     
     // Mark 20 button
-    document.getElementById('mark20-btn')?.addEventListener('click', toggleMark20Mode);
+    // mark20-btn removed in favor of rotation controls
     
     // Rotate 20 button
-    document.getElementById('rotate20-btn')?.addEventListener('click', rotate20);
+    document.getElementById('rotate-left-btn')?.addEventListener('click', () => rotateCalibration('left'));
+    document.getElementById('rotate-right-btn')?.addEventListener('click', () => rotateCalibration('right'));
     
     // Overlay opacity
     document.getElementById('overlay-opacity')?.addEventListener('input', (e) => {
