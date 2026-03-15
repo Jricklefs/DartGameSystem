@@ -4164,63 +4164,79 @@ function drawPolygonOverlay(canvas, calData) {
     
     if (!calData || !calData.center) return;
     
-    // Get outer boundary points from polygon data or fall back
-    const polygon = calData.polygon;
-    const outerPoints = polygon?.double_outers;
-    if (!outerPoints || outerPoints.length < 20) return;
-    
     const center = calData.center;
     const seg20Idx = calData.segment_20_index || 0;
-    
-    // Standard dartboard segment order
     const DARTBOARD_SEGMENTS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
     
-    // Draw lines from center to each outer boundary point
-    for (let i = 0; i < 20; i++) {
-        const point = outerPoints[i];
-        // Map boundary index to segment number using seg20_idx
-        // Boundary i sits between two segments; label with the segment that starts at this boundary
-        const segIdx = ((i - seg20Idx) % 20 + 20) % 20;
-        const segNum = DARTBOARD_SEGMENTS[segIdx];
+    // Helper: draw an OpenCV-format ellipse [[cx,cy], [w,h], angle]
+    function drawEllipse(ellipseData, color, lineWidth) {
+        if (!ellipseData) return;
+        const [ctr, axes, angle] = ellipseData;
+        const cx = ctr[0], cy = ctr[1];
+        const rx = axes[0], ry = axes[1]; // semi-axes (OpenCV gives full width/height)
+        const rot = (angle || 0) * Math.PI / 180;
         
-        // Draw line from center to boundary point
         ctx.beginPath();
-        ctx.moveTo(center[0], center[1]);
-        ctx.lineTo(point[0], point[1]);
-        
-        if (segNum === 20) {
-            ctx.strokeStyle = 'rgba(0, 255, 0, 0.9)';
-            ctx.lineWidth = 2;
-        } else {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.lineWidth = 1;
-        }
+        ctx.ellipse(cx, cy, rx, ry, rot, 0, 2 * Math.PI);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
         ctx.stroke();
-        
-        // Label between this boundary and the next (midpoint of the segment arc)
-        const nextI = (i + 1) % 20;
-        const nextPoint = outerPoints[nextI];
-        const midX = (point[0] + nextPoint[0]) / 2;
-        const midY = (point[1] + nextPoint[1]) / 2;
-        
-        const dx = midX - center[0];
-        const dy = midY - center[1];
-        const len = Math.sqrt(dx * dx + dy * dy);
-        const labelX = center[0] + (dx / len) * (len + 25);
-        const labelY = center[1] + (dy / len) * (len + 25);
-        
-        ctx.font = 'bold 14px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        // Black outline for readability
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 3;
-        ctx.strokeText(String(segNum), labelX, labelY);
-        
-        // Green for 20, white for others
-        ctx.fillStyle = segNum === 20 ? '#00ff00' : '#ffffff';
-        ctx.fillText(String(segNum), labelX, labelY);
+    }
+    
+    // Draw ring ellipses (like the reference image)
+    drawEllipse(calData.outer_double_ellipse, 'rgba(255, 0, 255, 0.7)', 2);   // magenta - outer double
+    drawEllipse(calData.inner_double_ellipse, 'rgba(255, 0, 255, 0.5)', 1);   // magenta - inner double
+    drawEllipse(calData.outer_triple_ellipse, 'rgba(0, 255, 0, 0.7)', 2);     // green - outer triple
+    drawEllipse(calData.inner_triple_ellipse, 'rgba(0, 255, 0, 0.5)', 1);     // green - inner triple
+    drawEllipse(calData.bull_ellipse, 'rgba(0, 255, 255, 0.7)', 1);           // cyan - bull
+    drawEllipse(calData.bullseye_ellipse, 'rgba(255, 255, 0, 0.7)', 1);       // yellow - bullseye
+    
+    // Draw segment boundary lines from polygon data
+    const polygon = calData.polygon;
+    const outerPoints = polygon?.double_outers;
+    if (outerPoints && outerPoints.length >= 20) {
+        for (let i = 0; i < 20; i++) {
+            const point = outerPoints[i];
+            const segIdx = ((i - seg20Idx) % 20 + 20) % 20;
+            const segNum = DARTBOARD_SEGMENTS[segIdx];
+            
+            // Draw line from center to boundary point
+            ctx.beginPath();
+            ctx.moveTo(center[0], center[1]);
+            ctx.lineTo(point[0], point[1]);
+            
+            if (segNum === 20) {
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
+                ctx.lineWidth = 2;
+            } else {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1;
+            }
+            ctx.stroke();
+            
+            // Label between this boundary and the next
+            const nextI = (i + 1) % 20;
+            const nextPoint = outerPoints[nextI];
+            const midX = (point[0] + nextPoint[0]) / 2;
+            const midY = (point[1] + nextPoint[1]) / 2;
+            
+            const dx = midX - center[0];
+            const dy = midY - center[1];
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const labelX = center[0] + (dx / len) * (len + 25);
+            const labelY = center[1] + (dy / len) * (len + 25);
+            
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.strokeText(String(segNum), labelX, labelY);
+            
+            ctx.fillStyle = segNum === 20 ? '#ff0000' : '#ffffff';
+            ctx.fillText(String(segNum), labelX, labelY);
+        }
     }
     
     // Draw center dot
