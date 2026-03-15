@@ -1058,9 +1058,6 @@ async function refreshCurrentCamera() {
         
         qualityLabel.textContent = stored ? `✅ Live + Overlay (${Math.round(stored.quality * 100)}%)` : '📷 Live Preview';
         qualityLabel.className = 'cam-quality-label' + (stored ? ' calibrated' : '');
-        } else {
-            throw new Error('Camera unavailable');
-        }
     } catch (e) {
         console.error(`Camera ${selectedCamera} error:`, e);
         // Clear everything when camera is offline
