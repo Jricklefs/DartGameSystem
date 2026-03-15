@@ -36,9 +36,11 @@ public class CalibrationsController : ControllerBase
     /// Get all stored calibrations
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<List<CalibrationDto>>> GetAll()
+    public async Task<ActionResult<List<CalibrationDto>>> GetAll([FromQuery] string? method = null)
     {
-        var calibrations = await _db.Calibrations.ToListAsync();
+        var query = _db.Calibrations.AsQueryable();
+        if (method != null) query = query.Where(c => c.CalibrationMethod == method);
+        var calibrations = await query.ToListAsync();
         return calibrations.Select(ToDto).ToList();
     }
 
