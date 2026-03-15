@@ -3936,9 +3936,8 @@ async function loadOpenCVCalibrations() {
             const calibrations = await resp.json();
             storedOpenCVCalibrations = {};
             calibrations.forEach(cal => {
-                if (cal.calibrationModel === 'opencv') {
-                    storedOpenCVCalibrations[cal.cameraId] = cal;
-                }
+                // Load ALL calibrations, not just opencv - so we can show current method
+                storedOpenCVCalibrations[cal.cameraId] = cal;
             });
             // Update camera indicators
             for (let i = 0; i < 3; i++) {
@@ -3959,7 +3958,8 @@ function updateOpenCVCameraIndicator(camIndex) {
     
     if (stored) {
         indicator.classList.add('calibrated');
-        indicator.title = `Calibrated: ${Math.round(stored.quality * 100)}%`;
+        const method = (stored.calibrationModel || 'unknown').toUpperCase();
+        indicator.title = `Calibrated: ${Math.round(stored.quality * 100)}% [${method}]`;
     } else {
         indicator.classList.add('not-calibrated');
         indicator.title = 'Not calibrated';
@@ -4017,7 +4017,8 @@ async function refreshOpenCVPreview() {
         const stored = storedOpenCVCalibrations[`cam${selectedOpenCVCamera}`];
         if (stored && stored.calibrationData) {
             drawPolygonOverlay(canvas, JSON.parse(stored.calibrationData));
-            qualityLabel.textContent = `✅ Calibrated: ${Math.round(stored.quality * 100)}%`;
+            const method = (stored.calibrationModel || 'unknown').toUpperCase();
+            qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}% [${method}]`;
             qualityLabel.className = 'cam-quality-label calibrated';
         } else {
             qualityLabel.textContent = 'Not Calibrated';
