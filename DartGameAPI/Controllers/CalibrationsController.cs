@@ -131,7 +131,6 @@ public class CalibrationsController : ControllerBase
         existing.Quality = dto.Quality;
         existing.TwentyAngle = dto.TwentyAngle;
         existing.CalibrationModel = dto.CalibrationModel;
-        existing.CalibrationMethod = method;
         existing.CalibrationData = dto.CalibrationData;
         existing.UpdatedAt = DateTime.UtcNow;
 
@@ -151,7 +150,7 @@ public class CalibrationsController : ControllerBase
     {
         var cal = await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == cameraId && c.CalibrationMethod == method);
         if (cal == null)
-            return NotFound(new { error = $"No calibration found for {cameraId}" });
+            return NotFound(new { error = $"No calibration found for {cameraId} with method {method}" });
 
         // Call DartDetectionAI to update segment_20_index in its calibration store
         try
