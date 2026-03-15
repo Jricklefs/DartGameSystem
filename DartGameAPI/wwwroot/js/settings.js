@@ -3911,22 +3911,26 @@ async function saveCameraSettings() {
 let selectedOpenCVCamera = 0;
 let storedOpenCVCalibrations = {};
 
+let opencvTabInitialized = false;
 function initOpenCVCalibrationTab() {
-    // Camera button listeners
-    document.querySelectorAll('[data-ocvcam]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            selectOpenCVCamera(parseInt(btn.dataset.ocvcam));
+    if (!opencvTabInitialized) {
+        // Camera button listeners (only bind once)
+        document.querySelectorAll('[data-ocvcam]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectOpenCVCamera(parseInt(btn.dataset.ocvcam));
+            });
         });
-    });
+        
+        // Action button listeners
+        document.getElementById('ocv-refresh-btn')?.addEventListener('click', refreshOpenCVPreview);
+        document.getElementById('ocv-calibrate-btn')?.addEventListener('click', calibrateOpenCV);
+        document.getElementById('ocv-rotate-left-btn')?.addEventListener('click', rotateOpenCVLeft);
+        document.getElementById('ocv-rotate-right-btn')?.addEventListener('click', rotateOpenCVRight);
+        opencvTabInitialized = true;
+    }
     
-    // Action button listeners
-    document.getElementById('ocv-refresh-btn')?.addEventListener('click', refreshOpenCVPreview);
-    document.getElementById('ocv-calibrate-btn')?.addEventListener('click', calibrateOpenCV);
-    document.getElementById('ocv-rotate-left-btn')?.addEventListener('click', rotateOpenCVLeft);
-    document.getElementById('ocv-rotate-right-btn')?.addEventListener('click', rotateOpenCVRight);
-    
-    // Load stored calibrations
-    loadOpenCVCalibrations();
+    // Always reload calibrations when tab is opened
+    return loadOpenCVCalibrations();
 }
 
 async function loadOpenCVCalibrations() {
@@ -4231,9 +4235,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const opencvTab = document.querySelector('[data-tab="opencv-cal"]');
     if (opencvTab) {
         opencvTab.addEventListener('click', () => {
-            setTimeout(() => {
-                initOpenCVCalibrationTab();
-                selectOpenCVCamera(0);
+            setTimeout(async () => {
+                await initOpenCVCalibrationTab();
+                await selectOpenCVCamera(0);
             }, 100);
         });
     }
