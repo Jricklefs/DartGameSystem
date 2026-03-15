@@ -109,7 +109,7 @@ public class DartsMobDbContext : DbContext
             entity.ToTable("Calibrations");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.CameraId).HasMaxLength(50).IsRequired();
-            entity.HasIndex(e => e.CameraId).IsUnique();
+            entity.HasIndex(e => new { e.CameraId, e.CalibrationMethod }).IsUnique();
         });
 
         // DartLocations (for heatmap data)
@@ -283,6 +283,7 @@ public class CalibrationEntity
 {
     public int Id { get; set; }
     public string CameraId { get; set; } = string.Empty;
+    public string CalibrationMethod { get; set; } = "yolo";  // "yolo" or "opencv"
     public string? CalibrationImagePath { get; set; }
     public string? OverlayImagePath { get; set; }
     public double Quality { get; set; }

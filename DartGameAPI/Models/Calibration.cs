@@ -23,6 +23,9 @@ public class Calibration
     [MaxLength(100)]
     public string? CalibrationModel { get; set; }  // Model used for calibration (e.g., "default", "11m")
     
+    [MaxLength(20)]
+    public string CalibrationMethod { get; set; } = "yolo";  // "yolo" or "opencv"
+    
     public string? CalibrationData { get; set; }
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -40,6 +43,7 @@ public class CalibrationDto
     public double Quality { get; set; }
     public double? TwentyAngle { get; set; }
     public string? CalibrationModel { get; set; }  // Model used for calibration
+    public string? CalibrationMethod { get; set; }
     public string? CalibrationData { get; set; }
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

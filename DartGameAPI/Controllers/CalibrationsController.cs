@@ -46,11 +46,13 @@ public class CalibrationsController : ControllerBase
     /// Get calibration for a specific camera
     /// </summary>
     [HttpGet("{cameraId}")]
-    public async Task<ActionResult<CalibrationDto>> Get(string cameraId)
+    public async Task<ActionResult<CalibrationDto>> Get(string cameraId, [FromQuery] string? method = null)
     {
-        var cal = await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == cameraId);
+        var cal = method != null 
+            ? await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == cameraId && c.CalibrationMethod == method)
+            : await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == cameraId);
         if (cal == null)
-            return NotFound(new { error = $"No calibration found for {cameraId}" });
+            return NotFound(new { error = $"No calibration found for {cameraId} with method {method}" });
         
         return ToDto(cal);
     }
@@ -59,10 +61,10 @@ public class CalibrationsController : ControllerBase
     /// Get the overlay image file directly
     /// </summary>
     [HttpGet("{cameraId}/overlay")]
-    public async Task<IActionResult> GetOverlay(string cameraId)
+    public async Task<IActionResult> GetOverlay(string cameraId, [FromQuery] string method = "yolo")
     {
         var cal = await _db.Calibrations
-            .Where(c => c.CameraId == cameraId)
+            .Where(c => c.CameraId == cameraId && c.CalibrationMethod == method)
             .Select(c => new { c.OverlayImagePath })
             .FirstOrDefaultAsync();
         
@@ -85,13 +87,15 @@ public class CalibrationsController : ControllerBase
         if (string.IsNullOrEmpty(dto.CameraId))
             return BadRequest(new { error = "CameraId is required" });
 
-        var existing = await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == dto.CameraId);
+        var method = dto.CalibrationMethod ?? "yolo";
+        var existing = await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == dto.CameraId && c.CalibrationMethod == method);
         
         if (existing == null)
         {
             existing = new CalibrationEntity
             {
                 CameraId = dto.CameraId,
+                CalibrationMethod = method,
                 CreatedAt = DateTime.UtcNow
             };
             _db.Calibrations.Add(existing);
@@ -127,6 +131,7 @@ public class CalibrationsController : ControllerBase
         existing.Quality = dto.Quality;
         existing.TwentyAngle = dto.TwentyAngle;
         existing.CalibrationModel = dto.CalibrationModel;
+        existing.CalibrationMethod = method;
         existing.CalibrationData = dto.CalibrationData;
         existing.UpdatedAt = DateTime.UtcNow;
 
@@ -142,9 +147,9 @@ public class CalibrationsController : ControllerBase
     /// Update the 20-angle for a camera (mark 20 feature)
     /// </summary>
     [HttpPost("{cameraId}/mark20")]
-    public async Task<ActionResult<CalibrationDto>> Mark20(string cameraId, [FromBody] Mark20Request request)
+    public async Task<ActionResult<CalibrationDto>> Mark20(string cameraId, [FromBody] Mark20Request request, [FromQuery] string method = "yolo")
     {
-        var cal = await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == cameraId);
+        var cal = await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == cameraId && c.CalibrationMethod == method);
         if (cal == null)
             return NotFound(new { error = $"No calibration found for {cameraId}" });
 
@@ -259,9 +264,9 @@ public class CalibrationsController : ControllerBase
     /// Delete calibration for a camera
     /// </summary>
     [HttpDelete("{cameraId}")]
-    public async Task<IActionResult> Delete(string cameraId)
+    public async Task<IActionResult> Delete(string cameraId, [FromQuery] string method = "yolo")
     {
-        var cal = await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == cameraId);
+        var cal = await _db.Calibrations.FirstOrDefaultAsync(c => c.CameraId == cameraId && c.CalibrationMethod == method);
         if (cal == null)
             return NotFound();
 
@@ -286,6 +291,7 @@ public class CalibrationsController : ControllerBase
     private static CalibrationDto ToDto(CalibrationEntity entity) => new()
     {
         CameraId = entity.CameraId,
+        CalibrationMethod = entity.CalibrationMethod,
         CalibrationImagePath = entity.CalibrationImagePath,
         OverlayImagePath = entity.OverlayImagePath,
         Quality = entity.Quality,

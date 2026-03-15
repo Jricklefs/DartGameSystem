@@ -780,7 +780,10 @@ async function loadStoredCalibrations() {
             console.log('[CALIBRATION] Loaded calibrations:', calibrations);
             storedCalibrations = {};
             calibrations.forEach(c => {
-                storedCalibrations[c.cameraId] = c;
+                // Only load YOLO calibrations (or legacy ones without a method)
+                if (!c.calibrationMethod || c.calibrationMethod === 'yolo') {
+                    storedCalibrations[c.cameraId] = c;
+                }
             });
             console.log('[CALIBRATION] storedCalibrations:', storedCalibrations);
             
@@ -1142,6 +1145,7 @@ async function calibrateCurrentCamera() {
                     overlayImage: camResult.overlay_image,
                     quality: camResult.quality,
                     calibrationModel: getCurrentCalibrationModel(),
+                    calibrationMethod: 'yolo',
                     calibrationData: JSON.stringify(camResult.calibration_data)
                 })
             });
@@ -3940,8 +3944,10 @@ async function loadOpenCVCalibrations() {
             const calibrations = await resp.json();
             storedOpenCVCalibrations = {};
             calibrations.forEach(cal => {
-                // Load ALL calibrations, not just opencv - so we can show current method
-                storedOpenCVCalibrations[cal.cameraId] = cal;
+                // Only load OpenCV calibrations
+                if (cal.calibrationMethod === 'opencv') {
+                    storedOpenCVCalibrations[cal.cameraId] = cal;
+                }
             });
             // Update camera indicators
             for (let i = 0; i < 3; i++) {
@@ -4085,6 +4091,7 @@ async function calibrateOpenCV() {
                     overlayImage: camResult.overlay_image,
                     quality: camResult.quality,
                     calibrationModel: 'opencv',
+                    calibrationMethod: 'opencv',
                     calibrationData: JSON.stringify(camResult.calibration_data)
                 })
             });
