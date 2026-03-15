@@ -4158,63 +4158,70 @@ async function rotateOpenCV(direction) {
 function drawPolygonOverlay(canvas, calData) {
     const ctx = canvas.getContext('2d');
     
-    if (!calData || !calData.center || !calData.outer_double_points) {
-        return;
-    }
+    if (!calData || !calData.center) return;
+    
+    // Get outer boundary points from polygon data or fall back
+    const polygon = calData.polygon;
+    const outerPoints = polygon?.double_outers;
+    if (!outerPoints || outerPoints.length < 20) return;
     
     const center = calData.center;
-    const outerPoints = calData.outer_double_points;
+    const seg20Idx = calData.segment_20_index || 0;
     
-    // Segment order for dartboard (20 at top)
-    const segments = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+    // Standard dartboard segment order
+    const DARTBOARD_SEGMENTS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
     
-    // Draw lines from center to each outer point
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.lineWidth = 1;
-    
-    for (let i = 0; i < outerPoints.length && i < 20; i++) {
+    // Draw lines from center to each outer boundary point
+    for (let i = 0; i < 20; i++) {
         const point = outerPoints[i];
+        // Map boundary index to segment number using seg20_idx
+        // Boundary i sits between two segments; label with the segment that starts at this boundary
+        const segIdx = ((i - seg20Idx) % 20 + 20) % 20;
+        const segNum = DARTBOARD_SEGMENTS[segIdx];
         
-        // Draw line
+        // Draw line from center to boundary point
         ctx.beginPath();
         ctx.moveTo(center[0], center[1]);
         ctx.lineTo(point[0], point[1]);
         
-        // Segment 20 in green
-        if (segments[i] === 20) {
+        if (segNum === 20) {
             ctx.strokeStyle = 'rgba(0, 255, 0, 0.9)';
             ctx.lineWidth = 2;
         } else {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.lineWidth = 1;
         }
         ctx.stroke();
         
-        // Draw segment label outside the board
-        const dx = point[0] - center[0];
-        const dy = point[1] - center[1];
-        const length = Math.sqrt(dx * dx + dy * dy);
-        const labelDist = length + 20;
-        const labelX = center[0] + (dx / length) * labelDist;
-        const labelY = center[1] + (dy / length) * labelDist;
+        // Label between this boundary and the next (midpoint of the segment arc)
+        const nextI = (i + 1) % 20;
+        const nextPoint = outerPoints[nextI];
+        const midX = (point[0] + nextPoint[0]) / 2;
+        const midY = (point[1] + nextPoint[1]) / 2;
+        
+        const dx = midX - center[0];
+        const dy = midY - center[1];
+        const len = Math.sqrt(dx * dx + dy * dy);
+        const labelX = center[0] + (dx / len) * (len + 25);
+        const labelY = center[1] + (dy / len) * (len + 25);
         
         ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        // Black outline
+        // Black outline for readability
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
-        ctx.strokeText(String(segments[i]), labelX, labelY);
+        ctx.strokeText(String(segNum), labelX, labelY);
         
         // Green for 20, white for others
-        ctx.fillStyle = segments[i] === 20 ? '#00ff00' : '#ffffff';
-        ctx.fillText(String(segments[i]), labelX, labelY);
+        ctx.fillStyle = segNum === 20 ? '#00ff00' : '#ffffff';
+        ctx.fillText(String(segNum), labelX, labelY);
     }
     
     // Draw center dot
     ctx.beginPath();
-    ctx.arc(center[0], center[1], 3, 0, 2 * Math.PI);
+    ctx.arc(center[0], center[1], 4, 0, 2 * Math.PI);
     ctx.fillStyle = 'cyan';
     ctx.fill();
 }
