@@ -4168,12 +4168,12 @@ function drawPolygonOverlay(canvas, calData) {
     const seg20Idx = calData.segment_20_index || 0;
     const DARTBOARD_SEGMENTS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
     
-    // Helper: draw an OpenCV-format ellipse [[cx,cy], [w,h], angle]
+    // Helper: draw an OpenCV-format ellipse [[cx,cy], [width,height], angle]
     function drawEllipse(ellipseData, color, lineWidth) {
         if (!ellipseData) return;
         const [ctr, axes, angle] = ellipseData;
         const cx = ctr[0], cy = ctr[1];
-        const rx = axes[0], ry = axes[1]; // semi-axes (OpenCV gives full width/height)
+        const rx = axes[0] / 2, ry = axes[1] / 2; // OpenCV gives full width/height, canvas needs radii
         const rot = (angle || 0) * Math.PI / 180;
         
         ctx.beginPath();
