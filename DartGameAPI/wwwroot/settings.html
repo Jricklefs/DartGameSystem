@@ -186,6 +186,30 @@
                     <button id="calibrate-btn" class="btn btn-sm btn-primary">🎯 Calibrate</button>
                 </div>
             </div>
+        
+            <!-- Calibration Source Toggle -->
+            <div style="margin-top: 20px; background: #1a1a1a; border: 1px solid var(--gold-dark); border-radius: 8px; padding: 15px;">
+                <h3 style="color: var(--gold); margin: 0 0 10px 0;">&#x1f527; Calibration Source for Scoring</h3>
+                <p style="color: var(--paper-muted); font-size: 0.85rem; margin-bottom: 15px;">
+                    Choose which calibration data to use for dart scoring. YOLO is the default. 
+                    OpenCV requires all cameras to have OpenCV calibrations stored.
+                </p>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <select id="calibration-source-select" style="padding: 10px 15px; background: #0a0a0a; border: 1px solid var(--gold-dark); color: var(--paper); border-radius: 4px; min-width: 200px; font-size: 1rem;">
+                        <option value="yolo">YOLO (Default)</option>
+                        <option value="opencv" id="opencv-source-option">OpenCV</option>
+                    </select>
+                    <button id="apply-cal-source-btn" class="btn btn-primary" style="padding: 10px 20px;" onclick="applyCalibrationSource()">Apply</button>
+                    <span id="cal-source-status" style="color: var(--paper-muted);"></span>
+                </div>
+                <p id="opencv-source-warning" style="color: #f59e0b; font-size: 0.85rem; margin-top: 10px; display: none;">
+                    &#x26a0;&#xfe0f; Not all cameras have OpenCV calibrations. Calibrate all cameras in the OpenCV Cal tab first.
+                </p>
+                <p style="color: var(--paper-muted); font-size: 0.8rem; margin-top: 8px;">
+                    Note: Restart the scoring service after changing this setting for it to take effect.
+                </p>
+            </div>
+
         </section>
 
         <!-- OpenCV Calibration Tab -->

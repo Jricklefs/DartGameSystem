@@ -4143,7 +4143,7 @@ async function rotateOpenCV(direction) {
         const resp = await fetch(`${DART_DETECT_URL}/v1/calibrations/${camId}/rotate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ direction })
+            body: JSON.stringify({ direction, calibration_method: 'opencv' })
         });
         
         if (!resp.ok) throw new Error('Rotate failed');
@@ -4191,34 +4191,103 @@ function drawPolygonOverlay(canvas, calData) {
     }
     
     // Draw ring ellipses (like the reference image)
-    drawEllipse(calData.outer_double_ellipse, 'rgba(255, 0, 255, 0.7)', 2);   // magenta - outer double
+    drawEllipse(calData.outer_double_ellipse, 'rgba(255, 0, 255, 0.7)', 3);   // magenta - outer double
     drawEllipse(calData.inner_double_ellipse, 'rgba(255, 0, 255, 0.5)', 1);   // magenta - inner double
-    drawEllipse(calData.outer_triple_ellipse, 'rgba(0, 255, 0, 0.7)', 2);     // green - outer triple
+    drawEllipse(calData.outer_triple_ellipse, 'rgba(0, 255, 0, 0.7)', 3);     // green - outer triple
     drawEllipse(calData.inner_triple_ellipse, 'rgba(0, 255, 0, 0.5)', 1);     // green - inner triple
-    drawEllipse(calData.bull_ellipse, 'rgba(0, 255, 255, 0.7)', 1);           // cyan - bull
-    drawEllipse(calData.bullseye_ellipse, 'rgba(255, 255, 0, 0.7)', 1);       // yellow - bullseye
+    drawEllipse(calData.bull_ellipse, 'rgba(255, 255, 0, 0.9)', 2);           // cyan - bull
+    drawEllipse(calData.bullseye_ellipse, 'rgba(255, 255, 0, 0.9)', 2);       // yellow - bullseye
     
     // Draw segment boundary lines from polygon data
     const polygon = calData.polygon;
     const outerPoints = polygon?.double_outers;
+    
+    // Calculate bull outer radius for line clipping
+    const bullEllipse = calData.bull_ellipse;
+    let bullRadiusX = 0, bullRadiusY = 0, bullAngle = 0;
+    if (bullEllipse) {
+        bullRadiusX = bullEllipse[1][0] / 2;
+        bullRadiusY = bullEllipse[1][1] / 2;
+        bullAngle = (bullEllipse[2] || 0) * Math.PI / 180;
+    }
+    
     if (outerPoints && outerPoints.length >= 20) {
+        // First pass: fill segment 20 in blue
+        for (let i = 0; i < 20; i++) {
+            const segIdx = ((i - seg20Idx) % 20 + 20) % 20;
+            const segNum = DARTBOARD_SEGMENTS[segIdx];
+            if (segNum === 20) {
+                const nextI = (i + 1) % 20;
+                const point = outerPoints[i];
+                const nextPoint = outerPoints[nextI];
+                ctx.beginPath();
+                ctx.moveTo(center[0], center[1]);
+                ctx.lineTo(point[0], point[1]);
+                ctx.lineTo(nextPoint[0], nextPoint[1]);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(0, 100, 255, 0.35)';
+                ctx.fill();
+                break;
+            }
+        }
+        
+        // Draw yellow line from center through middle of segment 20
+        for (let i = 0; i < 20; i++) {
+            const segIdx2 = ((i - seg20Idx) % 20 + 20) % 20;
+            if (DARTBOARD_SEGMENTS[segIdx2] === 20) {
+                const nextI2 = (i + 1) % 20;
+                const p1 = outerPoints[i];
+                const p2 = outerPoints[nextI2];
+                const midX2 = (p1[0] + p2[0]) / 2;
+                const midY2 = (p1[1] + p2[1]) / 2;
+                const dx2 = midX2 - center[0];
+                const dy2 = midY2 - center[1];
+                const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                const endX2 = center[0] + (dx2 / len2) * (len2 + 25);
+                const endY2 = center[1] + (dy2 / len2) * (len2 + 25);
+                ctx.beginPath();
+                ctx.moveTo(center[0], center[1]);
+                ctx.lineTo(endX2, endY2);
+                ctx.strokeStyle = 'yellow';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                break;
+            }
+        }
+        
+        // Second pass: draw lines and labels
         for (let i = 0; i < 20; i++) {
             const point = outerPoints[i];
             const segIdx = ((i - seg20Idx) % 20 + 20) % 20;
             const segNum = DARTBOARD_SEGMENTS[segIdx];
             
-            // Draw line from center to boundary point
-            ctx.beginPath();
-            ctx.moveTo(center[0], center[1]);
-            ctx.lineTo(point[0], point[1]);
+            // Calculate line start point at outer bull ellipse
+            const dx = point[0] - center[0];
+            const dy = point[1] - center[1];
+            const lineLen = Math.sqrt(dx * dx + dy * dy);
             
-            if (segNum === 20) {
-                ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
-                ctx.lineWidth = 2;
-            } else {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.lineWidth = 1;
+            let startX = center[0], startY = center[1];
+            if (bullEllipse && bullRadiusX > 0) {
+                // Find intersection with bull ellipse
+                const angle = Math.atan2(dy, dx);
+                const cosA = Math.cos(angle - bullAngle);
+                const sinA = Math.sin(angle - bullAngle);
+                const r = (bullRadiusX * bullRadiusY) / Math.sqrt(
+                    (bullRadiusY * cosA) * (bullRadiusY * cosA) + 
+                    (bullRadiusX * sinA) * (bullRadiusX * sinA)
+                );
+                startX = center[0] + r * Math.cos(angle);
+                startY = center[1] + r * Math.sin(angle);
             }
+            
+            // Draw line from outer bull to 20px past outer double
+            const extX = point[0] + (dx / lineLen) * 20;
+            const extY = point[1] + (dy / lineLen) * 20;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(extX, extY);
+            ctx.strokeStyle = 'rgba(180, 0, 255, 0.8)';
+            ctx.lineWidth = 3;
             ctx.stroke();
             
             // Label between this boundary and the next
@@ -4227,29 +4296,36 @@ function drawPolygonOverlay(canvas, calData) {
             const midX = (point[0] + nextPoint[0]) / 2;
             const midY = (point[1] + nextPoint[1]) / 2;
             
-            const dx = midX - center[0];
-            const dy = midY - center[1];
-            const len = Math.sqrt(dx * dx + dy * dy);
-            const labelX = center[0] + (dx / len) * (len + 25);
-            const labelY = center[1] + (dy / len) * (len + 25);
+            const dxL = midX - center[0];
+            const dyL = midY - center[1];
+            const lenL = Math.sqrt(dxL * dxL + dyL * dyL);
+            const labelX = center[0] + (dxL / lenL) * (lenL + 25);
+            const labelY = center[1] + (dyL / lenL) * (lenL + 25);
             
-            ctx.font = 'bold 14px Arial';
+            ctx.font = 'bold 24px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3;
-            ctx.strokeText(String(segNum), labelX, labelY);
-            
-            ctx.fillStyle = segNum === 20 ? '#ff0000' : '#ffffff';
+            if (segNum === 20) {
+                ctx.font = 'bold 28px Arial';
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 4;
+                ctx.strokeText(String(segNum), labelX, labelY);
+                ctx.fillStyle = '#ff0000';
+            } else {
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText(String(segNum), labelX, labelY);
+                ctx.fillStyle = '#ffffff';
+            }
             ctx.fillText(String(segNum), labelX, labelY);
         }
     }
     
-    // Draw center dot
+// Draw center dot
     ctx.beginPath();
-    ctx.arc(center[0], center[1], 4, 0, 2 * Math.PI);
-    ctx.fillStyle = 'cyan';
+    ctx.arc(center[0], center[1], 2, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
     ctx.fill();
 }
 
@@ -4266,3 +4342,108 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+
+// ============================================================================
+// Calibration Source Toggle (YOLO vs OpenCV)
+// ============================================================================
+
+async function loadCalibrationSource() {
+    try {
+        // Load current setting from API
+        const resp = await fetch(`${DART_GAME_URL}/api/settings/calibration-source`);
+        if (resp.ok) {
+            const data = await resp.json();
+            const select = document.getElementById('calibration-source-select');
+            if (select) select.value = data.source || 'yolo';
+        }
+    } catch (e) {
+        console.error('Failed to load calibration source:', e);
+    }
+    
+    // Check if OpenCV calibrations exist for all cameras
+    await checkOpenCVAvailability();
+}
+
+async function checkOpenCVAvailability() {
+    const warning = document.getElementById('opencv-source-warning');
+    const option = document.getElementById('opencv-source-option');
+    if (!warning || !option) return;
+    
+    try {
+        const resp = await fetch(`${DART_GAME_URL}/api/calibrations`);
+        if (!resp.ok) return;
+        
+        const calibrations = await resp.json();
+        const opencvCams = new Set();
+        calibrations.forEach(c => {
+            if (c.calibrationMethod === 'opencv') {
+                opencvCams.add(c.cameraId);
+            }
+        });
+        
+        // Check if all 3 cameras have OpenCV calibrations
+        const allHaveOpenCV = ['cam0', 'cam1', 'cam2'].every(cam => opencvCams.has(cam));
+        
+        if (!allHaveOpenCV) {
+            option.disabled = true;
+            option.textContent = 'OpenCV (not all cameras calibrated)';
+            warning.style.display = 'block';
+        } else {
+            option.disabled = false;
+            option.textContent = 'OpenCV';
+            warning.style.display = 'none';
+        }
+    } catch (e) {
+        console.error('Failed to check OpenCV availability:', e);
+    }
+}
+
+async function applyCalibrationSource() {
+    const select = document.getElementById('calibration-source-select');
+    const status = document.getElementById('cal-source-status');
+    if (!select) return;
+    
+    const source = select.value;
+    
+    try {
+        const resp = await fetch(`${DART_GAME_URL}/api/settings/calibration-source?source=${source}`, {
+            method: 'POST'
+        });
+        
+        if (resp.ok) {
+            const data = await resp.json();
+            if (status) {
+                status.textContent = `\u2713 ${data.message}`;
+                status.style.color = '#22c55e';
+                setTimeout(() => { status.textContent = ''; }, 5000);
+            }
+        } else {
+            const err = await resp.json();
+            if (status) {
+                status.textContent = `\u2717 ${err.error || 'Failed'}`;
+                status.style.color = '#ef4444';
+            }
+        }
+    } catch (e) {
+        console.error('Failed to set calibration source:', e);
+        if (status) {
+            status.textContent = '\u2717 API error';
+            status.style.color = '#ef4444';
+        }
+    }
+}
+
+// Load calibration source when calibration tab is shown
+document.addEventListener('DOMContentLoaded', () => {
+    // Load on page load since calibration tab is default active
+    setTimeout(loadCalibrationSource, 500);
+    
+    // Also reload when calibration tab is clicked
+    const calTab = document.querySelector('[data-tab="calibration"]');
+    if (calTab) {
+        calTab.addEventListener('click', () => {
+            setTimeout(loadCalibrationSource, 100);
+        });
+    }
+});

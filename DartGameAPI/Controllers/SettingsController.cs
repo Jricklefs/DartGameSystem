@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace DartGameAPI.Controllers;
 
@@ -26,8 +26,24 @@ public class SettingsController : ControllerBase
         if (mode != "hough" && mode != "pca")
             return BadRequest(new { error = "mode must be 'hough' or 'pca'" });
         
-        // Update in-memory config
         _configuration["DetectionMode"] = mode;
         return Ok(new { mode, message = $"Detection mode set to {mode}" });
+    }
+
+    [HttpGet("calibration-source")]
+    public IActionResult GetCalibrationSource()
+    {
+        var source = _configuration.GetValue<string>("CalibrationSource") ?? "yolo";
+        return Ok(new { source });
+    }
+
+    [HttpPost("calibration-source")]
+    public IActionResult SetCalibrationSource([FromQuery] string source)
+    {
+        if (source != "yolo" && source != "opencv")
+            return BadRequest(new { error = "source must be 'yolo' or 'opencv'" });
+        
+        _configuration["CalibrationSource"] = source;
+        return Ok(new { source, message = $"Calibration source set to {source}. Restart scoring to apply." });
     }
 }
