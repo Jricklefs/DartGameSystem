@@ -1689,6 +1689,34 @@ function initEventListeners() {
     // Calibrate button
     document.getElementById('calibrate-btn')?.addEventListener('click', calibrateCurrentCamera);
     
+    // Calibration method selector
+    const calMethodSelect = document.getElementById('cal-method-select');
+    if (calMethodSelect) {
+        // Load current method on init
+        fetch(`${DART_DETECT_URL}/v1/calibration-method`)
+            .then(r => r.json())
+            .then(d => { if (d.method) calMethodSelect.value = d.method; })
+            .catch(() => {});
+        
+        calMethodSelect.addEventListener('change', async (e) => {
+            try {
+                const res = await fetch(`${DART_DETECT_URL}/v1/calibration-method`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ method: e.target.value })
+                });
+                if (res.ok) {
+                    console.log('[CAL] Method set to:', e.target.value);
+                } else {
+                    alert('Failed to set calibration method');
+                    e.target.value = e.target.value === 'opencv' ? 'yolo' : 'opencv';
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        });
+    }
+    
     // Mark 20 button
     // mark20-btn removed in favor of rotation controls
     

@@ -192,6 +192,10 @@
                     <button id="focus-btn" class="btn btn-sm">🔍 Focus</button>
                     <button id="rotate-left-btn" class="btn btn-sm" title="Rotate segment labels counter-clockwise">← Rotate Left</button>
                     <button id="rotate-right-btn" class="btn btn-sm" title="Rotate segment labels clockwise">Rotate Right →</button>
+                    <select id="cal-method-select" class="btn btn-sm" style="background:var(--dark-bg);color:var(--gold);border:1px solid var(--gold);padding:4px 8px;font-size:12px;" title="Calibration detection method">
+                        <option value="yolo">YOLO</option>
+                        <option value="opencv">OpenCV</option>
+                    </select>
                     <button id="calibrate-btn" class="btn btn-sm btn-primary">🎯 Calibrate</button>
                 </div>
             </div>
@@ -780,7 +784,7 @@
 
     </main>
 
-    <script src="/js/settings.js?v=1773533000"></script>
+    <script src="/js/settings.js?v=1773534000"></script>
     <!-- Delete Confirmation Modal -->
     <div id="delete-confirm-modal" class="delete-modal-overlay hidden">
         <div class="delete-modal-box">
