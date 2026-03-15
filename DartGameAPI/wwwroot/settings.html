@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - DartsMob</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="stylesheet" href="/css/dartsmob.css?v=1773497573">
+    <link rel="stylesheet" href="/css/dartsmob.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
@@ -112,13 +112,6 @@
         .toggle-switch input:checked + .toggle-slider { background-color: var(--gold-dark); }
         .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
     </style>
-    <style>
-        /* Fix: allow JS to hide calibration img when showing live canvas */
-        .camera-preview-full .calibration-camera-img.loaded {
-            z-index: 15;
-            /* display controlled by JS, not forced */
-        }
-    </style>
 </head>
 <body class="settings-page">
     <div id="background-layer" class="background-layer"></div>
@@ -131,6 +124,7 @@
         <!-- Tabs on right -->
         <nav class="settings-nav-inline">
             <button class="nav-tab-sm active" data-tab="calibration">🎯 CALIBRATION</button>
+            <button class="nav-tab-sm" data-tab="opencv-cal">📐 OPENCV CAL</button>
             <button class="nav-tab-sm" data-tab="theme">🎨 THEME</button>
             <button class="nav-tab-sm" data-tab="audio">🔊 AUDIO</button>
             <button class="nav-tab-sm" data-tab="logs">📋 LOGS</button>
@@ -184,19 +178,37 @@
             <div class="camera-actions-bar">
                 <span id="cam-quality-label" class="cam-quality-label">Not Calibrated</span>
                 <span id="cam-focus-label" class="cam-focus-label" style="display:none; margin-left: 10px;"></span>
-                <span id="rotation-offset-label" class="rotation-offset-label" style="display:none; margin-left: 10px; color: var(--gold);">
-                    Rotation: <span id="rotation-offset-value">0°</span>
-                </span>
                 <div class="cam-buttons">
                     <button id="refresh-btn" class="btn btn-sm">🔄 Refresh</button>
                     <button id="focus-btn" class="btn btn-sm">🔍 Focus</button>
-                    <button id="rotate-left-btn" class="btn btn-sm" title="Rotate segment labels counter-clockwise">← Rotate Left</button>
-                    <button id="rotate-right-btn" class="btn btn-sm" title="Rotate segment labels clockwise">Rotate Right →</button>
-                    <select id="cal-method-select" class="btn btn-sm" style="background:var(--dark-bg);color:var(--gold);border:1px solid var(--gold);padding:4px 8px;font-size:12px;" title="Calibration detection method">
-                        <option value="yolo">YOLO</option>
-                        <option value="opencv">OpenCV</option>
-                    </select>
+                    <button id="mark20-btn" class="btn btn-sm">🎯 Mark 20</button>
+                    <button id="rotate20-btn" class="btn btn-sm">🔄 Rotate 20</button>
                     <button id="calibrate-btn" class="btn btn-sm btn-primary">🎯 Calibrate</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- OpenCV Calibration Tab -->
+        <section id="tab-opencv-cal" class="settings-section">
+            <div class="section-title-row">
+                <h2 class="section-title">OPENCV CALIBRATION</h2>
+                <div class="camera-selector-compact">
+                    <button class="cam-btn-sm" data-ocvcam="0" id="ocv-cam-btn-0">CAM 0 <span class="cam-indicator" id="ocv-cam-ind-0">●</span></button>
+                    <button class="cam-btn-sm" data-ocvcam="1" id="ocv-cam-btn-1">CAM 1 <span class="cam-indicator" id="ocv-cam-ind-1">●</span></button>
+                    <button class="cam-btn-sm" data-ocvcam="2" id="ocv-cam-btn-2">CAM 2 <span class="cam-indicator" id="ocv-cam-ind-2">●</span></button>
+                </div>
+            </div>
+            <div class="camera-preview-full" id="opencv-preview">
+                <canvas id="opencv-canvas" class="calibration-canvas"></canvas>
+                <div id="opencv-loading" class="main-cam-loading hidden"><span>Loading...</span></div>
+            </div>
+            <div class="camera-actions-bar">
+                <span id="ocv-quality-label" class="cam-quality-label">Not Calibrated</span>
+                <div class="cam-buttons">
+                    <button id="ocv-refresh-btn" class="btn btn-sm">🔄 REFRESH</button>
+                    <button id="ocv-rotate-left-btn" class="btn btn-sm">← ROTATE LEFT</button>
+                    <button id="ocv-rotate-right-btn" class="btn btn-sm">ROTATE RIGHT →</button>
+                    <button id="ocv-calibrate-btn" class="btn btn-sm btn-primary">📐 CALIBRATE</button>
                 </div>
             </div>
         </section>
@@ -784,7 +796,7 @@
 
     </main>
 
-    <script src="/js/settings.js?v=1773534000"></script>
+    <script src="/js/settings.js"></script>
     <!-- Delete Confirmation Modal -->
     <div id="delete-confirm-modal" class="delete-modal-overlay hidden">
         <div class="delete-modal-box">

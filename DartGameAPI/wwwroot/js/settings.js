@@ -72,6 +72,7 @@ function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage, overlayO
     canvas.width = baseImage.naturalWidth || baseImage.width;
     canvas.height = baseImage.naturalHeight || baseImage.height;
     
+    // Draw base image (skip if overlayOnly — live feed is behind in img tag)
     if (!overlayOnly) {
         ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
     } else {
@@ -87,126 +88,66 @@ function drawCalibrationOverlay(canvas, calibrationDataJson, baseImage, overlayO
     
     const center = cal.center;
     if (!center) return;
+    
     const cx = center[0], cy = center[1];
     
-    // Check if we have polygon data — use Autodarts-style rendering
-    const poly = cal.polygon;
-    if (poly && poly.valid && poly.double_outers && poly.double_outers.length === 20) {
-        drawPolygonOverlay(ctx, cal, poly, cx, cy);
-    } else {
-        // Fallback: old ellipse-based rendering
-        drawEllipseOverlay(ctx, cal, cx, cy);
-    }
-    
-    // Center dot
-    ctx.beginPath();
-    ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
-    ctx.fillStyle = 'cyan';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-}
-
-// === AUTODARTS-STYLE POLYGON OVERLAY ===
-function drawPolygonOverlay(ctx, cal, poly, cx, cy) {
-    const SEGMENTS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
-    
-    const dOuters = poly.double_outers;
-    
-    // Get outer double radius for line length
-    let maxR = 300;
-    if (cal.outer_double_ellipse) {
-        maxR = Math.max(cal.outer_double_ellipse[1][0], cal.outer_double_ellipse[1][1]) / 2 + 15;
-    }
-    
-    // Draw thin white segment boundary lines from center to just past outer double
-    for (let i = 0; i < 20; i++) {
-        const outerPt = dOuters[i];
-        if (!outerPt) continue;
-        
-        const dx = outerPt[0] - cx;
-        const dy = outerPt[1] - cy;
-        const len = Math.hypot(dx, dy);
-        if (len < 1) continue;
-        
-        // Line from center to maxR in the direction of the polygon boundary point
-        const x2 = cx + (dx / len) * maxR;
-        const y2 = cy + (dy / len) * maxR;
-        
+    // Helper: draw OpenCV ellipse
+    function drawEllipse(ell, color, lineWidth) {
+        if (!ell) return;
+        const [ecx, ecy] = ell[0];
+        const [w, h] = ell[1];
+        const angleDeg = ell[2];
+        ctx.save();
+        ctx.translate(ecx, ecy);
+        ctx.rotate(angleDeg * Math.PI / 180);
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(x2, y2);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.lineWidth = 1;
+        ctx.ellipse(0, 0, w/2, h/2, 0, 0, 2 * Math.PI);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
         ctx.stroke();
+        ctx.restore();
     }
     
-    // Label segments between boundaries
-    for (let i = 0; i < 20; i++) {
-        const p1 = dOuters[i];
-        const p2 = dOuters[(i + 1) % 20];
-        if (!p1 || !p2) continue;
-        
-        const segNum = SEGMENTS[i];
-        
-        // Direction to midpoint between two boundary points
-        const midX = (p1[0] + p2[0]) / 2;
-        const midY = (p1[1] + p2[1]) / 2;
-        const dx = midX - cx;
-        const dy = midY - cy;
-        const len = Math.hypot(dx, dy);
-        
-        // Place label just outside the outer ring
-        const labelR = maxR + 20;
-        const labelX = cx + (dx / len) * labelR;
-        const labelY = cy + (dy / len) * labelR;
-        
-        ctx.font = 'bold 14px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        // Black outline for readability
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 3;
-        ctx.strokeText(String(segNum), labelX, labelY);
-        // Green for 20, white for others
-        ctx.fillStyle = segNum === 20 ? '#00ff00' : '#ffffff';
-        ctx.fillText(String(segNum), labelX, labelY);
-    }
-}
-
-// === OLD ELLIPSE-BASED OVERLAY (fallback) ===
-function drawEllipseOverlay(ctx, cal, cx, cy) {
-    drawEllipseShape(ctx, cal.outer_double_ellipse, 'rgba(255,255,0,0.8)', 2);
-    drawEllipseShape(ctx, cal.inner_double_ellipse, 'rgba(255,255,0,0.5)', 1);
-    drawEllipseShape(ctx, cal.outer_triple_ellipse, 'rgba(255,255,0,0.8)', 2);
-    drawEllipseShape(ctx, cal.inner_triple_ellipse, 'rgba(255,255,0,0.5)', 1);
-    drawEllipseShape(ctx, cal.bull_ellipse, 'rgba(255,255,0,0.6)', 1);
-    drawEllipseShape(ctx, cal.bullseye_ellipse, 'rgba(255,255,0,0.6)', 1);
+    // Draw rings
+    drawEllipse(cal.outer_double_ellipse, 'rgba(255,255,0,0.8)', 2);
+    drawEllipse(cal.inner_double_ellipse, 'rgba(255,255,0,0.5)', 1);
+    drawEllipse(cal.outer_triple_ellipse, 'rgba(255,255,0,0.8)', 2);
+    drawEllipse(cal.inner_triple_ellipse, 'rgba(255,255,0,0.5)', 1);
+    drawEllipse(cal.bull_ellipse, 'rgba(255,255,0,0.6)', 1);
+    drawEllipse(cal.bullseye_ellipse, 'rgba(255,255,0,0.6)', 1);
     
+    // Draw segment lines
     const segAngles = cal.segment_angles;
     const seg20Idx = cal.segment_20_index || 0;
     
     if (segAngles && segAngles.length >= 20) {
+        // Get outer double radius for line length
         let maxR = 300;
         if (cal.outer_double_ellipse) {
-            maxR = Math.max(cal.outer_double_ellipse[1][0], cal.outer_double_ellipse[1][1]) / 2 + 30;
+            maxR = Math.max(cal.outer_double_ellipse[1][0], cal.outer_double_ellipse[1][1]) / 2 + 10;
         }
+        // Bull radius for inner endpoint
         let bullR = 20;
         if (cal.bull_ellipse) {
             bullR = Math.max(cal.bull_ellipse[1][0], cal.bull_ellipse[1][1]) / 2;
         }
         
-        // Segment 20 wedge
-        const seg20Angle1 = segAngles[seg20Idx];
-        const seg20Angle2 = segAngles[(seg20Idx + 1) % 20];
+        // Draw blue filled wedge for segment 20
+        const seg20BoundaryIdx = seg20Idx;
+        const seg20Angle1 = segAngles[seg20BoundaryIdx];
+        const seg20Angle2 = segAngles[(seg20BoundaryIdx + 1) % 20];
+        
+        // Draw filled wedge using ellipse path if available, else arc
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(cx, cy);
+        // Use arc between the two boundary angles
         let startA = seg20Angle1;
         let endA = seg20Angle2;
+        // Handle angle wrapping
         if (endA < startA) endA += 2 * Math.PI;
         if (endA - startA > Math.PI) {
+            // Wrong direction, swap
             startA = seg20Angle2;
             endA = seg20Angle1;
             if (endA < startA) endA += 2 * Math.PI;
@@ -221,6 +162,7 @@ function drawEllipseOverlay(ctx, cal, cx, cy) {
             const angle = segAngles[i];
             const dx = Math.cos(angle);
             const dy = Math.sin(angle);
+            
             const x1 = cx + bullR * dx;
             const y1 = cy + bullR * dy;
             const x2 = cx + maxR * dx;
@@ -229,6 +171,7 @@ function drawEllipseOverlay(ctx, cal, cx, cy) {
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
+            // Highlight segment 20 boundaries in blue
             let sNum = SEGMENT_ORDER[(i - seg20Idx + 20) % 20];
             let nextSNum = SEGMENT_ORDER[((i + 1) - seg20Idx + 20) % 20];
             if (sNum === 20 || nextSNum === 20) {
@@ -240,6 +183,7 @@ function drawEllipseOverlay(ctx, cal, cx, cy) {
             }
             ctx.stroke();
             
+            // Label: segment between boundary i and i+1
             let nextAngle = segAngles[(i + 1) % 20];
             let a1 = angle, a2 = nextAngle;
             if (Math.abs(a2 - a1) > Math.PI) {
@@ -255,30 +199,21 @@ function drawEllipseOverlay(ctx, cal, cx, cy) {
             ctx.font = 'bold 16px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            // Black outline
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 3;
             ctx.strokeText(String(segNum), lx, ly);
+            // Green for 20, white for others
             ctx.fillStyle = segNum === 20 ? '#00ff00' : '#ffffff';
             ctx.fillText(String(segNum), lx, ly);
         }
     }
-}
-
-// Helper: draw a single OpenCV ellipse
-function drawEllipseShape(ctx, ell, color, lineWidth) {
-    if (!ell) return;
-    const [ecx, ecy] = ell[0];
-    const [w, h] = ell[1];
-    const angleDeg = ell[2];
-    ctx.save();
-    ctx.translate(ecx, ecy);
-    ctx.rotate(angleDeg * Math.PI / 180);
+    
+    // Center dot
     ctx.beginPath();
-    ctx.ellipse(0, 0, w/2, h/2, 0, 0, 2 * Math.PI);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.stroke();
-    ctx.restore();
+    ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
+    ctx.fillStyle = 'cyan';
+    ctx.fill();
 }
 
 // Fetch live snapshot and draw calibration overlay
@@ -766,12 +701,6 @@ function updateCalibrationView() {
     const img = document.getElementById('camera-base-img');
     const canvas = document.getElementById('calibration-canvas');
     
-    // If canvas is visible (live feed + overlay), don't hide it
-    if (canvas && canvas.style.display === 'block') {
-        // Canvas has live feed - leave it alone
-        return;
-    }
-    
     // Hide fronton canvas if switching away from fronton mode
     if (calibrationViewMode !== 'fronton' && canvas) {
         canvas.style.display = 'none';
@@ -899,90 +828,66 @@ async function selectCamera(camIndex) {
     });
     
     const img = document.getElementById('camera-base-img');
-    const canvas = document.getElementById('calibration-canvas');
+    const baseImg = document.getElementById('camera-base-img');
     const loading = document.getElementById('main-camera-loading');
     const offline = document.getElementById('main-camera-offline');
     const qualityLabel = document.getElementById('cam-quality-label');
-    
-    // Reset state: hide everything first
-    img.classList.remove('loaded');
-    img.style.setProperty('display', 'none', 'important');
-    if (canvas) canvas.style.display = 'none';
-    offline.classList.add('hidden');
-    loading.classList.remove('hidden');
-    loading.querySelector('span').textContent = '📷 Loading camera...';
-    
-    // Hide live badge
-    const badge = document.getElementById('live-badge');
-    if (badge) badge.style.display = 'none';
     
     const stored = storedCalibrations[`cam${camIndex}`];
     
     console.log('[CALIBRATION] selectCamera:', camIndex, 'stored:', stored);
     
+    // Show live camera feed with stored calibration overlay
     if (stored) {
-        // Try to get live snapshot + draw calibration overlay on canvas
+        // Draw live snapshot + overlay both on canvas (ensures perfect alignment)
         try {
             const snapUrl = `${DART_SENSOR_URL}/cameras/${camIndex}/snapshot?t=${Date.now()}`;
             const liveImg = new Image();
             liveImg.crossOrigin = 'anonymous';
-            
-            // Use promise to properly await the image load
-            const loaded = await new Promise((resolve) => {
-                liveImg.onload = () => resolve(true);
-                liveImg.onerror = () => resolve(false);
-                liveImg.src = snapUrl;
-                setTimeout(() => resolve(false), 5000);
-            });
-            
-            if (loaded && canvas) {
-                // SUCCESS: Draw live image + overlay on canvas
-                canvas.style.display = 'block';
-                drawCalibrationOverlay(canvas, stored.calibrationData, liveImg, false);
-                
-                // Show LIVE badge
-                let liveBadge = document.getElementById('live-badge');
-                if (!liveBadge) {
-                    liveBadge = document.createElement('div');
-                    liveBadge.id = 'live-badge';
-                    liveBadge.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(220,20,20,0.85); color:white; padding:4px 12px; border-radius:4px; font-weight:bold; font-size:13px; z-index:20; letter-spacing:1px;';
-                    liveBadge.textContent = '● LIVE';
-                    canvas.parentElement.appendChild(liveBadge);
+            liveImg.onload = () => {
+                const canvas = document.getElementById('calibration-canvas');
+                if (canvas) {
+                    // Hide img tag, show canvas
+                    img.style.display = 'none';
+                    canvas.style.display = 'block';
+                    // Draw live image + overlay on canvas together
+                    drawCalibrationOverlay(canvas, stored.calibrationData, liveImg, false);
                 }
-                liveBadge.style.display = 'block';
-                
                 loading.classList.add('hidden');
-                const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
-                const modelInfo = stored.calibrationModel ? ` [${stored.calibrationModel}]` : '';
-                qualityLabel.textContent = `✅ Live + Overlay (${Math.round(stored.quality * 100)}%)${angleInfo}${modelInfo}`;
-                qualityLabel.className = 'cam-quality-label calibrated';
-            } else {
-                // FALLBACK: Show stored overlay image
+                offline.classList.add('hidden');
+            };
+            liveImg.onerror = () => {
                 console.warn('[CALIBRATION] Live snapshot failed, falling back to stored overlay');
                 if (stored.overlayImagePath) {
                     const cacheBuster = stored.overlayImagePath.includes('?') ? '&' : '?';
                     img.src = stored.overlayImagePath + cacheBuster + 't=' + Date.now();
+                    img.style.display = 'block';
                     img.classList.add('loaded');
-                    img.style.setProperty('display', 'block', 'important');
                 }
                 loading.classList.add('hidden');
-                const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
-                const modelInfo = stored.calibrationModel ? ` [${stored.calibrationModel}]` : '';
-                qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}%${angleInfo}${modelInfo}`;
-                qualityLabel.className = 'cam-quality-label calibrated';
-            }
+            };
+            liveImg.src = snapUrl;
         } catch (e) {
             console.warn('[CALIBRATION] Live snapshot error:', e);
             loading.classList.add('hidden');
         }
-        
         if (stored.calibrationImagePath) {
             lastCameraSnapshot = stored.calibrationImagePath;
         } else {
             lastCameraSnapshot = null;
         }
+        updateCalibrationView();
+        
+        // Show 20-angle info if Mark 20 was used
+        const angleInfo = stored.twentyAngle ? ` (20 at ${Math.round(stored.twentyAngle)}°)` : '';
+        
+        const modelInfo = stored.calibrationModel ? ` [${stored.calibrationModel}]` : '';
+        qualityLabel.textContent = `✅ Stored: ${Math.round(stored.quality * 100)}%${angleInfo}${modelInfo}`;
+        qualityLabel.className = 'cam-quality-label calibrated';
     } else {
-        // No stored calibration
+        // No stored calibration - show placeholder
+        img.classList.remove('loaded');
+        img.style.display = 'none';
         lastCameraSnapshot = null;
         loading.classList.add('hidden');
         offline.classList.remove('hidden');
@@ -994,70 +899,42 @@ async function selectCamera(camIndex) {
 }
 
 async function refreshCurrentCamera() {
-    // Get live snapshot and draw calibration overlay on top
+    // Get live snapshot from camera (for preview before calibrating)
     const img = document.getElementById('camera-base-img');
     const baseImg = document.getElementById('camera-base-img');
-    const canvas = document.getElementById('calibration-canvas');
     const loading = document.getElementById('main-camera-loading');
     const offline = document.getElementById('main-camera-offline');
     const qualityLabel = document.getElementById('cam-quality-label');
     
     img.classList.remove('loaded');
-    img.src = '';
+    img.src = '';  // Clear existing image immediately
     baseImg.style.display = 'none';
-    if (canvas) canvas.style.display = 'none';
     lastCameraSnapshot = null;
     loading.classList.remove('hidden');
     loading.querySelector('span').textContent = '📷 Loading live view...';
     offline.classList.add('hidden');
     
-    // Hide live badge during refresh
-    const badge = document.getElementById('live-badge');
-    if (badge) badge.style.display = 'none';
-    
     try {
-        // Fetch raw JPEG snapshot (not JSON)
-        const snapUrl = `${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot?t=${Date.now()}`;
-        const stored = storedCalibrations[`cam${selectedCamera}`];
-        
-        const liveImg = new Image();
-        liveImg.crossOrigin = 'anonymous';
-        
-        await new Promise((resolve, reject) => {
-            liveImg.onload = resolve;
-            liveImg.onerror = reject;
-            liveImg.src = snapUrl;
-            setTimeout(() => reject(new Error('Timeout')), 5000);
+        const res = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot?format=json`, {
+            signal: AbortSignal.timeout(5000)
         });
         
-        if (stored && stored.calibrationData && canvas) {
-            // Draw live snapshot + calibration overlay on canvas
-            img.classList.remove('loaded');
-            img.style.setProperty('display', 'none', 'important');
-            canvas.style.display = 'block';
-            drawCalibrationOverlay(canvas, stored.calibrationData, liveImg, false);
-            // Show LIVE badge
-            let liveBadge = document.getElementById('live-badge');
-            if (!liveBadge) {
-                liveBadge = document.createElement('div');
-                liveBadge.id = 'live-badge';
-                liveBadge.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(220,20,20,0.85); color:white; padding:4px 12px; border-radius:4px; font-weight:bold; font-size:13px; z-index:20; letter-spacing:1px;';
-                liveBadge.textContent = '● LIVE';
-                canvas.parentElement.appendChild(liveBadge);
-            }
-            liveBadge.style.display = 'block';
-        } else {
-            // No calibration data - just show raw image
-            img.src = liveImg.src;
-            img.style.display = 'block';
+        if (res.ok) {
+            const data = await res.json();
+            const imgData = `data:image/jpeg;base64,${data.image}`;
+            img.src = imgData;
             img.classList.add('loaded');
+            loading.classList.add('hidden');
+            
+            // Store snapshot for combined view
+            lastCameraSnapshot = imgData;
+            updateCalibrationView();
+            
+            qualityLabel.textContent = '📷 Live Preview';
+            qualityLabel.className = 'cam-quality-label';
+        } else {
+            throw new Error('Camera unavailable');
         }
-        
-        loading.classList.add('hidden');
-        lastCameraSnapshot = snapUrl;
-        
-        qualityLabel.textContent = stored ? `✅ Live + Overlay (${Math.round(stored.quality * 100)}%)` : '📷 Live Preview';
-        qualityLabel.className = 'cam-quality-label' + (stored ? ' calibrated' : '');
     } catch (e) {
         console.error(`Camera ${selectedCamera} error:`, e);
         // Clear everything when camera is offline
@@ -1150,7 +1027,7 @@ async function runFocusStream() {
     while (focusStreamActive) {
         try {
             // Get fresh snapshot (returns JSON with base64 image)
-            const snapRes = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot`);
+            const snapRes = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot?format=json`);
             if (!snapRes.ok) throw new Error('Camera offline');
             
             const snapData = await snapRes.json();
@@ -1232,7 +1109,7 @@ async function calibrateCurrentCamera() {
     
     try {
         // Get fresh snapshot
-        const snapRes = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot`);
+        const snapRes = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot?format=json`);
         if (!snapRes.ok) throw new Error('Could not get camera snapshot');
         
         const snapData = await snapRes.json();
@@ -1409,11 +1286,10 @@ function setStatus(id, online, text) {
 
 
 // ============================================================================
-// ============================================================================
-// Rotate Calibration - Shift segment alignment left or right
+// Rotate 20 - Shift segment alignment by 1 position
 // ============================================================================
 
-async function rotateCalibration(direction) {
+async function rotate20() {
     const camId = `cam${selectedCamera}`;
     const stored = storedCalibrations[camId];
     
@@ -1422,57 +1298,39 @@ async function rotateCalibration(direction) {
         return;
     }
     
-    const leftBtn = document.getElementById('rotate-left-btn');
-    const rightBtn = document.getElementById('rotate-right-btn');
-    const activeBtn = direction === 'left' ? leftBtn : rightBtn;
-    
-    if (activeBtn) {
-        activeBtn.disabled = true;
-        activeBtn.textContent = direction === 'left' ? '⏳ Rotating...' : 'Rotating... ⏳';
-    }
+    const btn = document.getElementById('rotate20-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Rotating...';
     
     try {
-        // Call API to rotate calibration
-        const res = await fetch(`${DART_DETECT_URL}/v1/calibrations/${camId}/rotate`, {
+        // Call API to rotate the 20 position by 1 segment (18 degrees)
+        const res = await fetch(`${DART_DETECT_URL}/v1/calibrations/${camId}/rotate20`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ direction })
+            headers: { 'Content-Type': 'application/json' }
         });
         
         if (res.ok) {
             const data = await res.json();
-            console.log('Rotate result:', data);
+            console.log('Rotate 20 result:', data);
             
             // Reload calibrations and refresh view
             await loadStoredCalibrations();
             await selectCamera(selectedCamera);
             
-            // Update rotation offset display
-            const rotLabel = document.getElementById('rotation-offset-label');
-            const rotValue = document.getElementById('rotation-offset-value');
-            if (rotLabel && rotValue) {
-                rotLabel.style.display = 'inline';
-                rotValue.textContent = `${Math.round(data.new_rotation_deg || 0)}°`;
-            }
-            
-            // Flash success message
+            // Show new angle
             const qualityLabel = document.getElementById('cam-quality-label');
-            const oldText = qualityLabel.textContent;
-            qualityLabel.textContent = `✓ Rotated ${direction}!`;
-            setTimeout(() => { qualityLabel.textContent = oldText; }, 2000);
+            qualityLabel.textContent = `✅ Rotated! 20 now at ${Math.round(data.twentyAngle || 0)}°`;
         } else {
             const err = await res.json();
-            alert(`Rotate failed: ${err.error || 'Unknown error'}`);
+            alert(`Rotate failed: ${err.error || err.detail || 'Unknown error'}`);
         }
     } catch (e) {
-        console.error('Rotate error:', e);
+        console.error('Rotate 20 error:', e);
         alert(`Rotate failed: ${e.message}`);
     }
     
-    if (activeBtn) {
-        activeBtn.disabled = false;
-        activeBtn.textContent = direction === 'left' ? '← Rotate Left' : 'Rotate Right →';
-    }
+    btn.disabled = false;
+    btn.textContent = '🔄 Rotate 20';
 }
 
 // ============================================================================
@@ -1538,7 +1396,7 @@ async function toggleLiveOverlay() {
         if (!liveOverlayActive) return;
         
         try {
-            const res = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot`, {
+            const res = await fetch(`${DART_SENSOR_URL}/cameras/${selectedCamera}/snapshot?format=json`, {
                 signal: AbortSignal.timeout(3000)
             });
             
@@ -1604,7 +1462,7 @@ async function refreshCameraWithOverlay() {
     
     try {
         // Get fresh frame from camera
-        const snapResp = await fetch(`${DART_SENSOR_URL}/cameras/${camIndex}/snapshot`);
+        const snapResp = await fetch(`${DART_SENSOR_URL}/cameras/${camIndex}/snapshot?format=json`);
         if (!snapResp.ok) throw new Error('Failed to get camera snapshot');
         
         const snapData = await snapResp.json();
@@ -1686,40 +1544,11 @@ function initEventListeners() {
     // Calibrate button
     document.getElementById('calibrate-btn')?.addEventListener('click', calibrateCurrentCamera);
     
-    // Calibration method selector
-    const calMethodSelect = document.getElementById('cal-method-select');
-    if (calMethodSelect) {
-        // Load current method on init
-        fetch(`${DART_DETECT_URL}/v1/calibration-method`)
-            .then(r => r.json())
-            .then(d => { if (d.method) calMethodSelect.value = d.method; })
-            .catch(() => {});
-        
-        calMethodSelect.addEventListener('change', async (e) => {
-            try {
-                const res = await fetch(`${DART_DETECT_URL}/v1/calibration-method`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ method: e.target.value })
-                });
-                if (res.ok) {
-                    console.log('[CAL] Method set to:', e.target.value);
-                } else {
-                    alert('Failed to set calibration method');
-                    e.target.value = e.target.value === 'opencv' ? 'yolo' : 'opencv';
-                }
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
-        });
-    }
-    
     // Mark 20 button
-    // mark20-btn removed in favor of rotation controls
+    document.getElementById('mark20-btn')?.addEventListener('click', toggleMark20Mode);
     
     // Rotate 20 button
-    document.getElementById('rotate-left-btn')?.addEventListener('click', () => rotateCalibration('left'));
-    document.getElementById('rotate-right-btn')?.addEventListener('click', () => rotateCalibration('right'));
+    document.getElementById('rotate20-btn')?.addEventListener('click', rotate20);
     
     // Overlay opacity
     document.getElementById('overlay-opacity')?.addEventListener('input', (e) => {
@@ -2264,7 +2093,7 @@ async function initStereoCalibration() {
             const cameras = [];
             for (let i = 0; i < 3; i++) {
                 try {
-                    const snapResp = await fetch(`${DART_SENSOR_URL}/cameras/${i}/snapshot`);
+                    const snapResp = await fetch(`${DART_SENSOR_URL}/cameras/${i}/snapshot?format=json`);
                     const snapData = await snapResp.json();
                     if (snapData.image) {
                         cameras.push({
@@ -4074,3 +3903,331 @@ async function saveCameraSettings() {
     btn.disabled = false;
     setTimeout(() => { status.textContent = ''; }, 3000);
 }
+
+// ============================================================================
+// OPENCV CALIBRATION TAB
+// ============================================================================
+
+let selectedOpenCVCamera = 0;
+let storedOpenCVCalibrations = {};
+
+function initOpenCVCalibrationTab() {
+    // Camera button listeners
+    document.querySelectorAll('[data-ocvcam]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            selectOpenCVCamera(parseInt(btn.dataset.ocvcam));
+        });
+    });
+    
+    // Action button listeners
+    document.getElementById('ocv-refresh-btn')?.addEventListener('click', refreshOpenCVPreview);
+    document.getElementById('ocv-calibrate-btn')?.addEventListener('click', calibrateOpenCV);
+    document.getElementById('ocv-rotate-left-btn')?.addEventListener('click', rotateOpenCVLeft);
+    document.getElementById('ocv-rotate-right-btn')?.addEventListener('click', rotateOpenCVRight);
+    
+    // Load stored calibrations
+    loadOpenCVCalibrations();
+}
+
+async function loadOpenCVCalibrations() {
+    try {
+        const resp = await fetch(`${DART_GAME_URL}/api/calibrations`);
+        if (resp.ok) {
+            const calibrations = await resp.json();
+            storedOpenCVCalibrations = {};
+            calibrations.forEach(cal => {
+                if (cal.calibrationModel === 'opencv') {
+                    storedOpenCVCalibrations[cal.cameraId] = cal;
+                }
+            });
+            // Update camera indicators
+            for (let i = 0; i < 3; i++) {
+                updateOpenCVCameraIndicator(i);
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load OpenCV calibrations:', e);
+    }
+}
+
+function updateOpenCVCameraIndicator(camIndex) {
+    const indicator = document.getElementById(`ocv-cam-ind-${camIndex}`);
+    if (!indicator) return;
+    
+    const stored = storedOpenCVCalibrations[`cam${camIndex}`];
+    indicator.classList.remove('calibrated', 'not-calibrated');
+    
+    if (stored) {
+        indicator.classList.add('calibrated');
+        indicator.title = `Calibrated: ${Math.round(stored.quality * 100)}%`;
+    } else {
+        indicator.classList.add('not-calibrated');
+        indicator.title = 'Not calibrated';
+    }
+}
+
+async function selectOpenCVCamera(camIndex) {
+    selectedOpenCVCamera = camIndex;
+    
+    // Update button states
+    document.querySelectorAll('[data-ocvcam]').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.ocvcam) === camIndex);
+    });
+    
+    // Load snapshot and show stored calibration overlay
+    await refreshOpenCVPreview();
+}
+
+async function refreshOpenCVPreview() {
+    const canvas = document.getElementById('opencv-canvas');
+    const loading = document.getElementById('opencv-loading');
+    const qualityLabel = document.getElementById('ocv-quality-label');
+    
+    if (!canvas) return;
+    
+    loading.classList.remove('hidden');
+    loading.querySelector('span').textContent = 'Loading...';
+    
+    try {
+        // Fetch live snapshot
+        const snapRes = await fetch(`${DART_SENSOR_URL}/cameras/${selectedOpenCVCamera}/snapshot?format=json`, {
+            signal: AbortSignal.timeout(5000)
+        });
+        
+        if (!snapRes.ok) throw new Error('Camera offline');
+        
+        const snapData = await snapRes.json();
+        const imgData = `data:image/jpeg;base64,${snapData.image}`;
+        
+        // Load image
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = imgData;
+        });
+        
+        // Draw image on canvas
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        // Draw stored calibration overlay if available
+        const stored = storedOpenCVCalibrations[`cam${selectedOpenCVCamera}`];
+        if (stored && stored.calibrationData) {
+            drawPolygonOverlay(canvas, JSON.parse(stored.calibrationData));
+            qualityLabel.textContent = `✅ Calibrated: ${Math.round(stored.quality * 100)}%`;
+            qualityLabel.className = 'cam-quality-label calibrated';
+        } else {
+            qualityLabel.textContent = 'Not Calibrated';
+            qualityLabel.className = 'cam-quality-label';
+        }
+        
+        loading.classList.add('hidden');
+        
+    } catch (err) {
+        console.error('OpenCV preview error:', err);
+        loading.classList.add('hidden');
+        qualityLabel.textContent = `❌ ${err.message}`;
+        qualityLabel.className = 'cam-quality-label failed';
+    }
+}
+
+async function calibrateOpenCV() {
+    const btn = document.getElementById('ocv-calibrate-btn');
+    const qualityLabel = document.getElementById('ocv-quality-label');
+    const loading = document.getElementById('opencv-loading');
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Calibrating...';
+    loading.classList.remove('hidden');
+    loading.querySelector('span').textContent = '🎯 Running OpenCV calibration...';
+    
+    try {
+        // Get fresh snapshot
+        const snapRes = await fetch(`${DART_SENSOR_URL}/cameras/${selectedOpenCVCamera}/snapshot?format=json`);
+        if (!snapRes.ok) throw new Error('Camera snapshot failed');
+        
+        const snapData = await snapRes.json();
+        
+        // Call OpenCV calibration endpoint
+        const calRes = await fetch(`${DART_DETECT_URL}/v1/calibrate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cameras: [{
+                    camera_id: `cam${selectedOpenCVCamera}`,
+                    image: snapData.image
+                }],
+                calibration_method: 'opencv'
+            })
+        });
+        
+        if (!calRes.ok) throw new Error('Calibration request failed');
+        
+        const result = await calRes.json();
+        const camResult = result.results?.[0];
+        
+        if (camResult?.success) {
+            // Save to database
+            const saveRes = await fetch(`${DART_GAME_URL}/api/calibrations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cameraId: `cam${selectedOpenCVCamera}`,
+                    calibrationImage: snapData.image,
+                    overlayImage: camResult.overlay_image,
+                    quality: camResult.quality,
+                    calibrationModel: 'opencv',
+                    calibrationData: JSON.stringify(camResult.calibration_data)
+                })
+            });
+            
+            if (saveRes.ok) {
+                const saved = await saveRes.json();
+                storedOpenCVCalibrations[`cam${selectedOpenCVCamera}`] = saved;
+                updateOpenCVCameraIndicator(selectedOpenCVCamera);
+            }
+            
+            qualityLabel.textContent = `✅ Calibrated: ${Math.round(camResult.quality * 100)}%`;
+            qualityLabel.className = 'cam-quality-label calibrated';
+            
+            // Refresh to show overlay
+            await refreshOpenCVPreview();
+            
+        } else {
+            throw new Error(camResult?.error || 'Calibration failed');
+        }
+        
+    } catch (err) {
+        console.error('OpenCV calibration error:', err);
+        qualityLabel.textContent = `❌ Failed: ${err.message}`;
+        qualityLabel.className = 'cam-quality-label failed';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '📐 CALIBRATE';
+        loading.classList.add('hidden');
+    }
+}
+
+async function rotateOpenCVLeft() {
+    await rotateOpenCV('left');
+}
+
+async function rotateOpenCVRight() {
+    await rotateOpenCV('right');
+}
+
+async function rotateOpenCV(direction) {
+    const btn = direction === 'left' ? document.getElementById('ocv-rotate-left-btn') : document.getElementById('ocv-rotate-right-btn');
+    const qualityLabel = document.getElementById('ocv-quality-label');
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Rotating...';
+    
+    try {
+        const camId = `cam${selectedOpenCVCamera}`;
+        const resp = await fetch(`${DART_DETECT_URL}/v1/calibrations/${camId}/rotate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ direction })
+        });
+        
+        if (!resp.ok) throw new Error('Rotate failed');
+        
+        const data = await resp.json();
+        
+        // Reload calibrations
+        await loadOpenCVCalibrations();
+        await refreshOpenCVPreview();
+        
+        qualityLabel.textContent = `✅ Rotated ${direction}`;
+        
+    } catch (err) {
+        console.error('Rotate error:', err);
+        qualityLabel.textContent = `❌ Rotate failed: ${err.message}`;
+        qualityLabel.className = 'cam-quality-label failed';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = direction === 'left' ? '← ROTATE LEFT' : 'ROTATE RIGHT →';
+    }
+}
+
+function drawPolygonOverlay(canvas, calData) {
+    const ctx = canvas.getContext('2d');
+    
+    if (!calData || !calData.center || !calData.outer_double_points) {
+        return;
+    }
+    
+    const center = calData.center;
+    const outerPoints = calData.outer_double_points;
+    
+    // Segment order for dartboard (20 at top)
+    const segments = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+    
+    // Draw lines from center to each outer point
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.lineWidth = 1;
+    
+    for (let i = 0; i < outerPoints.length && i < 20; i++) {
+        const point = outerPoints[i];
+        
+        // Draw line
+        ctx.beginPath();
+        ctx.moveTo(center[0], center[1]);
+        ctx.lineTo(point[0], point[1]);
+        
+        // Segment 20 in green
+        if (segments[i] === 20) {
+            ctx.strokeStyle = 'rgba(0, 255, 0, 0.9)';
+            ctx.lineWidth = 2;
+        } else {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 1;
+        }
+        ctx.stroke();
+        
+        // Draw segment label outside the board
+        const dx = point[0] - center[0];
+        const dy = point[1] - center[1];
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const labelDist = length + 20;
+        const labelX = center[0] + (dx / length) * labelDist;
+        const labelY = center[1] + (dy / length) * labelDist;
+        
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Black outline
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.strokeText(String(segments[i]), labelX, labelY);
+        
+        // Green for 20, white for others
+        ctx.fillStyle = segments[i] === 20 ? '#00ff00' : '#ffffff';
+        ctx.fillText(String(segments[i]), labelX, labelY);
+    }
+    
+    // Draw center dot
+    ctx.beginPath();
+    ctx.arc(center[0], center[1], 3, 0, 2 * Math.PI);
+    ctx.fillStyle = 'cyan';
+    ctx.fill();
+}
+
+// Initialize OpenCV tab when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    const opencvTab = document.querySelector('[data-tab="opencv-cal"]');
+    if (opencvTab) {
+        opencvTab.addEventListener('click', () => {
+            setTimeout(() => {
+                initOpenCVCalibrationTab();
+                selectOpenCVCamera(0);
+            }, 100);
+        });
+    }
+});
+
